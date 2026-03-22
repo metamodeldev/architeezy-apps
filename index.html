@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architeezy Application Gallery</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <!-- Header ─────────────────────────────────────────────────────────────── -->
+    <header>
+      <a class="logo" href="https://architeezy.com">
+        <img class="logo-img" src="https://docs.architeezy.com/ru/img/logo.svg" alt="Architeezy" />
+        <span class="wordmark">Architeezy</span>
+      </a>
+
+      <nav>
+        <a class="nav-link" id="nav-home" href="https://architeezy.com">Home</a>
+        <a class="nav-link" id="nav-about" href="https://about.architeezy.com">About</a>
+        <a class="nav-link" id="nav-docs" href="https://docs.architeezy.com">Docs</a>
+      </nav>
+
+      <div class="theme-switcher">
+        <button class="theme-btn" id="theme-btn-dark" onclick="setTheme('dark')" title="Dark">
+          🌙
+        </button>
+        <button class="theme-btn" id="theme-btn-light" onclick="setTheme('light')" title="Light">
+          ☀️
+        </button>
+        <button class="theme-btn" id="theme-btn-system" onclick="setTheme('system')" title="System">
+          🖥
+        </button>
+      </div>
+    </header>
+
+    <!-- App grid ───────────────────────────────────────────────────────────── -->
+    <main>
+      <h1 class="page-title" id="page-title">Architeezy Application Gallery</h1>
+      <div class="app-grid" id="app-grid"></div>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>

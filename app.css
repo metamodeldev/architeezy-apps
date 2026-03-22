@@ -1,0 +1,214 @@
+/* ── Reset ─────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-card-hov: #1c2128;
+  --border: rgb(48 54 61);
+  --text: #e6edf3;
+  --text-muted: #7d8590;
+  --accent: #2f81f7;
+  --accent-hov: #388bfd;
+  --radius: 10px;
+  --font: system-ui, -apple-system, sans-serif;
+}
+
+[data-theme="light"] {
+  --bg: #f6f8fa;
+  --bg-card: #fff;
+  --bg-card-hov: #f0f3f6;
+  --border: rgb(208 215 222);
+  --text: #1f2328;
+  --text-muted: #57606a;
+  --accent: #0969da;
+  --accent-hov: #0550ae;
+}
+
+@media (prefers-color-scheme: light) {
+  [data-theme="system"] {
+    --bg: #f6f8fa;
+    --bg-card: #fff;
+    --bg-card-hov: #f0f3f6;
+    --border: rgb(208 215 222);
+    --text: #1f2328;
+    --text-muted: #57606a;
+    --accent: #0969da;
+    --accent-hov: #0550ae;
+  }
+}
+
+/* ── Base ───────────────────────────────────────────────────────────── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100dvh;
+  padding: 0 24px 48px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.logo-img {
+  height: 32px;
+  width: auto;
+}
+
+.wordmark {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.wordmark span {
+  color: var(--accent);
+}
+
+/* ── Nav links ──────────────────────────────────────────────────────── */
+nav {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  flex-wrap: wrap;
+}
+
+.nav-link {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: var(--text);
+}
+
+/* ── Theme switcher ─────────────────────────────────────────────────── */
+.theme-switcher {
+  display: flex;
+  gap: 2px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.theme-btn {
+  background: none;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 5px 8px;
+  color: var(--text-muted);
+  transition: background 0.15s;
+}
+
+.theme-btn:hover {
+  background: var(--bg-card-hov);
+}
+
+.theme-btn.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ── Page title ─────────────────────────────────────────────────────── */
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+/* ── Grid ───────────────────────────────────────────────────────────── */
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+/* ── Card ───────────────────────────────────────────────────────────── */
+.app-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  text-decoration: none;
+  color: inherit;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.app-card:hover {
+  background: var(--bg-card-hov);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.app-card:active {
+  transform: translateY(0);
+}
+
+.card-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 16px;
+}
+
+.card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.card-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  flex: 1;
+}
+
+.card-cta {
+  margin-top: 20px;
+  font-size: 0.875rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.app-card:hover .card-cta {
+  color: var(--accent-hov);
+}
