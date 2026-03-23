@@ -2,17 +2,23 @@
 
 import { state } from "./state.js";
 import { applyLayout, fitGraph } from "./graph.js";
-import { applyDrill, applyVisibility } from "./filters.js";
+import { applyDrill, applyVisibility } from "./visibility.js";
 import { showDetail } from "./detail.js";
 import { renderTable } from "./table.js";
 import { syncUrl } from "./routing.js";
 
-// Mark the current drill-root node with isDrillRoot data so Cytoscape applies
-// the green-border style. Call after buildCytoscape() to restore the marker.
+/** Re-applies the .drill-root class after buildCytoscape() recreates the instance. */
 export function restoreDrillRootStyle() {
-  if (state.drillNodeId) state.cy?.$id(state.drillNodeId).addClass("drill-root");
+  if (state.drillNodeId)
+    state.cy?.$id(state.drillNodeId).addClass("drill-root");
 }
 
+/**
+ * Rebuilds the depth picker buttons (1–5) inside `#depth-picker`,
+ * marking the currently active depth with the "active" class.
+ * Each button updates `state.drillDepth`, redrills, reflows the layout,
+ * and syncs the URL.
+ */
 export function buildDepthPicker() {
   const picker = document.getElementById("depth-picker");
   picker.innerHTML = "";
@@ -31,6 +37,13 @@ export function buildDepthPicker() {
   });
 }
 
+/**
+ * Enters drill-down mode centred on `node`.
+ * Shows the drill bar, builds the depth picker, applies the BFS visibility,
+ * re-runs the layout, and opens the detail panel for the drill root.
+ *
+ * @param {cytoscape.NodeSingular} node - The Cytoscape node to drill into.
+ */
 export function onNodeDrill(node) {
   state.drillNodeId = node.id();
 
@@ -39,7 +52,7 @@ export function onNodeDrill(node) {
   buildDepthPicker();
   applyDrill();
 
-  // Update class after applyDrill's cy.batch() completes so it isn't overridden
+  // Update class after applyDrill's cy.batch() completes so it isn't overridden.
   state.cy.nodes().removeClass("drill-root");
   state.cy.$id(state.drillNodeId).addClass("drill-root");
 
@@ -48,6 +61,11 @@ export function onNodeDrill(node) {
   syncUrl();
 }
 
+/**
+ * Exits drill-down mode and restores the full-model view.
+ * Hides the drill bar, clears drill state, reapplies full visibility,
+ * fits the graph, and re-renders the table if it is active.
+ */
 export function exitDrill() {
   state.cy?.nodes().removeClass("drill-root");
   state.drillNodeId = null;

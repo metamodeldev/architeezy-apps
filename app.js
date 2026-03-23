@@ -13,7 +13,8 @@ const STRINGS = {
     apps: {
       lens: {
         name: "Architeezy Lens",
-        description: "Displays the model as a graph or table, and allows you to filter objects and relationships, as well as search for related objects",
+        description:
+          "Displays the model as a graph or table, and allows you to filter objects and relationships, as well as search for related objects",
       },
     },
   },
@@ -28,12 +29,20 @@ const STRINGS = {
     apps: {
       lens: {
         name: "Architeezy Lens",
-        description: "Показывает модель в виде графа или таблицы, позволяет фильтровать объекты и связи, искать связанные объекты",
+        description:
+          "Показывает модель в виде графа или таблицы, позволяет фильтровать объекты и связи, искать связанные объекты",
       },
     },
   },
 };
 
+/**
+ * Returns the localised string for `key` in the active locale.
+ * Falls back to English, then to the key itself.
+ *
+ * @param {string} key - String key from the STRINGS map.
+ * @returns {string|object}
+ */
 function t(key) {
   return (STRINGS[LANG] ?? STRINGS.en)[key] ?? STRINGS.en[key] ?? key;
 }
@@ -80,6 +89,12 @@ APPS.forEach(({ id, href, img }) => {
 // ── Theme ─────────────────────────────────────────────────────────────
 const STORAGE_KEY = "architeezyTheme";
 
+/**
+ * Applies a colour theme to the page and persists the choice to localStorage.
+ * Updates the active state of all `.theme-btn` elements.
+ *
+ * @param {"dark"|"light"|"system"} theme - Theme name.
+ */
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem(STORAGE_KEY, theme);

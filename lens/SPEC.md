@@ -1,4 +1,4 @@
-# Architeezy Lens — Specification v7
+# Architeezy Lens — Specification
 
 ## Overview
 
@@ -204,7 +204,7 @@ Resolution algorithm:
 - Shows the focal node and all nodes reachable within N hops via **semantic relationship edges and containment** (parent↔child), subject to the active element and relationship type filters.
 - **BFS traversal rules:**
   - Semantic edges whose type is currently checked are traversed.
-  - **Element type filter is respected during BFS**: a node is only added to the reachable set (and used as a stepping stone) if its element type is currently active. This ensures nodes that are reachable only *through* filtered-out nodes are not shown — every visible node has an unbroken path to the drill-root through visible nodes.
+  - **Element type filter is respected during BFS**: a node is only added to the reachable set (and used as a stepping stone) if its element type is currently active. This ensures nodes that are reachable only _through_ filtered-out nodes are not shown — every visible node has an unbroken path to the drill-root through visible nodes.
   - The drill-root is always traversable and always visible even if its element type is filtered out (see below).
   - Containment is traversed as regular hops (N levels of children **and** N levels of parents) — independent of whether containment is shown as edges or compound shapes.
   - When containment display is **None**, containment is not traversed and contained/containing objects are not included.
@@ -253,20 +253,21 @@ The address bar reflects the full application state so that any view can be shar
 
 #### URL parameters
 
-| Parameter       | Present when                          | Value                                                   |
-| --------------- | ------------------------------------- | ------------------------------------------------------- |
-| `model`         | A model is loaded                     | Model `id` (UUID) from the API                          |
-| `entity`        | Drill-down is active                  | Element `id` of the drill-root node                     |
-| `depth`         | Drill-down is active                  | BFS depth (1–5)                                         |
-| `entities`      | One or more element types are hidden  | Comma-separated list of **visible** element type names  |
-| `relationships` | One or more rel. types are hidden     | Comma-separated list of **visible** rel. type names     |
-| `view`          | Table view is active                  | `table` (parameter absent when graph is active)         |
+| Parameter       | Present when                         | Value                                                  |
+| --------------- | ------------------------------------ | ------------------------------------------------------ |
+| `model`         | A model is loaded                    | Model `id` (UUID) from the API                         |
+| `entity`        | Drill-down is active                 | Element `id` of the drill-root node                    |
+| `depth`         | Drill-down is active                 | BFS depth (1–5)                                        |
+| `entities`      | One or more element types are hidden | Comma-separated list of **visible** element type names |
+| `relationships` | One or more rel. types are hidden    | Comma-separated list of **visible** rel. type names    |
+| `view`          | Table view is active                 | `table` (parameter absent when graph is active)        |
 
 Commas in list values are written literally (not encoded as `%2C`). Other values use standard percent-encoding.
 
 #### Update triggers
 
 `syncUrl()` is called after every state change that affects the URL:
+
 - Model loaded → `modelId` added
 - Drill entered / exited / depth changed → `entityId` + `depth` added or removed
 - Filter toggled → `entities` / `relationships` added or removed
@@ -314,23 +315,39 @@ Commas in list values are written literally (not encoded as `%2C`). Other values
 
 ## Module Structure
 
-| File              | Responsibility                                                                                 |
-| ----------------- | ---------------------------------------------------------------------------------------------- |
-| `js/constants.js` | Global constants: API base, URLs, color palette, regexes                                       |
-| `js/i18n.js`      | Language detection, string table, `t()`, `applyLocale()`                                       |
-| `js/utils.js`     | Pure helpers: color hashing, HTML escaping, model URL derivation                               |
-| `js/state.js`     | Single shared mutable `state` object (all runtime state)                                       |
-| `js/auth.js`      | Auth token (memory-only), cookie auth probe, `apiFetch`, sign-in/out                           |
-| `js/parser.js`    | Universal structural model parser — `parseModel()`                                             |
-| `js/graph.js`     | Cytoscape instance lifecycle, styles, layout, zoom, label sizing                               |
-| `js/filters.js`   | Filter panel, type visibility, `applyVisibility()`, `applyDrill()`                             |
-| `js/drill.js`     | Drill-down entry/exit, depth picker, BFS coordination                                          |
-| `js/detail.js`    | Node detail panel rendering                                                                    |
-| `js/table.js`     | Table view (elements / relationships tabs), sorting, search                                    |
-| `js/ui.js`        | Loading/error/toast overlays, theme, view switching                                            |
-| `js/models.js`    | Model list fetch, model selector modal                                                         |
-| `js/routing.js`   | URL state: `syncUrl()` writes current state to address bar; `readUrlParams()` reads it back     |
-| `js/app.js`       | Entry point: `init()`, `loadModel()`, `setContainmentMode()`, window globals for HTML handlers |
+| File                 | Responsibility                                                                                              |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `js/constants.js`    | Global constants: API base, URLs, color palette, regexes, UI timing and sizing values                       |
+| `js/i18n.js`         | Language detection, string table, `t()`, `applyLocale()`                                                    |
+| `js/utils.js`        | Pure helpers: color hashing, HTML escaping, model URL derivation                                            |
+| `js/state.js`        | Single shared mutable `state` object (all runtime state, fully JSDoc-typed)                                 |
+| `js/auth.js`         | Auth token (memory-only), cookie auth probe, `apiFetch`, sign-in/out                                        |
+| `js/parser.js`       | Universal structural model parser — `parseModel()`                                                          |
+| `js/graph-styles.js` | Cytoscape style array (`buildCyStyles`), label measurement (`createLabelMeasurer`), `cyBg()`                |
+| `js/graph.js`        | Cytoscape instance lifecycle (`buildCytoscape`), layout, zoom, stats; imports graph-styles.js               |
+| `js/visibility.js`   | All show/hide logic: `applyVisibility()`, `applyDrill()`, `syncCompoundParents()`, filter-count UI updaters |
+| `js/filters.js`      | Filter panel UI: `buildFilters()`, `selectAll()`, `applyUrlFilters()`, filter state persistence             |
+| `js/drill.js`        | Drill-down entry/exit (`onNodeDrill`, `exitDrill`), depth picker                                            |
+| `js/detail.js`       | Node detail panel rendering                                                                                 |
+| `js/table.js`        | Table view (elements / relationships tabs), sorting, search, `focusNode()`                                  |
+| `js/ui.js`           | Loading/error/toast overlays, theme, view switching                                                         |
+| `js/models.js`       | Model list fetch, model selector modal                                                                      |
+| `js/routing.js`      | URL state: `syncUrl()` writes current state to address bar; `readUrlParams()` reads it back                 |
+| `js/app.js`          | Entry point: `init()`, `loadModel()`, `setContainmentMode()`, window globals for HTML handlers              |
+
+### Import graph (no cycles)
+
+```
+constants ← utils ← graph-styles ← graph
+                                  ↗
+state ────────────────────────────
+                ↘
+visibility ← filters ← app
+           ↗
+drill ←────
+       ↘
+table ← detail
+```
 
 ## localStorage Keys
 
@@ -339,7 +356,7 @@ across all Architeezy applications.
 
 | Key                         | Value                                                                                 |
 | --------------------------- | ------------------------------------------------------------------------------------- |
-| `architeezyTheme`           | `dark` / `light` / `system` — shared with the gallery and all other apps            |
+| `architeezyTheme`           | `dark` / `light` / `system` — shared with the gallery and all other apps              |
 | `architeezyLensContainment` | `none` / `edge` / `compound`                                                          |
 | `architeezyLensModelUrl`    | Last loaded model content URL                                                         |
 | `architeezyLensFilter`      | JSON object: `{ [namespaceURI]: { hiddenEntityTypes[], hiddenRelationshipTypes[] } }` |

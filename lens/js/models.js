@@ -6,6 +6,13 @@ import { t } from "./i18n.js";
 import { escHtml, modelTypeLabel, modelContentUrl } from "./utils.js";
 import { MODELS_API } from "./constants.js";
 
+/**
+ * Fetches the full paginated model list from the API.
+ * Follows `_links.next` until all pages are consumed.
+ *
+ * @returns {Promise<Array>} Resolved list of model objects.
+ * @throws {Error} If any page request fails or the list is empty.
+ */
 export async function fetchModelList() {
   const models = [];
   let url = MODELS_API;
@@ -21,6 +28,7 @@ export async function fetchModelList() {
   return models;
 }
 
+/** Opens the model-selector modal and focuses the search input. */
 export function openModelSelector() {
   document.getElementById("model-modal").classList.remove("hidden");
   document.getElementById("model-search").value = "";
@@ -28,10 +36,18 @@ export function openModelSelector() {
   document.getElementById("model-search").focus();
 }
 
+/** Closes the model-selector modal. */
 export function closeModelSelector() {
   document.getElementById("model-modal").classList.add("hidden");
 }
 
+/**
+ * Renders the model list inside the modal, filtered by `query`.
+ * Items without a resolvable content URL are shown as disabled.
+ *
+ * @param {Array} models - List of model objects from the API.
+ * @param {string} query - Filter string (matched against name, type label, and description).
+ */
 export function renderModelList(models, query) {
   const q = query.toLowerCase();
   const container = document.getElementById("model-list");
@@ -62,16 +78,18 @@ export function renderModelList(models, query) {
       </div>`;
 
     if (url) {
-      item.addEventListener("click", async () => {
+      item.addEventListener("click", () => {
         closeModelSelector();
         setCurrentModelName(model.name);
         // loadModel is in app.js; use a custom event to avoid circular dependency
         document.dispatchEvent(
-          new CustomEvent("loadModel", { detail: { url, modelId: model.id ?? null } })
+          new CustomEvent("loadModel", {
+            detail: { url, modelId: model.id ?? null },
+          }),
         );
       });
     } else {
-      item.style.opacity = ".4";
+      item.style.opacity = "0.4";
       item.style.cursor = "not-allowed";
     }
     container.appendChild(item);
@@ -81,10 +99,21 @@ export function renderModelList(models, query) {
     container.innerHTML = `<div class="model-list-loading">${t("noResults")}</div>`;
 }
 
+/**
+ * Re-renders the model list using the cached model array, filtered by `query`.
+ * Bound to the search input's `oninput` event.
+ *
+ * @param {string} query - Search string typed by the user.
+ */
 export function filterModelList(query) {
   renderModelList(state.cachedModels, query);
 }
 
+/**
+ * Updates the header model name label and the document title.
+ *
+ * @param {string} name - Display name of the loaded model.
+ */
 export function setCurrentModelName(name) {
   document.getElementById("current-model-name").textContent = name;
   document.title = `${name} — Architeezy Lens`;

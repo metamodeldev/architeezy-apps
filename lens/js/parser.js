@@ -17,11 +17,24 @@ import { ECORE_NS } from "./constants.js";
 import { isUUID } from "./utils.js";
 import { state } from "./state.js";
 
+/**
+ * Parses a raw Architeezy model JSON response into `state.allElements`,
+ * `state.allRelations`, and `state.elemMap`.
+ * Also resolves the model namespace URI into `state.currentModelNs`.
+ *
+ * @param {object} raw - The parsed JSON body of a model content API response.
+ */
+// Monotonically incrementing counter for synthetic IDs assigned to nodes that
+// have no `id` field in the model JSON.  Reset at the start of each parse so
+// IDs are stable within a session but never collide across two different nodes.
+let _idCounter = 0;
+
 export function parseModel(raw) {
   state.allElements = [];
   state.allRelations = [];
   state.elemMap = {};
   state.currentModelNs = "";
+  _idCounter = 0;
 
   const roots = Array.isArray(raw.content) ? raw.content : [raw];
   const rootObj = roots[0] ?? {};
@@ -42,6 +55,14 @@ export function parseModel(raw) {
   roots.forEach((root) => walkData(root?.data ?? {}, null));
 }
 
+/**
+ * Recursively walks all array-valued properties of a data object.
+ * Objects with `eClass` are dispatched to `walkNode`; plain UUID strings
+ * produce implicit edges from `parentId` to the referenced UUID.
+ *
+ * @param {object} d - The `data` object of a model node.
+ * @param {string|null} parentId - ID of the containing element, or null at root level.
+ */
 function walkData(d, parentId) {
   if (!d || typeof d !== "object") return;
   for (const [key, val] of Object.entries(d)) {
@@ -64,6 +85,13 @@ function walkData(d, parentId) {
   }
 }
 
+/**
+ * Classifies a single eClass node as a standalone edge, embedded reference edge,
+ * or graph element, then recurses into its data.
+ *
+ * @param {object} node - Raw eClass node from the model JSON.
+ * @param {string|null} parentId - ID of the containing element, or null at root level.
+ */
 function walkNode(node, parentId) {
   const raw = node.eClass;
   const col = raw.lastIndexOf(":");
@@ -75,23 +103,36 @@ function walkNode(node, parentId) {
   if (type === "EStringToStringMapEntry" && fullNs === ECORE_NS) return;
 
   const d = node.data ?? {};
-  const id = node.id ?? `_${state.allElements.length + state.allRelations.length}`;
+  const id = node.id ?? `_${_idCounter++}`;
 
   // Rule 1: standalone edge
   if (d.source && d.target) {
-    state.allRelations.push({ id, type, source: d.source, target: d.target, name: d.name || "" });
+    state.allRelations.push({
+      id,
+      type,
+      source: d.source,
+      target: d.target,
+      name: d.name || "",
+    });
     walkData(d, id);
     return;
   }
 
   // Rule 2: embedded reference (target only, no source)
   if (d.target && !d.source && parentId) {
-    state.allRelations.push({ id, type, source: parentId, target: d.target, name: d.name || "" });
+    state.allRelations.push({
+      id,
+      type,
+      source: parentId,
+      target: d.target,
+      name: d.name || "",
+    });
     return;
   }
 
   // Rule 3: graph node — track containment parent
-  const parentIsNode = parentId != null && state.elemMap[parentId] !== undefined;
+  const parentIsNode =
+    parentId != null && state.elemMap[parentId] !== undefined;
   const elem = {
     id,
     type,

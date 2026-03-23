@@ -7,15 +7,21 @@ let authToken = null; // Bearer token; kept in memory only
 let cookieAuthed = false; // true when /api/users/current succeeds without a token (same-domain cookie session)
 let authPopup = null;
 
+/** Returns true when the user has an active session (token or cookie). */
 export function isAuthed() {
   return cookieAuthed || !!authToken;
 }
 
-// Probe whether the browser already has a valid session cookie (same-domain hosting).
-// Called once at startup before we know if a token is needed.
+/**
+ * Probes whether the browser has a valid session cookie (same-domain hosting).
+ * Called once at startup before we know if a token is needed.
+ * Sets `cookieAuthed` and updates the auth UI if a session is found.
+ */
 export async function probeAuth() {
   try {
-    const r = await fetch(`${BASE}/api/users/current`, { credentials: "include" });
+    const r = await fetch(`${BASE}/api/users/current`, {
+      credentials: "include",
+    });
     if (r.ok) {
       const user = await r.json();
       cookieAuthed = true;
@@ -28,15 +34,20 @@ export async function probeAuth() {
   updateAuthUI();
 }
 
+/** Syncs the auth-related header elements to the current session state. */
 export function updateAuthUI() {
   const authed = cookieAuthed || !!authToken;
   document.getElementById("auth-btn").style.display = authed ? "none" : "";
   document.getElementById("user-info").style.display = authed ? "" : "none";
   // Sign-out button only shown for token auth; cookie sessions are managed server-side
-  document.getElementById("signout-btn").style.display = !cookieAuthed && authToken ? "" : "none";
+  document.getElementById("signout-btn").style.display =
+    !cookieAuthed && authToken ? "" : "none";
 }
 
-// Open auth popup (called by the Sign in button).
+/**
+ * Opens the Architeezy auth popup window.
+ * The popup posts an AUTH_SUCCESS message back to this window when login completes.
+ */
 export function startAuth() {
   authPopup = window.open(
     AUTH_URL,
@@ -45,6 +56,10 @@ export function startAuth() {
   );
 }
 
+/**
+ * Fetches the current user profile and updates the display name in the header.
+ * Non-critical: silently ignored on failure.
+ */
 export async function fetchCurrentUser() {
   try {
     const r = await apiFetch(`${BASE}/api/users/current`);
@@ -58,14 +73,23 @@ export async function fetchCurrentUser() {
   updateAuthUI();
 }
 
+/**
+ * Clears the in-memory token and resets the header user name.
+ * The caller (app.js) re-runs init() afterwards to reload with anonymous access.
+ */
 export function signOut() {
   authToken = null;
   document.getElementById("user-name").textContent = "";
   updateAuthUI();
-  // Caller (app.js) calls init() after signOut()
 }
 
-// Fetch wrapper: always sends cookies; adds Bearer token when present; clears token on 401.
+/**
+ * Fetch wrapper that always sends credentials and attaches the Bearer token when present.
+ * Clears the token and throws on HTTP 401 so the caller can prompt the user to sign in.
+ *
+ * @param {string} url - The URL to fetch.
+ * @returns {Promise<Response>}
+ */
 export async function apiFetch(url) {
   const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
   const r = await fetch(url, { headers, credentials: "include" });
@@ -77,7 +101,12 @@ export async function apiFetch(url) {
   return r;
 }
 
-// Called from app.js when the AUTH_SUCCESS postMessage arrives from the popup.
+/**
+ * Handles the AUTH_SUCCESS postMessage from the auth popup.
+ * Stores the token in memory and closes the popup window.
+ *
+ * @param {string} token - The Bearer access token received from the auth popup.
+ */
 export function handleAuthSuccess(token) {
   authToken = token;
   if (authPopup) {

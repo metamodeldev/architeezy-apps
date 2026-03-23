@@ -486,12 +486,14 @@ button.ctrl:hover {
   gap: 4px;
 }
 
-.depth-btn {
+/* Higher specificity (#drill-bar) overrides the generic #drill-bar > button rule
+   without needing !important. */
+#drill-bar .depth-btn {
   width: 28px;
   height: 28px;
-  border: 1px solid rgb(255 255 255 / 30%) !important;
+  border: 1px solid rgb(255 255 255 / 30%);
   border-radius: 5px;
-  background: rgb(255 255 255 / 10%) !important;
+  background: rgb(255 255 255 / 10%);
   color: rgb(255 255 255 / 75%);
   cursor: pointer;
   font-size: 0.85rem;
@@ -505,14 +507,14 @@ button.ctrl:hover {
   justify-content: center;
 }
 
-.depth-btn:hover {
-  background: rgb(255 255 255 / 25%) !important;
+#drill-bar .depth-btn:hover {
+  background: rgb(255 255 255 / 25%);
   color: #fff;
 }
 
-.depth-btn.active {
-  background: var(--accent) !important;
-  border-color: var(--accent) !important;
+#drill-bar .depth-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
   color: #fff;
   box-shadow: 0 0 0 2px rgb(233 69 96 / 35%);
 }

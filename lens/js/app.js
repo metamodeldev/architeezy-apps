@@ -12,10 +12,9 @@ import {
 } from "./auth.js";
 import { clearDetail, showDetail } from "./detail.js";
 import { exitDrill, onNodeDrill, restoreDrillRootStyle } from "./drill.js";
+import { applyDrill, applyVisibility } from "./visibility.js";
 import {
-  applyDrill,
   applyUrlFilters,
-  applyVisibility,
   buildFilters,
   filterSearch,
   loadFilterState,
@@ -58,7 +57,10 @@ window.signOut = () => {
 window.openModelSelector = openModelSelector;
 window.closeModelSelector = closeModelSelector;
 window.hideToast = hideToast;
-window.switchView = (view) => { switchView(view, renderTable); syncUrl(); };
+window.switchView = (view) => {
+  switchView(view, renderTable);
+  syncUrl();
+};
 window.applyLayout = applyLayout;
 window.fitGraph = fitGraph;
 window.filterModelList = filterModelList;
@@ -74,12 +76,14 @@ window.init = init;
 
 // Zoom controls (buttons in HTML use these)
 window.zoomIn = () => {
-  state.cy?.zoom(state.cy.zoom() * 1.3);
-  state.cy?.center();
+  if (!state.cy) return;
+  state.cy.zoom(state.cy.zoom() * 1.3);
+  state.cy.center();
 };
 window.zoomOut = () => {
-  state.cy?.zoom(state.cy.zoom() * 0.77);
-  state.cy?.center();
+  if (!state.cy) return;
+  state.cy.zoom(state.cy.zoom() * 0.77);
+  state.cy.center();
 };
 
 // ── AUTH_SUCCESS from popup ─────────────────────────────────────────────────
@@ -91,10 +95,18 @@ window.addEventListener("message", (e) => {
 });
 
 // ── loadModel event from models.js ─────────────────────────────────────────
-document.addEventListener("loadModel", (e) => loadModel(e.detail.url, e.detail.modelId));
+document.addEventListener("loadModel", (e) =>
+  loadModel(e.detail.url, e.detail.modelId),
+);
 
 // ── CONTAINMENT MODE ───────────────────────────────────────────────────────
 
+/**
+ * Switches the containment display mode and rebuilds the graph.
+ * Persists the choice to localStorage.
+ *
+ * @param {"none"|"edge"|"compound"} mode - New containment mode.
+ */
 function setContainmentMode(mode) {
   state.containmentMode = mode;
   localStorage.setItem("architeezyLensContainment", mode);
@@ -116,6 +128,15 @@ function setContainmentMode(mode) {
 
 // ── LOAD MODEL ─────────────────────────────────────────────────────────────
 
+/**
+ * Fetches and loads a model from `url`, then builds the graph, filters, and table.
+ * On failure, shows a toast if a model is already visible, otherwise lets the
+ * caller detect `state.cy === null` and open the model selector.
+ *
+ * @param {string} url - Content URL of the model to load.
+ * @param {string|null} [modelId] - Optional model ID for URL routing.
+ * @param {Function|null} [afterLoad] - Optional callback invoked after a successful load.
+ */
 async function loadModel(url, modelId = null, afterLoad = null) {
   showLoading(t("loadingModel"));
   try {
@@ -164,6 +185,11 @@ async function loadModel(url, modelId = null, afterLoad = null) {
 
 // ── INIT ───────────────────────────────────────────────────────────────────
 
+/**
+ * Application entry point: applies locale, checks auth, fetches the model list,
+ * then loads the model from the URL or localStorage.
+ * If no model URL is available, opens the model selector modal.
+ */
 async function init() {
   applyLocale();
   document.getElementById("containment-select").value = state.containmentMode;
@@ -196,7 +222,8 @@ async function init() {
     : localStorage.getItem("architeezyLensModelUrl");
   const targetModelId = urlModel ? urlModelId : null;
 
-  const hasUrlState = urlEntities !== null || urlRelationships !== null || urlEntityId || urlView;
+  const hasUrlState =
+    urlEntities !== null || urlRelationships !== null || urlEntityId || urlView;
 
   const afterLoad = hasUrlState
     ? () => {
@@ -205,15 +232,19 @@ async function init() {
         const allETypes = [...new Set(state.allElements.map((e) => e.type))];
         const allRTypes = [...new Set(state.allRelations.map((r) => r.type))];
         applyUrlFilters(
-          urlEntities !== null ? urlEntities.split(",").filter(Boolean) : allETypes,
-          urlRelationships !== null ? urlRelationships.split(",").filter(Boolean) : allRTypes,
+          urlEntities !== null
+            ? urlEntities.split(",").filter(Boolean)
+            : allETypes,
+          urlRelationships !== null
+            ? urlRelationships.split(",").filter(Boolean)
+            : allRTypes,
         );
         // View
         if (urlView === "table") switchView("table", renderTable);
         // Drill
         if (urlEntityId) {
           if (urlDepth != null) state.drillDepth = urlDepth;
-          const node = state.cy.getElementById(urlEntityId);
+          const node = state.cy?.getElementById(urlEntityId);
           if (node?.length) onNodeDrill(node);
         }
       }
@@ -226,7 +257,9 @@ async function init() {
       localStorage.removeItem("architeezyLensModelUrl");
       openModelSelector();
     } else {
-      const saved = state.cachedModels.find((m) => modelContentUrl(m) === targetUrl);
+      const saved = state.cachedModels.find(
+        (m) => modelContentUrl(m) === targetUrl,
+      );
       if (saved) setCurrentModelName(saved.name);
     }
   } else {

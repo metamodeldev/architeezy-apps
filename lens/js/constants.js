@@ -28,3 +28,23 @@ export const UUID_RE = /^[0-9a-f]{8,}(-[0-9a-f]+)*$/i;
 
 // Full URI of the ecore namespace used in EMF models
 export const ECORE_NS = "http://www.eclipse.org/emf/2002/Ecore";
+
+// ── UI TIMING & SIZING CONSTANTS ────────────────────────────────────────────
+
+// Delay (ms) before treating a single tap as a click, allowing double-tap detection
+export const TAP_DELAY_MS = 180;
+
+// Node count below which layout runs with animation; above this, skip animation for speed
+export const LAYOUT_ANIM_THRESHOLD = 400;
+
+// Max text-wrap width for node labels (px); must stay in sync with text-max-width in graph-styles.js
+export const LABEL_WRAP_W = 120;
+
+// Text outline width for node labels (px); used in node size calculation to pad the bounding box
+export const LABEL_OUTLINE = 2;
+
+// Padding around the graph when fitting to the viewport (px)
+export const FIT_PADDING = 40;
+
+// Zoom level applied when focusing a node from the table view
+export const FOCUS_ZOOM = 1.5;

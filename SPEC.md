@@ -1,4 +1,4 @@
-# Architeezy Application Gallery — Specification v2
+# Architeezy Application Gallery — Specification
 
 ## Overview
 
