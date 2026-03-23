@@ -5,7 +5,6 @@ const STRINGS = {
   en: {
     pageTitle: "Architeezy Application Gallery",
     openCta: "Open →",
-    navHome: "Home",
     navAbout: "About",
     navDocs: "Docs",
     themeDark: "Dark",
@@ -21,7 +20,6 @@ const STRINGS = {
   ru: {
     pageTitle: "Галерея приложений Architeezy",
     openCta: "Открыть →",
-    navHome: "Главная",
     navAbout: "О продукте",
     navDocs: "Документация",
     themeDark: "Тёмная",
@@ -53,7 +51,6 @@ const APPS = [
 document.documentElement.lang = LANG;
 document.title = t("pageTitle");
 document.getElementById("page-title").textContent = t("pageTitle");
-document.getElementById("nav-home").textContent = t("navHome");
 document.getElementById("nav-about").textContent = t("navAbout");
 document.getElementById("nav-docs").textContent = t("navDocs");
 document.getElementById("theme-btn-dark").title = t("themeDark");

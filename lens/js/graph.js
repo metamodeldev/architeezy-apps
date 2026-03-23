@@ -112,7 +112,7 @@ function buildCyStyles() {
     },
     {
       // Drill-root node — green border regardless of selection
-      selector: "node[?isDrillRoot]",
+      selector: "node.drill-root",
       style: { "border-width": 3, "border-color": "#22c55e", "z-index": 9998 },
     },
     {
@@ -293,6 +293,12 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
   });
   state.cy.on("tap", (e) => {
     if (e.target === state.cy) onCanvasTap();
+  });
+
+  // Cytoscape re-evaluates styles on unselect and can drop dynamic classes —
+  // re-assert the drill-root class immediately after any selection change.
+  state.cy.on("unselect", () => {
+    if (state.drillNodeId) state.cy.$id(state.drillNodeId).addClass("drill-root");
   });
 
   setupPointerInteractions();

@@ -152,14 +152,14 @@
       <aside>
         <div class="sidebar-section">
           <div class="sidebar-header" onclick="toggleSection('sec-elem')">
-            <span data-i18n="sectionElements">Element types</span>
+            <span class="sidebar-header-title" data-i18n="sectionElements">Entities</span>
+            <div class="sidebar-header-actions" onclick="event.stopPropagation()">
+              <button class="filter-icon-btn" onclick="selectAll('elem', true)" data-i18n-tt="filterAll" title="Select all">✓</button>
+              <button class="filter-icon-btn" onclick="selectAll('elem', false)" data-i18n-tt="filterNone" title="Select none">✗</button>
+            </div>
             <span class="toggle-icon" id="icon-sec-elem">▼</span>
           </div>
           <div class="sidebar-content" id="sec-elem">
-            <div class="filter-actions">
-              <button onclick="selectAll('elem', true)" data-i18n="filterAll">All</button>
-              <button onclick="selectAll('elem', false)" data-i18n="filterNone">None</button>
-            </div>
             <input
               class="filter-search"
               type="text"
@@ -173,14 +173,14 @@
 
         <div class="sidebar-section">
           <div class="sidebar-header" onclick="toggleSection('sec-rel')">
-            <span data-i18n="sectionRelations">Relationship types</span>
+            <span class="sidebar-header-title" data-i18n="sectionRelations">Relationships</span>
+            <div class="sidebar-header-actions" onclick="event.stopPropagation()">
+              <button class="filter-icon-btn" onclick="selectAll('rel', true)" data-i18n-tt="filterAll" title="Select all">✓</button>
+              <button class="filter-icon-btn" onclick="selectAll('rel', false)" data-i18n-tt="filterNone" title="Select none">✗</button>
+            </div>
             <span class="toggle-icon" id="icon-sec-rel">▼</span>
           </div>
           <div class="sidebar-content" id="sec-rel">
-            <div class="filter-actions">
-              <button onclick="selectAll('rel', true)" data-i18n="filterAll">All</button>
-              <button onclick="selectAll('rel', false)" data-i18n="filterNone">None</button>
-            </div>
             <input
               class="filter-search"
               type="text"

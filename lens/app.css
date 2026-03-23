@@ -6,6 +6,10 @@
   padding: 0;
 }
 
+html {
+  overflow: hidden; /* prevent document-level scroll in all directions */
+}
+
 /* ── THEMES ──────────────────────────────────────────────── */
 :root {
   --sidebar-w: 280px;
@@ -51,6 +55,7 @@ body {
   background: var(--bg);
   color: var(--text);
   height: 100vh;
+  height: 100dvh; /* dynamic viewport height — excludes mobile browser chrome */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -350,6 +355,7 @@ header h1 span {
 .ctrl-group {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 6px;
   margin-left: auto;
 }
@@ -520,7 +526,7 @@ button.ctrl:hover {
 
 /* ── SIDEBAR ─────────────────────────────────────────────── */
 aside {
-  width: var(--sidebar-w);
+  width: clamp(180px, 33.333%, var(--sidebar-w));
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
@@ -541,8 +547,8 @@ aside {
   letter-spacing: 0.06em;
   color: var(--text-muted);
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 6px;
   cursor: pointer;
   user-select: none;
 }
@@ -551,8 +557,41 @@ aside {
   color: var(--text);
 }
 
+.sidebar-header-title {
+  flex: 1;
+}
+
+.sidebar-header-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.filter-icon-btn {
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.filter-icon-btn:hover {
+  background: var(--border);
+  border-color: var(--border);
+  color: var(--text);
+}
+
 .toggle-icon {
   font-size: 0.65rem;
+  flex-shrink: 0;
 }
 
 .sidebar-content {
@@ -561,28 +600,6 @@ aside {
 
 .sidebar-content.collapsed {
   display: none;
-}
-
-.filter-actions {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.filter-actions button {
-  flex: 1;
-  font-size: 0.72rem;
-  padding: 3px 0;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  color: var(--text-muted);
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.filter-actions button:hover {
-  color: var(--text);
-  border-color: var(--accent);
 }
 
 .filter-search {
@@ -1020,4 +1037,44 @@ tr:hover td {
   color: #fff;
   border-radius: 6px;
   cursor: pointer;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  header {
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  /* Compress model button to leave room for other controls */
+  .model-btn {
+    max-width: 140px;
+  }
+
+  /* Hide user name text on small screens (keep sign-in/out button) */
+  #user-name {
+    display: none;
+  }
+
+  /* Ctrl group wraps to its own full-width row */
+  .ctrl-group {
+    width: 100%;
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  /* Constrain selects so they don't overflow on small screens */
+  #layout-select {
+    max-width: 80px;
+  }
+
+  #containment-select {
+    max-width: 120px;
+  }
+
+  /* Drill bar wraps depth picker to second line if needed */
+  #drill-bar {
+    flex-wrap: wrap;
+  }
 }

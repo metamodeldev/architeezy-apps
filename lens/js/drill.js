@@ -10,7 +10,7 @@ import { syncUrl } from "./routing.js";
 // Mark the current drill-root node with isDrillRoot data so Cytoscape applies
 // the green-border style. Call after buildCytoscape() to restore the marker.
 export function restoreDrillRootStyle() {
-  if (state.drillNodeId) state.cy?.$id(state.drillNodeId).data("isDrillRoot", true);
+  if (state.drillNodeId) state.cy?.$id(state.drillNodeId).addClass("drill-root");
 }
 
 export function buildDepthPicker() {
@@ -32,23 +32,24 @@ export function buildDepthPicker() {
 }
 
 export function onNodeDrill(node) {
-  // Clear marker on the previous drill-root before switching to a new one
-  if (state.drillNodeId) state.cy.$id(state.drillNodeId).removeData("isDrillRoot");
-
   state.drillNodeId = node.id();
-  state.cy.$id(state.drillNodeId).data("isDrillRoot", true);
 
   document.getElementById("drill-bar").classList.add("visible");
   document.getElementById("drill-label").textContent = node.data("label");
   buildDepthPicker();
   applyDrill();
+
+  // Update class after applyDrill's cy.batch() completes so it isn't overridden
+  state.cy.nodes().removeClass("drill-root");
+  state.cy.$id(state.drillNodeId).addClass("drill-root");
+
   applyLayout();
   showDetail(state.drillNodeId, (targetNode) => onNodeDrill(targetNode));
   syncUrl();
 }
 
 export function exitDrill() {
-  if (state.drillNodeId) state.cy?.$id(state.drillNodeId).removeData("isDrillRoot");
+  state.cy?.nodes().removeClass("drill-root");
   state.drillNodeId = null;
   state.drillVisibleIds = null;
   document.getElementById("drill-bar").classList.remove("visible");

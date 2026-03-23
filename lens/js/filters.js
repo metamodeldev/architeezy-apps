@@ -257,11 +257,15 @@ export function loadFilterState() {
 export function applyDrill() {
   if (!state.cy || !state.drillNodeId) return;
 
-  // BFS traverses semantic relationship edges AND containment edges/compound links
-  // (when containment display is not "none"), treating composition as regular hops.
-  // In edge mode, containment edges are in the graph (isContainment flag).
-  // In compound mode, parent↔child is expressed via Cytoscape compound nodes.
-  // Track the BFS depth of every reached node for the universal edge-visibility rule.
+  // The drill-root is always traversable and always visible, even if its type is filtered.
+  const isTypeOk = (n) =>
+    state.activeElemTypes.has(n.data("type")) || n.id() === state.drillNodeId;
+
+  // BFS traverses semantic relationship edges AND containment edges/compound links.
+  // Only type-active nodes (plus the drill-root) are added to the visible set and
+  // used as frontier — this ensures nodes reachable only via filtered-out types are
+  // excluded (they have no visible path back to the drill-root).
+  // Track BFS depth for the universal edge-visibility rule.
   const visible = new Set([state.drillNodeId]);
   const nodeDepth = new Map([[state.drillNodeId, 0]]);
   let frontier = [state.cy.$id(state.drillNodeId)];
@@ -279,7 +283,7 @@ export function applyDrill() {
         reachable = reachable.union(n.children()).union(n.parent());
       }
       reachable.forEach((nb) => {
-        if (!visible.has(nb.id())) {
+        if (!visible.has(nb.id()) && isTypeOk(nb)) {
           visible.add(nb.id());
           nodeDepth.set(nb.id(), d + 1);
           next.push(nb);
@@ -292,25 +296,18 @@ export function applyDrill() {
 
   state.drillVisibleIds = visible;
 
-  syncCompoundParents((n) => visible.has(n.id()) && state.activeElemTypes.has(n.data("type")));
+  syncCompoundParents((n) => visible.has(n.id()));
   state.cy.batch(() => {
     state.cy
       .nodes()
-      .forEach((n) =>
-        n.style(
-          "display",
-          visible.has(n.id()) && state.activeElemTypes.has(n.data("type")) ? "element" : "none",
-        ),
-      );
+      .forEach((n) => n.style("display", visible.has(n.id()) ? "element" : "none"));
     state.cy.edges().forEach((e) => {
       const srcId = e.source().id();
       const tgtId = e.target().id();
       const srcVis = visible.has(srcId);
       const tgtVis = visible.has(tgtId);
-      const srcOk = state.activeElemTypes.has(e.source().data("type"));
-      const tgtOk = state.activeElemTypes.has(e.target().data("type"));
       let show = false;
-      if (srcVis && tgtVis && srcOk && tgtOk) {
+      if (srcVis && tgtVis) {
         const isRel = state.activeRelTypes.has(e.data("type"));
         const isContainment = e.data("isContainment");
         if (isRel || isContainment) {
@@ -324,6 +321,10 @@ export function applyDrill() {
       e.style("display", show ? "element" : "none");
     });
   });
+
+  // Guarantee drill-root is visible regardless of type filter — bypass style
+  // has highest priority and overrides anything set inside the batch above.
+  state.cy.$id(state.drillNodeId).style("display", "element");
 
   updateStats();
   updateElemFilterDim();

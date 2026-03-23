@@ -1,4 +1,4 @@
-# Architeezy Lens — Specification v6
+# Architeezy Lens — Specification v7
 
 ## Overview
 
@@ -185,10 +185,10 @@ Resolution algorithm:
 
 ### FR-5: Type Filtering
 
-- Sidebar panels with checkboxes for all element types and all relationship types present in the loaded model.
+- Sidebar panels named **Entities** (element types) and **Relationships** (relationship types) with checkboxes for all types present in the loaded model.
 - Toggling a type hides/shows matching nodes or edges instantly.
 - Clicking anywhere on a filter row (checkbox, dot, label, count) toggles the type.
-- "All / None" buttons per panel; per-panel text search.
+- Each panel header contains **✓ / ✗ icon buttons** (select-all / select-none) inline with the section title, so they are always visible without scrolling. Per-panel text search below the header.
 - Colored dot per type (matches node/edge color).
 - **Relationship type counts** reflect the current element filter and drill-down scope:
   - Shows **N / M** where M is the total count of that relationship type (both endpoints are graph nodes) and N is the count where both endpoint element types are currently visible (and within drill scope if active).
@@ -201,9 +201,11 @@ Resolution algorithm:
 ### FR-6: Drill-Down View
 
 - Entered by double-clicking a node.
-- Shows the focal node and all nodes reachable within N hops via **semantic relationship edges and containment** (parent↔child).
+- Shows the focal node and all nodes reachable within N hops via **semantic relationship edges and containment** (parent↔child), subject to the active element and relationship type filters.
 - **BFS traversal rules:**
-  - Semantic edges whose type is currently checked are always traversed.
+  - Semantic edges whose type is currently checked are traversed.
+  - **Element type filter is respected during BFS**: a node is only added to the reachable set (and used as a stepping stone) if its element type is currently active. This ensures nodes that are reachable only *through* filtered-out nodes are not shown — every visible node has an unbroken path to the drill-root through visible nodes.
+  - The drill-root is always traversable and always visible even if its element type is filtered out (see below).
   - Containment is traversed as regular hops (N levels of children **and** N levels of parents) — independent of whether containment is shown as edges or compound shapes.
   - When containment display is **None**, containment is not traversed and contained/containing objects are not included.
   - In edge mode, containment edges (`isContainment`) are traversed via `connectedEdges`; in compound mode, `node.children()` and `node.parent()` are used instead.
@@ -215,8 +217,9 @@ Resolution algorithm:
 - Detail panel shows connections to/from the focal node; clicking a connection item enters drill-down on that node.
 - Table view is also filtered to drill-down scope while drill is active.
 - **Stats bar in drill mode** shows N / M format for both nodes and edges (N = visible in drill scope, M = total in model). The stats bar is always visible at the bottom of the main area.
-- **Element type filter in drill mode** shows N / M per type (N = elements of that type reachable in the drill scope via active relationship types, M = total elements of that type). N is independent of the element-type checkbox state. If N = M, only M is shown.
+- **Element type filter in drill mode** shows N / M per type (N = elements of that type currently visible in the drill scope, M = total elements of that type in the model). N reflects both the BFS depth limit and the active type filter. If N = M, only M is shown.
 - **Drill-root visual indicator**: the focal node always has a **green border** (`#22c55e`, 3 px) to identify it at a glance regardless of selection state. When the drill-root node is simultaneously selected (detail panel open), the border turns **red** (`#e94560`) as for any selected node — the selected style takes priority.
+- **Drill-root always visible**: the focal node is always rendered even if its element type is currently hidden by the filter. Edges connecting it to other visible nodes are also shown regardless of the root's type filter state.
 
 ### FR-7: Detail Panel
 
@@ -298,8 +301,16 @@ Commas in list values are written literally (not encoded as `%2C`). Other values
 
 - Pure HTML + CSS + JS; no build step.
 - All dependencies from CDN.
-- Responsive at ≥ 1280 px width.
+- Responsive at any width; optimised for desktop, usable on mobile.
 - Source split into ES modules under `js/`; loaded via `<script type="module" src="js/app.js">`.
+
+## Mobile / Responsive Layout
+
+- `body` uses `height: 100dvh` (dynamic viewport height) to avoid the iOS Safari "extra space at bottom" issue where `100vh` includes hidden browser chrome.
+- `html` has `overflow: hidden` to prevent document-level scroll in all directions.
+- Sidebar width is `clamp(180px, 33.333%, 280px)` — at most one-third of the viewport, never wider than 280 px, never narrower than 180 px.
+- Header uses `flex-wrap: wrap`; at ≤ 600 px the `.ctrl-group` wraps to its own full-width row and select elements are capped in width to fit smaller screens.
+- Drill bar wraps depth picker to a second line when the viewport is narrow.
 
 ## Module Structure
 
