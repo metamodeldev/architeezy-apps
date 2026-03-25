@@ -6,49 +6,74 @@
 import { state } from './state.js';
 
 /**
- * Serialises the current application state into the URL query string and
- * pushes it with `history.replaceState` (no new history entry).
+ * Pure function: builds the URL query string from a state snapshot.
  *
- * Reflected params:
- * - `model`         — current model ID (omitted when no model is loaded)
- * - `entity`        — drill-root node ID (omitted outside drill mode)
- * - `depth`         — BFS depth (omitted outside drill mode)
- * - `entities`      — comma-separated active element types (omitted when all are active)
- * - `relationships` — comma-separated active relationship types (omitted when all are active)
- * - `view`          — "table" (omitted when graph view is active)
+ * Reflected params: - `model` — current model ID (omitted when falsy) - `entity` — drill-root node ID (omitted outside
+ * drill mode) - `depth` — BFS depth (omitted outside drill mode) - `entities` — comma-separated active element types
+ * (omitted when all are active) - `relationships` — comma-separated active relationship types (omitted when all are
+ * active) - `view` — "table" (omitted when graph view is active)
+ *
+ * @param {{
+ *   currentModelId: string | undefined;
+ *   drillNodeId: string | undefined;
+ *   drillDepth: number;
+ *   allElements: { type: string }[];
+ *   allRelations: { type: string }[];
+ *   activeElemTypes: Set<string>;
+ *   activeRelTypes: Set<string>;
+ *   currentView: string;
+ * }} snapshot
+ * @returns {string} Query string without the leading "?", or "" if all params are omitted.
  */
-export function syncUrl() {
+export function buildStateQuery({
+  currentModelId,
+  drillNodeId,
+  drillDepth,
+  allElements,
+  allRelations,
+  activeElemTypes,
+  activeRelTypes,
+  currentView,
+}) {
   const parts = [];
 
-  if (state.currentModelId) {
-    parts.push(`model=${encodeURIComponent(state.currentModelId)}`);
+  if (currentModelId) {
+    parts.push(`model=${encodeURIComponent(currentModelId)}`);
   }
 
-  if (state.drillNodeId) {
-    parts.push(`entity=${encodeURIComponent(state.drillNodeId)}`);
-    parts.push(`depth=${state.drillDepth}`);
+  if (drillNodeId) {
+    parts.push(`entity=${encodeURIComponent(drillNodeId)}`);
+    parts.push(`depth=${drillDepth}`);
   }
 
   // entities — active (visible) types; omitted when all types are visible
-  const allETypes = [...new Set(state.allElements.map((e) => e.type))];
-  const activeE = allETypes.filter((type) => state.activeElemTypes.has(type));
+  const allETypes = [...new Set(allElements.map((e) => e.type))];
+  const activeE = allETypes.filter((type) => activeElemTypes.has(type));
   if (activeE.length < allETypes.length) {
     parts.push(`entities=${activeE.map(encodeURIComponent).join(',')}`);
   }
 
   // relationships — active (visible) types; omitted when all types are visible
-  const allRTypes = [...new Set(state.allRelations.map((r) => r.type))];
-  const activeR = allRTypes.filter((type) => state.activeRelTypes.has(type));
+  const allRTypes = [...new Set(allRelations.map((r) => r.type))];
+  const activeR = allRTypes.filter((type) => activeRelTypes.has(type));
   if (activeR.length < allRTypes.length) {
     parts.push(`relationships=${activeR.map(encodeURIComponent).join(',')}`);
   }
 
   // view — only when table is active
-  if (state.currentView === 'table') {
+  if (currentView === 'table') {
     parts.push('view=table');
   }
 
-  const q = parts.join('&');
+  return parts.join('&');
+}
+
+/**
+ * Serialises the current application state into the URL query string and pushes it with `history.replaceState` (no new
+ * history entry).
+ */
+export function syncUrl() {
+  const q = buildStateQuery(state);
   // eslint-disable-next-line unicorn/no-null
   history.replaceState(null, '', location.pathname + (q ? '?' + q : ''));
 }
@@ -57,12 +82,12 @@ export function syncUrl() {
  * Reads and returns the recognised URL query parameters.
  *
  * @returns {{
- *   modelId: string|undefined,
- *   entityId: string|undefined,
- *   depth: number|undefined,
- *   entities: string|undefined,
- *   relationships: string|undefined,
- *   view: string|undefined
+ *   modelId: string | undefined;
+ *   entityId: string | undefined;
+ *   depth: number | undefined;
+ *   entities: string | undefined;
+ *   relationships: string | undefined;
+ *   view: string | undefined;
  * }}
  */
 export function readUrlParams() {

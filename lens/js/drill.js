@@ -15,10 +15,8 @@ export function restoreDrillRootStyle() {
 }
 
 /**
- * Rebuilds the depth picker buttons (1–5) inside `#depth-picker`,
- * marking the currently active depth with the "active" class.
- * Each button updates `state.drillDepth`, redrills, reflows the layout,
- * and syncs the URL.
+ * Rebuilds the depth picker buttons (1–5) inside `#depth-picker`, marking the currently active depth with the "active"
+ * class. Each button updates `state.drillDepth`, redrills, reflows the layout, and syncs the URL.
  */
 export function buildDepthPicker() {
   const picker = document.getElementById('depth-picker');
@@ -39,8 +37,7 @@ export function buildDepthPicker() {
 }
 
 /**
- * Enters drill-down mode centred on `node`.
- * Shows the drill bar, builds the depth picker, applies the BFS visibility,
+ * Enters drill-down mode centred on `node`. Shows the drill bar, builds the depth picker, applies the BFS visibility,
  * re-runs the layout, and opens the detail panel for the drill root.
  *
  * @param {cytoscape.NodeSingular} node - The Cytoscape node to drill into.
@@ -63,9 +60,8 @@ export function onNodeDrill(node) {
 }
 
 /**
- * Exits drill-down mode and restores the full-model view.
- * Hides the drill bar, clears drill state, reapplies full visibility,
- * fits the graph, and re-renders the table if it is active.
+ * Exits drill-down mode and restores the full-model view. Hides the drill bar, clears drill state, reapplies full
+ * visibility, fits the graph, and re-renders the table if it is active.
  */
 export function exitDrill() {
   state.cy?.nodes().removeClass('drill-root');

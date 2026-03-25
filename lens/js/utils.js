@@ -37,9 +37,8 @@ export function elemColor(typ) {
 }
 
 /**
- * Maps a relationship type name to a palette color deterministically.
- * Uses a different offset from `elemColor` so types shared between elements
- * and relationships get distinct colors.
+ * Maps a relationship type name to a palette color deterministically. Uses a different offset from `elemColor` so types
+ * shared between elements and relationships get distinct colors.
  *
  * @param {string} typ - Relationship type name.
  * @returns {string} CSS color string.
@@ -63,10 +62,10 @@ export function escHtml(s) {
 }
 
 /**
- * Derives a short human-readable label from a model's `contentType` string.
- * Extracts the metamodel segment (e.g. "ARCHIMATE") or the fragment identifier.
+ * Derives a short human-readable label from a model's `contentType` string. Extracts the metamodel segment (e.g.
+ * "ARCHIMATE") or the fragment identifier.
  *
- * @param {string|undefined} contentType - The model's MIME-type-like content type.
+ * @param {string | undefined} contentType - The model's MIME-type-like content type.
  * @returns {string} Short label, or "?" when no recognisable pattern is found.
  */
 export function modelTypeLabel(contentType) {
@@ -82,12 +81,11 @@ export function modelTypeLabel(contentType) {
 }
 
 /**
- * Resolves the content fetch URL for a model object returned by the API.
- * Prefers the `_links.content` HAL link; falls back to constructing the
- * canonical API path from the model's slug fields.
+ * Resolves the content fetch URL for a model object returned by the API. Prefers the `_links.content` HAL link; falls
+ * back to constructing the canonical API path from the model's slug fields.
  *
  * @param {object} model - A model object from the API model list.
- * @returns {string|undefined} The content URL, or undefined if it cannot be resolved.
+ * @returns {string | undefined} The content URL, or undefined if it cannot be resolved.
  */
 export function modelContentUrl(model) {
   const links = model._links?.content;

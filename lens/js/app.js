@@ -100,10 +100,9 @@ document.addEventListener('loadModel', (e) => loadModel(e.detail.url, e.detail.m
 // ── CONTAINMENT MODE ───────────────────────────────────────────────────────
 
 /**
- * Switches the containment display mode and rebuilds the graph.
- * Persists the choice to localStorage.
+ * Switches the containment display mode and rebuilds the graph. Persists the choice to localStorage.
  *
- * @param {"none"|"edge"|"compound"} mode - New containment mode.
+ * @param {'none' | 'edge' | 'compound'} mode - New containment mode.
  */
 function setContainmentMode(mode) {
   state.containmentMode = mode;
@@ -129,13 +128,12 @@ function setContainmentMode(mode) {
 // ── LOAD MODEL ─────────────────────────────────────────────────────────────
 
 /**
- * Fetches and loads a model from `url`, then builds the graph, filters, and table.
- * On failure, shows a toast if a model is already visible, otherwise lets the
- * caller detect `state.cy === null` and open the model selector.
+ * Fetches and loads a model from `url`, then builds the graph, filters, and table. On failure, shows a toast if a model
+ * is already visible, otherwise lets the caller detect `state.cy === null` and open the model selector.
  *
  * @param {string} url - Content URL of the model to load.
- * @param {string|undefined} [modelId] - Optional model ID for URL routing.
- * @param {Function|undefined} [afterLoad] - Optional callback invoked after a successful load.
+ * @param {string | undefined} [modelId] - Optional model ID for URL routing.
+ * @param {Function | undefined} [afterLoad] - Optional callback invoked after a successful load.
  */
 async function loadModel(url, modelId = undefined, afterLoad = undefined) {
   showLoading(t('loadingModel'));
@@ -146,7 +144,7 @@ async function loadModel(url, modelId = undefined, afterLoad = undefined) {
     }
     const data = await r.json();
 
-    parseModel(data);
+    Object.assign(state, parseModel(data));
     if (!state.allElements.length) {
       throw new Error(t('noElements'));
     }
@@ -193,9 +191,8 @@ async function loadModel(url, modelId = undefined, afterLoad = undefined) {
 // ── INIT ───────────────────────────────────────────────────────────────────
 
 /**
- * Application entry point: applies locale, checks auth, fetches the model list,
- * then loads the model from the URL or localStorage.
- * If no model URL is available, opens the model selector modal.
+ * Application entry point: applies locale, checks auth, fetches the model list, then loads the model from the URL or
+ * localStorage. If no model URL is available, opens the model selector modal.
  */
 async function init() {
   applyLocale();

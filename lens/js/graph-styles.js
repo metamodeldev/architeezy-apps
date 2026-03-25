@@ -51,11 +51,10 @@ function wrapLines(span, words, maxW) {
 }
 
 /**
- * Creates a temporary off-screen DOM span for measuring node label dimensions.
- * The span matches the Cytoscape node label font exactly.
- * Call destroy() when all measurements are done to remove the span from the DOM.
+ * Creates a temporary off-screen DOM span for measuring node label dimensions. The span matches the Cytoscape node
+ * label font exactly. Call destroy() when all measurements are done to remove the span from the DOM.
  *
- * @returns {{ labelSize(text: string): {nw: number, nh: number}, destroy(): void }}
+ * @returns {{ labelSize(text: string): { nw: number; nh: number }; destroy(): void }}
  */
 export function createLabelMeasurer() {
   const span = document.createElement('span');

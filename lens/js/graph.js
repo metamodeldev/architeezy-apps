@@ -16,9 +16,8 @@ let _pointerController;
 // ── NODE & EDGE DATA BUILDERS ───────────────────────────────────────────────
 
 /**
- * Builds the Cytoscape node data array for all elements in `state.allElements`.
- * Uses a temporary label measurer to compute node dimensions; the measurer
- * is always destroyed in the `finally` block to avoid DOM leaks.
+ * Builds the Cytoscape node data array for all elements in `state.allElements`. Uses a temporary label measurer to
+ * compute node dimensions; the measurer is always destroyed in the `finally` block to avoid DOM leaks.
  *
  * @param {Set<string>} elemIds - Set of all element IDs (used to resolve compound parents).
  * @returns {Array} Cytoscape node descriptors.
@@ -52,9 +51,8 @@ function buildNodes(elemIds) {
 }
 
 /**
- * Builds the Cytoscape edge data array for all relations whose both endpoints
- * exist in `elemIds`.  In "edge" containment mode, also adds synthetic
- * containment edges (filled diamond) for parent–child relationships.
+ * Builds the Cytoscape edge data array for all relations whose both endpoints exist in `elemIds`. In "edge" containment
+ * mode, also adds synthetic containment edges (filled diamond) for parent–child relationships.
  *
  * @param {Set<string>} elemIds - Set of element IDs used to filter dangling edges.
  * @returns {Array} Cytoscape edge descriptors.
@@ -101,8 +99,8 @@ function buildEdges(elemIds) {
 // ── EVENT BINDING ───────────────────────────────────────────────────────────
 
 /**
- * Attaches Cytoscape event handlers for tap, double-tap, canvas tap, and unselect.
- * Single-tap is debounced by `TAP_DELAY_MS` to let double-tap cancel it first.
+ * Attaches Cytoscape event handlers for tap, double-tap, canvas tap, and unselect. Single-tap is debounced by
+ * `TAP_DELAY_MS` to let double-tap cancel it first.
  *
  * @param {cytoscape.Core} cy
  * @param {function(string): void} onNodeTap - Called with the node ID on single tap.
@@ -137,12 +135,11 @@ function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
 // ── POINTER INTERACTIONS ────────────────────────────────────────────────────
 
 /**
- * Attaches native DOM event listeners to the Cytoscape container for:
- * - Middle-mouse button panning
- * - Wheel zoom (cursor-centred, 1.3× per notch)
+ * Attaches native DOM event listeners to the Cytoscape container for: - Middle-mouse button panning - Wheel zoom
+ * (cursor-centred, 1.3× per notch)
  *
- * These are handled outside Cytoscape's event system to avoid the
- * `wheelSensitivity` deprecation warning and to gain precise zoom control.
+ * These are handled outside Cytoscape's event system to avoid the `wheelSensitivity` deprecation warning and to gain
+ * precise zoom control.
  */
 function setupPointerInteractions() {
   // Abort any listeners from a previous buildCytoscape call so they don't stack.
@@ -206,14 +203,15 @@ function setupPointerInteractions() {
 // ── PUBLIC API ──────────────────────────────────────────────────────────────
 
 /**
- * Destroys any existing Cytoscape instance and creates a new one from current state.
- * Binds node/edge/canvas tap handlers and sets up pointer interactions.
+ * Destroys any existing Cytoscape instance and creates a new one from current state. Binds node/edge/canvas tap
+ * handlers and sets up pointer interactions.
  *
  * @param {{
  *   onNodeTap: function(string): void,
  *   onNodeDblTap: function(cytoscape.NodeSingular): void,
  *   onCanvasTap: function(): void
- * }} handlers - Tap event callbacks.
+ * }} handlers
+ *   - Tap event callbacks.
  */
 export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
   if (state.cy) {
@@ -239,9 +237,9 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
 }
 
 /**
- * Runs the layout selected in `#layout-select` on all currently visible elements.
- * Animates only when the visible node count is below `LAYOUT_ANIM_THRESHOLD`.
- * After layout, updates compound node label widths to match their rendered size.
+ * Runs the layout selected in `#layout-select` on all currently visible elements. Animates only when the visible node
+ * count is below `LAYOUT_ANIM_THRESHOLD`. After layout, updates compound node label widths to match their rendered
+ * size.
  */
 export function applyLayout() {
   if (!state.cy) {
@@ -350,9 +348,8 @@ export function fitGraph() {
 }
 
 /**
- * Updates the stats bar (#stat-nodes, #stat-edges, #stat-visible) based on
- * the current visible element and relationship counts.
- * In drill mode, shows visible/total for both nodes and edges.
+ * Updates the stats bar (#stat-nodes, #stat-edges, #stat-visible) based on the current visible element and relationship
+ * counts. In drill mode, shows visible/total for both nodes and edges.
  */
 export function updateStats() {
   if (!state.cy) {

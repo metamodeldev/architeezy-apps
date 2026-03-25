@@ -8,10 +8,9 @@ import { showDetail } from './detail.js';
 import { FOCUS_ZOOM } from './constants.js';
 
 /**
- * Switches the active table tab (elements or relationships).
- * Resets the sort state and re-renders the table.
+ * Switches the active table tab (elements or relationships). Resets the sort state and re-renders the table.
  *
- * @param {"elements"|"relationships"} tab - The tab to activate.
+ * @param {'elements' | 'relationships'} tab - The tab to activate.
  */
 export function switchTableTab(tab) {
   state.currentTTab = tab;
@@ -23,8 +22,8 @@ export function switchTableTab(tab) {
 }
 
 /**
- * Renders the table for the currently active tab, applying the search query
- * from `#table-search` and the current sort state.
+ * Renders the table for the currently active tab, applying the search query from `#table-search` and the current sort
+ * state.
  */
 export function renderTable() {
   const q = document.getElementById('table-search').value.toLowerCase();
@@ -60,8 +59,8 @@ function thHtml(cols) {
 }
 
 /**
- * Attaches click handlers to all `<th>` elements in `#table-head`
- * to toggle sort column and direction, then re-renders the table.
+ * Attaches click handlers to all `<th>` elements in `#table-head` to toggle sort column and direction, then re-renders
+ * the table.
  */
 function bindSortClicks() {
   document.querySelectorAll('#table-head th').forEach((th) =>
@@ -75,12 +74,11 @@ function bindSortClicks() {
 }
 
 /**
- * Sorts `rows` by column index using `getKey(row) → string`.
- * Returns the original array if no sort column is selected.
+ * Sorts `rows` by column index using `getKey(row) → string`. Returns the original array if no sort column is selected.
  *
  * @template T
  * @param {T[]} rows - Rows to sort.
- * @param {function(T): string|undefined} getKey - Extracts the sort key for a row.
+ * @param {function(T): string | undefined} getKey - Extracts the sort key for a row.
  * @returns {T[]} Sorted copy (or original array when no sort is active).
  */
 function sortRows(rows, getKey) {
@@ -116,8 +114,7 @@ function bindRowClicks(body) {
 // ── ELEMENT TABLE ───────────────────────────────────────────────────────────
 
 /**
- * Renders the elements table filtered by `q`, respecting the active element type
- * filter and the current drill scope.
+ * Renders the elements table filtered by `q`, respecting the active element type filter and the current drill scope.
  *
  * @param {string} q - Lowercase search query.
  * @param {HTMLElement} head - The `<thead>` element.
@@ -156,8 +153,7 @@ function renderElemsTable(q, head, body) {
 // ── RELATIONSHIP TABLE ──────────────────────────────────────────────────────
 
 /**
- * Renders the relationships table filtered by `q`, respecting active type filters
- * and the current drill scope.
+ * Renders the relationships table filtered by `q`, respecting active type filters and the current drill scope.
  *
  * @param {string} q - Lowercase search query.
  * @param {HTMLElement} head - The `<thead>` element.
@@ -217,8 +213,7 @@ function renderRelsTable(q, head, body) {
 // ── FOCUS NODE ──────────────────────────────────────────────────────────────
 
 /**
- * Switches to the graph view, animates the camera to the node with `id`,
- * selects it, and opens its detail panel.
+ * Switches to the graph view, animates the camera to the node with `id`, selects it, and opens its detail panel.
  *
  * @param {string} id - ID of the element to focus.
  */

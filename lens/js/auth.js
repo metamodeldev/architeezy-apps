@@ -13,9 +13,8 @@ export function isAuthed() {
 }
 
 /**
- * Probes whether the browser has a valid session cookie (same-domain hosting).
- * Called once at startup before we know if a token is needed.
- * Sets `cookieAuthed` and updates the auth UI if a session is found.
+ * Probes whether the browser has a valid session cookie (same-domain hosting). Called once at startup before we know if
+ * a token is needed. Sets `cookieAuthed` and updates the auth UI if a session is found.
  */
 export async function probeAuth() {
   try {
@@ -44,8 +43,8 @@ export function updateAuthUI() {
 }
 
 /**
- * Opens the Architeezy auth popup window.
- * The popup posts an AUTH_SUCCESS message back to this window when login completes.
+ * Opens the Architeezy auth popup window. The popup posts an AUTH_SUCCESS message back to this window when login
+ * completes.
  */
 export function startAuth() {
   authPopup = window.open(
@@ -56,8 +55,8 @@ export function startAuth() {
 }
 
 /**
- * Fetches the current user profile and updates the display name in the header.
- * Non-critical: silently ignored on failure.
+ * Fetches the current user profile and updates the display name in the header. Non-critical: silently ignored on
+ * failure.
  */
 export async function fetchCurrentUser() {
   try {
@@ -74,8 +73,8 @@ export async function fetchCurrentUser() {
 }
 
 /**
- * Clears the in-memory token and resets the header user name.
- * The caller (app.js) re-runs init() afterwards to reload with anonymous access.
+ * Clears the in-memory token and resets the header user name. The caller (app.js) re-runs init() afterwards to reload
+ * with anonymous access.
  */
 export function signOut() {
   authToken = undefined;
@@ -84,8 +83,8 @@ export function signOut() {
 }
 
 /**
- * Fetch wrapper that always sends credentials and attaches the Bearer token when present.
- * Clears the token and throws on HTTP 401 so the caller can prompt the user to sign in.
+ * Fetch wrapper that always sends credentials and attaches the Bearer token when present. Clears the token and throws
+ * on HTTP 401 so the caller can prompt the user to sign in.
  *
  * @param {string} url - The URL to fetch.
  * @returns {Promise<Response>}
@@ -102,8 +101,7 @@ export async function apiFetch(url) {
 }
 
 /**
- * Handles the AUTH_SUCCESS postMessage from the auth popup.
- * Stores the token in memory and closes the popup window.
+ * Handles the AUTH_SUCCESS postMessage from the auth popup. Stores the token in memory and closes the popup window.
  *
  * @param {string} token - The Bearer access token received from the auth popup.
  */

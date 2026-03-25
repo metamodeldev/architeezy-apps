@@ -7,8 +7,7 @@ import { escHtml, modelTypeLabel, modelContentUrl } from './utils.js';
 import { MODELS_API } from './constants.js';
 
 /**
- * Fetches the full paginated model list from the API.
- * Follows `_links.next` until all pages are consumed.
+ * Fetches the full paginated model list from the API. Follows `_links.next` until all pages are consumed.
  *
  * @returns {Promise<Array>} Resolved list of model objects.
  * @throws {Error} If any page request fails or the list is empty.
@@ -48,8 +47,8 @@ export function closeModelSelector() {
 }
 
 /**
- * Renders the model list inside the modal, filtered by `query`.
- * Items without a resolvable content URL are shown as disabled.
+ * Renders the model list inside the modal, filtered by `query`. Items without a resolvable content URL are shown as
+ * disabled.
  *
  * @param {Array} models - List of model objects from the API.
  * @param {string} query - Filter string (matched against name, type label, and description).
@@ -108,8 +107,8 @@ export function renderModelList(models, query) {
 }
 
 /**
- * Re-renders the model list using the cached model array, filtered by `query`.
- * Bound to the search input's `oninput` event.
+ * Re-renders the model list using the cached model array, filtered by `query`. Bound to the search input's `oninput`
+ * event.
  *
  * @param {string} query - Search string typed by the user.
  */

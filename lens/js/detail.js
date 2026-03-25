@@ -5,13 +5,12 @@ import { escHtml } from './utils.js';
 import { t } from './i18n.js';
 
 /**
- * Renders the detail panel for the element with the given `id`.
- * Lists the element's name, type, optional documentation, and all connections.
- * Each connection item fires `drillCallback` when clicked if provided.
+ * Renders the detail panel for the element with the given `id`. Lists the element's name, type, optional documentation,
+ * and all connections. Each connection item fires `drillCallback` when clicked if provided.
  *
  * @param {string} id - ID of the element to display.
- * @param {Function|null} drillCallback - Called with the target Cytoscape node when
- *   a connection item is clicked, or null to disable drill navigation from the panel.
+ * @param {Function | null} drillCallback - Called with the target Cytoscape node when a connection item is clicked, or
+ *   null to disable drill navigation from the panel.
  */
 export function showDetail(id, drillCallback) {
   const elem = state.elemMap[id];

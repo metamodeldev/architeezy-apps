@@ -12,30 +12,38 @@ import { syncUrl } from './routing.js';
 // ── FILTER LIST BUILD ───────────────────────────────────────────────────────
 
 /**
- * Counts element and relationship types across the full model, initialises the
- * active-type sets to "all visible", and renders the filter checkbox lists.
- * Called once after each model load.
+ * Pure: counts element and relationship types across a model. Only relations whose both endpoints are graph node IDs
+ * are counted.
+ *
+ * @param {{ id: string; type: string }[]} allElements
+ * @param {{ type: string; source: string; target: string }[]} allRelations
+ * @returns {{ elemTypeTotals: object; relTypeTotals: object }}
  */
-export function buildFilters() {
+export function computeFilterCounts(allElements, allRelations) {
   const ec = {};
-  state.allElements.forEach((e) => {
+  allElements.forEach((e) => {
     ec[e.type] = (ec[e.type] ?? 0) + 1;
   });
-  state.elemTypeTotals = { ...ec };
-
-  // Count only relations whose both endpoints are graph nodes
-  const elemIds = new Set(state.allElements.map((e) => e.id));
+  const elemIds = new Set(allElements.map((e) => e.id));
   const rc = {};
-  state.allRelations.forEach((r) => {
+  allRelations.forEach((r) => {
     if (elemIds.has(r.source) && elemIds.has(r.target)) {
       rc[r.type] = (rc[r.type] ?? 0) + 1;
     }
   });
-  state.relTypeTotals = { ...rc };
+  return { elemTypeTotals: { ...ec }, relTypeTotals: { ...rc } };
+}
 
+/**
+ * Counts element and relationship types across the full model, initialises the active-type sets to "all visible", and
+ * renders the filter checkbox lists. Called once after each model load.
+ */
+export function buildFilters() {
+  const { elemTypeTotals: ec, relTypeTotals: rc } = computeFilterCounts(state.allElements, state.allRelations);
+  state.elemTypeTotals = ec;
+  state.relTypeTotals = rc;
   state.activeElemTypes = new Set(Object.keys(ec));
   state.activeRelTypes = new Set(Object.keys(rc));
-
   renderFilterList('elem', ec, elemColor);
   renderFilterList('rel', rc, relColor);
 }
@@ -43,7 +51,7 @@ export function buildFilters() {
 /**
  * Renders a list of filter checkboxes sorted by count (descending).
  *
- * @param {"elem"|"rel"} kind - Which filter list to populate.
+ * @param {'elem' | 'rel'} kind - Which filter list to populate.
  * @param {Object<string, number>} counts - Type name → item count.
  * @param {function(string): string} colorFn - Returns a CSS color for a type name.
  */
@@ -68,8 +76,8 @@ function renderFilterList(kind, counts, colorFn) {
 // ── FILTER STATE CHANGES ────────────────────────────────────────────────────
 
 /**
- * Handles a checkbox change event: updates the active-type set, reapplies
- * visibility, persists the state to localStorage, and syncs the URL.
+ * Handles a checkbox change event: updates the active-type set, reapplies visibility, persists the state to
+ * localStorage, and syncs the URL.
  *
  * @param {Event} e - The change event from a filter checkbox.
  */
@@ -89,7 +97,7 @@ function onFilterChange(e) {
 /**
  * Selects or deselects all checkboxes of a given kind and updates visibility.
  *
- * @param {"elem"|"rel"} kind - Which checkbox group to affect.
+ * @param {'elem' | 'rel'} kind - Which checkbox group to affect.
  * @param {boolean} val - True to check all, false to uncheck all.
  */
 export function selectAll(kind, val) {
@@ -111,7 +119,7 @@ export function selectAll(kind, val) {
  * Applies a filter state read from URL params, overriding localStorage.
  *
  * @param {string[]} activeElemTypes - Visible element type names.
- * @param {string[]} activeRelTypes  - Visible relationship type names.
+ * @param {string[]} activeRelTypes - Visible relationship type names.
  */
 export function applyUrlFilters(activeElemTypes, activeRelTypes) {
   const visibleE = new Set(activeElemTypes);
@@ -138,10 +146,10 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
 }
 
 /**
- * Hides filter items whose type name does not contain `query` (case-insensitive).
- * Used by the search input inside each filter section.
+ * Hides filter items whose type name does not contain `query` (case-insensitive). Used by the search input inside each
+ * filter section.
  *
- * @param {"elem"|"rel"} kind - Which filter list to search.
+ * @param {'elem' | 'rel'} kind - Which filter list to search.
  * @param {string} query - Search string.
  */
 export function filterSearch(kind, query) {
@@ -156,10 +164,7 @@ export function filterSearch(kind, query) {
 // Stored as: { [namespaceURI]: { hiddenEntityTypes: string[], hiddenRelationshipTypes: string[] } }
 const LS_KEY = 'architeezyLensFilter';
 
-/**
- * Persists the current filter state (hidden types) to localStorage,
- * keyed by the model's namespace URI.
- */
+/** Persists the current filter state (hidden types) to localStorage, keyed by the model's namespace URI. */
 export function saveFilterState() {
   if (!state.currentModelNs) {
     return;
@@ -174,9 +179,8 @@ export function saveFilterState() {
 }
 
 /**
- * Restores the filter state from localStorage for the currently loaded model.
- * Unchecks checkboxes and removes types from the active sets for any type
- * that was previously hidden.  Does nothing if no saved state is found.
+ * Restores the filter state from localStorage for the currently loaded model. Unchecks checkboxes and removes types
+ * from the active sets for any type that was previously hidden. Does nothing if no saved state is found.
  */
 export function loadFilterState() {
   if (!state.currentModelNs) {

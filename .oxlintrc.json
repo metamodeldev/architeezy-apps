@@ -76,6 +76,6 @@
     "unicorn/no-null": "error",
     "use-isnan": "error",
     "valid-typeof": "error",
-    "yoda": "warn",
-  },
+    "yoda": "warn"
+  }
 }
