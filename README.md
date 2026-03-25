@@ -8,9 +8,9 @@ to visualise and interact with architecture models stored in Architeezy.
 
 ## Apps
 
-| App             | Description                                                 |
-| --------------- | ----------------------------------------------------------- |
-| [Lens](./lens/) | Interactive graph and table viewer for any Architeezy model |
+| App                 | Description                                                 |
+| ------------------- | ----------------------------------------------------------- |
+| [Lens](./src/lens/) | Interactive graph and table viewer for any Architeezy model |
 
 ---
 

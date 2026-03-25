@@ -20,7 +20,7 @@ export default defineConfig({
     ],
   ],
   webServer: {
-    command: 'npx http-server . -p 4200',
+    command: 'npx http-server src -p 4200',
     url: 'http://localhost:4200',
     reuseExistingServer: !process.env.CI,
     stdout: 'ignore',
