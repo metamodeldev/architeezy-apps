@@ -1,15 +1,15 @@
 // ── AUTH ───────────────────────────────────────────────────────────────────
 
-import { BASE, AUTH_URL } from "./constants.js";
-import { t } from "./i18n.js";
+import { BASE, AUTH_URL } from './constants.js';
+import { t } from './i18n.js';
 
-let authToken = null; // Bearer token; kept in memory only
+let authToken; // Bearer token; kept in memory only
 let cookieAuthed = false; // true when /api/users/current succeeds without a token (same-domain cookie session)
-let authPopup = null;
+let authPopup;
 
 /** Returns true when the user has an active session (token or cookie). */
 export function isAuthed() {
-  return cookieAuthed || !!authToken;
+  return cookieAuthed || Boolean(authToken);
 }
 
 /**
@@ -20,13 +20,13 @@ export function isAuthed() {
 export async function probeAuth() {
   try {
     const r = await fetch(`${BASE}/api/users/current`, {
-      credentials: "include",
+      credentials: 'include',
     });
     if (r.ok) {
       const user = await r.json();
       cookieAuthed = true;
-      document.getElementById("user-name").textContent =
-        user.name || user.displayName || user.email || user.login || "";
+      document.getElementById('user-name').textContent =
+        user.name || user.displayName || user.email || user.login || '';
     }
   } catch {
     /* offline or CORS — treat as anonymous */
@@ -36,12 +36,11 @@ export async function probeAuth() {
 
 /** Syncs the auth-related header elements to the current session state. */
 export function updateAuthUI() {
-  const authed = cookieAuthed || !!authToken;
-  document.getElementById("auth-btn").style.display = authed ? "none" : "";
-  document.getElementById("user-info").style.display = authed ? "" : "none";
+  const authed = cookieAuthed || Boolean(authToken);
+  document.getElementById('auth-btn').style.display = authed ? 'none' : '';
+  document.getElementById('user-info').style.display = authed ? '' : 'none';
   // Sign-out button only shown for token auth; cookie sessions are managed server-side
-  document.getElementById("signout-btn").style.display =
-    !cookieAuthed && authToken ? "" : "none";
+  document.getElementById('signout-btn').style.display = !cookieAuthed && authToken ? '' : 'none';
 }
 
 /**
@@ -51,7 +50,7 @@ export function updateAuthUI() {
 export function startAuth() {
   authPopup = window.open(
     AUTH_URL,
-    "architeezy-auth",
+    'architeezy-auth',
     `width=480,height=640,left=${Math.round((screen.width - 480) / 2)},top=${Math.round((screen.height - 640) / 2)}`,
   );
 }
@@ -63,10 +62,11 @@ export function startAuth() {
 export async function fetchCurrentUser() {
   try {
     const r = await apiFetch(`${BASE}/api/users/current`);
-    if (!r.ok) return;
+    if (!r.ok) {
+      return;
+    }
     const user = await r.json();
-    document.getElementById("user-name").textContent =
-      user.name || user.displayName || user.email || user.login || "";
+    document.getElementById('user-name').textContent = user.name || user.displayName || user.email || user.login || '';
   } catch {
     /* non-critical */
   }
@@ -78,8 +78,8 @@ export async function fetchCurrentUser() {
  * The caller (app.js) re-runs init() afterwards to reload with anonymous access.
  */
 export function signOut() {
-  authToken = null;
-  document.getElementById("user-name").textContent = "";
+  authToken = undefined;
+  document.getElementById('user-name').textContent = '';
   updateAuthUI();
 }
 
@@ -92,11 +92,11 @@ export function signOut() {
  */
 export async function apiFetch(url) {
   const headers = authToken ? { Authorization: `Bearer ${authToken}` } : {};
-  const r = await fetch(url, { headers, credentials: "include" });
+  const r = await fetch(url, { headers, credentials: 'include' });
   if (r.status === 401) {
-    authToken = null;
+    authToken = undefined;
     updateAuthUI();
-    throw new Error(t("authRequired"));
+    throw new Error(t('authRequired'));
   }
   return r;
 }
@@ -111,6 +111,6 @@ export function handleAuthSuccess(token) {
   authToken = token;
   if (authPopup) {
     authPopup.close();
-    authPopup = null;
+    authPopup = undefined;
   }
 }

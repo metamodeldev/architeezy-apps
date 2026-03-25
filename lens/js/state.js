@@ -13,8 +13,8 @@ export const state = {
   /** @type {Object<string, {id:string, type:string, ns:string, name:string, doc:string, parent:string|null}>} id → element lookup */
   elemMap: {},
 
-  /** @type {cytoscape.Core|null} */
-  cy: null,
+  /** @type {cytoscape.Core|undefined} */
+  cy: undefined,
 
   /** @type {Set<string>} element type names currently shown */
   activeElemTypes: new Set(),
@@ -22,23 +22,23 @@ export const state = {
   /** @type {Set<string>} relationship type names currently shown */
   activeRelTypes: new Set(),
 
-  /** @type {string|null} ID of the drill-root node; null when not in drill mode */
-  drillNodeId: null,
+  /** @type {string|undefined} ID of the drill-root node; undefined when not in drill mode */
+  drillNodeId: undefined,
 
   /** @type {number} BFS depth for drill-down (1–5) */
   drillDepth: 2,
 
-  /** @type {Set<string>|null} node IDs visible in drill scope; null = full model shown */
-  drillVisibleIds: null,
+  /** @type {Set<string>|undefined} node IDs visible in drill scope; undefined = full model shown */
+  drillVisibleIds: undefined,
 
   /** @type {"graph"|"table"} */
-  currentView: "graph",
+  currentView: 'graph',
 
   /** @type {"elements"|"relationships"} active tab in table view */
-  currentTTab: "elements",
+  currentTTab: 'elements',
 
-  /** @type {number|null} index of the sorted table column, or null if unsorted */
-  tableSortCol: null,
+  /** @type {number|undefined} index of the sorted table column, or undefined if unsorted */
+  tableSortCol: undefined,
 
   /** @type {boolean} true = ascending sort */
   tableSortAsc: true,
@@ -46,20 +46,20 @@ export const state = {
   /** @type {Array} fetched model list from the API */
   cachedModels: [],
 
-  /** @type {number|null} pending tap debounce timer ID */
-  tapTimer: null,
+  /** @type {number|undefined} pending tap debounce timer ID */
+  tapTimer: undefined,
 
-  /** @type {number|null} auto-dismiss timer ID for the toast notification */
-  toastTimer: null,
+  /** @type {number|undefined} auto-dismiss timer ID for the toast notification */
+  toastTimer: undefined,
 
   /** @type {"none"|"edge"|"compound"} containment display mode (persisted in localStorage) */
-  containmentMode: localStorage.getItem("architeezyLensContainment") || "edge",
+  containmentMode: localStorage.getItem('architeezyLensContainment') ?? 'edge',
 
-  /** @type {string|null} UUID/id of the currently loaded model; used for URL routing */
-  currentModelId: null,
+  /** @type {string|undefined} UUID/id of the currently loaded model; used for URL routing */
+  currentModelId: undefined,
 
   /** @type {string} full namespace URI of the model; used as filter-state localStorage key */
-  currentModelNs: "",
+  currentModelNs: '',
 
   /** @type {Object<string,string>} prefix → full namespace URI from the model's ns map */
   modelNsMap: {},

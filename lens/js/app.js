@@ -9,29 +9,23 @@ import {
   signOut,
   startAuth,
   updateAuthUI,
-} from "./auth.js";
-import { clearDetail, showDetail } from "./detail.js";
-import { exitDrill, onNodeDrill, restoreDrillRootStyle } from "./drill.js";
-import { applyDrill, applyVisibility } from "./visibility.js";
-import {
-  applyUrlFilters,
-  buildFilters,
-  filterSearch,
-  loadFilterState,
-  selectAll,
-} from "./filters.js";
-import { applyLayout, buildCytoscape, fitGraph } from "./graph.js";
-import { applyLocale, t } from "./i18n.js";
+} from './auth.js';
+import { clearDetail, showDetail } from './detail.js';
+import { exitDrill, onNodeDrill, restoreDrillRootStyle } from './drill.js';
+import { applyDrill, applyVisibility } from './visibility.js';
+import { applyUrlFilters, buildFilters, filterSearch, loadFilterState, selectAll } from './filters.js';
+import { applyLayout, buildCytoscape, fitGraph } from './graph.js';
+import { applyLocale, t } from './i18n.js';
 import {
   closeModelSelector,
   fetchModelList,
   filterModelList,
   openModelSelector,
   setCurrentModelName,
-} from "./models.js";
-import { parseModel } from "./parser.js";
-import { state } from "./state.js";
-import { renderTable, switchTableTab } from "./table.js";
+} from './models.js';
+import { parseModel } from './parser.js';
+import { state } from './state.js';
+import { renderTable, switchTableTab } from './table.js';
 import {
   hideLoading,
   hideToast,
@@ -41,12 +35,12 @@ import {
   showToast,
   switchView,
   toggleSection,
-} from "./ui.js";
-import { modelContentUrl } from "./utils.js";
-import { readUrlParams, syncUrl } from "./routing.js";
+} from './ui.js';
+import { modelContentUrl } from './utils.js';
+import { readUrlParams, syncUrl } from './routing.js';
 
 // ── INIT THEME (immediately, before anything else renders) ──────────────────
-setTheme(localStorage.getItem("architeezyTheme") || "system");
+setTheme(localStorage.getItem('architeezyTheme') ?? 'system');
 
 // ── WINDOW GLOBALS (for HTML onclick= handlers) ────────────────────────────
 window.startAuth = startAuth;
@@ -76,28 +70,32 @@ window.init = init;
 
 // Zoom controls (buttons in HTML use these)
 window.zoomIn = () => {
-  if (!state.cy) return;
+  if (!state.cy) {
+    return;
+  }
   state.cy.zoom(state.cy.zoom() * 1.3);
   state.cy.center();
 };
 window.zoomOut = () => {
-  if (!state.cy) return;
+  if (!state.cy) {
+    return;
+  }
   state.cy.zoom(state.cy.zoom() * 0.77);
   state.cy.center();
 };
 
 // ── AUTH_SUCCESS from popup ─────────────────────────────────────────────────
-window.addEventListener("message", (e) => {
-  if (!e.data || e.data.type !== "AUTH_SUCCESS") return;
+window.addEventListener('message', (e) => {
+  if (!e.data || e.data.type !== 'AUTH_SUCCESS') {
+    return;
+  }
   handleAuthSuccess(e.data.token);
   fetchCurrentUser();
   init();
 });
 
 // ── loadModel event from models.js ─────────────────────────────────────────
-document.addEventListener("loadModel", (e) =>
-  loadModel(e.detail.url, e.detail.modelId),
-);
+document.addEventListener('loadModel', (e) => loadModel(e.detail.url, e.detail.modelId));
 
 // ── CONTAINMENT MODE ───────────────────────────────────────────────────────
 
@@ -109,9 +107,11 @@ document.addEventListener("loadModel", (e) =>
  */
 function setContainmentMode(mode) {
   state.containmentMode = mode;
-  localStorage.setItem("architeezyLensContainment", mode);
-  document.getElementById("containment-select").value = mode;
-  if (!state.allElements.length) return;
+  localStorage.setItem('architeezyLensContainment', mode);
+  document.getElementById('containment-select').value = mode;
+  if (!state.allElements.length) {
+    return;
+  }
   buildCytoscape({
     onNodeTap: (id) => showDetail(id, (node) => onNodeDrill(node)),
     onNodeDblTap: (node) => onNodeDrill(node),
@@ -134,30 +134,37 @@ function setContainmentMode(mode) {
  * caller detect `state.cy === null` and open the model selector.
  *
  * @param {string} url - Content URL of the model to load.
- * @param {string|null} [modelId] - Optional model ID for URL routing.
- * @param {Function|null} [afterLoad] - Optional callback invoked after a successful load.
+ * @param {string|undefined} [modelId] - Optional model ID for URL routing.
+ * @param {Function|undefined} [afterLoad] - Optional callback invoked after a successful load.
  */
-async function loadModel(url, modelId = null, afterLoad = null) {
-  showLoading(t("loadingModel"));
+async function loadModel(url, modelId = undefined, afterLoad = undefined) {
+  showLoading(t('loadingModel'));
   try {
     const r = await apiFetch(url);
-    if (!r.ok) throw new Error(`HTTP ${r.status} — ${r.statusText}`);
+    if (!r.ok) {
+      throw new Error(`HTTP ${r.status} — ${r.statusText}`);
+    }
     const data = await r.json();
 
     parseModel(data);
-    if (!state.allElements.length) throw new Error(t("noElements"));
+    if (!state.allElements.length) {
+      throw new Error(t('noElements'));
+    }
 
-    localStorage.setItem("architeezyLensModelUrl", url);
-    state.drillNodeId = null;
-    state.drillVisibleIds = null;
-    document.getElementById("drill-bar").classList.remove("visible");
+    localStorage.setItem('architeezyLensModelUrl', url);
+    state.drillNodeId = undefined;
+    state.drillVisibleIds = undefined;
+    document.getElementById('drill-bar').classList.remove('visible');
 
     // Resolve modelId from cachedModels if not provided
-    if (!modelId) {
+    let resolvedModelId = modelId;
+    if (!resolvedModelId) {
       const found = state.cachedModels.find((m) => modelContentUrl(m) === url);
-      if (found) modelId = found.id ?? null;
+      if (found) {
+        resolvedModelId = found.id ?? undefined;
+      }
     }
-    state.currentModelId = modelId;
+    state.currentModelId = resolvedModelId;
 
     buildCytoscape({
       onNodeTap: (id) => showDetail(id, (node) => onNodeDrill(node)),
@@ -169,7 +176,7 @@ async function loadModel(url, modelId = null, afterLoad = null) {
     applyVisibility();
     applyLayout();
     hideLoading();
-    document.getElementById("stats-bar").style.display = "flex";
+    document.getElementById('stats-bar').style.display = 'flex';
     renderTable();
     afterLoad?.();
     syncUrl();
@@ -192,10 +199,13 @@ async function loadModel(url, modelId = null, afterLoad = null) {
  */
 async function init() {
   applyLocale();
-  document.getElementById("containment-select").value = state.containmentMode;
-  if (!isAuthed()) await probeAuth();
-  else updateAuthUI();
-  showLoading(t("loadingModels"));
+  document.getElementById('containment-select').value = state.containmentMode;
+  if (!isAuthed()) {
+    await probeAuth();
+  } else {
+    updateAuthUI();
+  }
+  showLoading(t('loadingModels'));
   try {
     state.cachedModels = await fetchModelList();
   } catch (e) {
@@ -214,16 +224,11 @@ async function init() {
     view: urlView,
   } = readUrlParams();
 
-  const urlModel = urlModelId
-    ? state.cachedModels.find((m) => m.id === urlModelId)
-    : null;
-  const targetUrl = urlModel
-    ? modelContentUrl(urlModel)
-    : localStorage.getItem("architeezyLensModelUrl");
-  const targetModelId = urlModel ? urlModelId : null;
+  const urlModel = urlModelId ? state.cachedModels.find((m) => m.id === urlModelId) : undefined;
+  const targetUrl = urlModel ? modelContentUrl(urlModel) : localStorage.getItem('architeezyLensModelUrl');
+  const targetModelId = urlModel ? urlModelId : undefined;
 
-  const hasUrlState =
-    urlEntities !== null || urlRelationships !== null || urlEntityId || urlView;
+  const hasUrlState = urlEntities !== undefined || urlRelationships !== undefined || urlEntityId || urlView;
 
   const afterLoad = hasUrlState
     ? () => {
@@ -232,35 +237,37 @@ async function init() {
         const allETypes = [...new Set(state.allElements.map((e) => e.type))];
         const allRTypes = [...new Set(state.allRelations.map((r) => r.type))];
         applyUrlFilters(
-          urlEntities !== null
-            ? urlEntities.split(",").filter(Boolean)
-            : allETypes,
-          urlRelationships !== null
-            ? urlRelationships.split(",").filter(Boolean)
-            : allRTypes,
+          urlEntities !== undefined ? urlEntities.split(',').filter(Boolean) : allETypes,
+          urlRelationships !== undefined ? urlRelationships.split(',').filter(Boolean) : allRTypes,
         );
         // View
-        if (urlView === "table") switchView("table", renderTable);
+        if (urlView === 'table') {
+          switchView('table', renderTable);
+        }
         // Drill
         if (urlEntityId) {
-          if (urlDepth != null) state.drillDepth = urlDepth;
+          if (urlDepth !== undefined) {
+            state.drillDepth = urlDepth;
+          }
           const node = state.cy?.getElementById(urlEntityId);
-          if (node?.length) onNodeDrill(node);
+          if (node?.length) {
+            onNodeDrill(node);
+          }
         }
       }
-    : null;
+    : undefined;
 
   if (targetUrl) {
     await loadModel(targetUrl, targetModelId, afterLoad);
 
     if (!state.cy) {
-      localStorage.removeItem("architeezyLensModelUrl");
+      localStorage.removeItem('architeezyLensModelUrl');
       openModelSelector();
     } else {
-      const saved = state.cachedModels.find(
-        (m) => modelContentUrl(m) === targetUrl,
-      );
-      if (saved) setCurrentModelName(saved.name);
+      const saved = state.cachedModels.find((m) => modelContentUrl(m) === targetUrl);
+      if (saved) {
+        setCurrentModelName(saved.name);
+      }
     }
   } else {
     openModelSelector();

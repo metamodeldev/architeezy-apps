@@ -51,9 +51,7 @@
           />
         </div>
         <div class="modal-body" id="model-list">
-          <div class="model-list-loading" data-i18n="modalLoading">
-            Loading list…
-          </div>
+          <div class="model-list-loading" data-i18n="modalLoading">Loading list…</div>
         </div>
       </div>
     </div>
@@ -64,54 +62,20 @@
       <h1>Architeezy <span>Lens</span></h1>
 
       <div class="tab-group">
-        <button
-          class="tab-btn active"
-          id="tab-graph"
-          onclick="switchView('graph')"
-          data-i18n="tabGraph"
-        >
-          Graph
-        </button>
-        <button
-          class="tab-btn"
-          id="tab-table"
-          onclick="switchView('table')"
-          data-i18n="tabTable"
-        >
-          Table
-        </button>
+        <button class="tab-btn active" id="tab-graph" onclick="switchView('graph')" data-i18n="tabGraph">Graph</button>
+        <button class="tab-btn" id="tab-table" onclick="switchView('table')" data-i18n="tabTable">Table</button>
       </div>
 
-      <button
-        class="ctrl model-btn"
-        id="current-model-btn"
-        onclick="openModelSelector()"
-      >
+      <button class="ctrl model-btn" id="current-model-btn" onclick="openModelSelector()">
         ⊞
-        <span id="current-model-name" data-i18n="selectModel"
-          >Select model…</span
-        >
+        <span id="current-model-name" data-i18n="selectModel">Select model…</span>
       </button>
 
       <div id="auth-area">
-        <button
-          class="ctrl"
-          id="auth-btn"
-          onclick="startAuth()"
-          data-i18n="signIn"
-        >
-          Sign in
-        </button>
+        <button class="ctrl" id="auth-btn" onclick="startAuth()" data-i18n="signIn">Sign in</button>
         <div id="user-info" style="display: none">
           <span id="user-name"></span>
-          <button
-            class="ctrl"
-            id="signout-btn"
-            onclick="signOut()"
-            data-i18n="signOut"
-          >
-            Sign out
-          </button>
+          <button class="ctrl" id="signout-btn" onclick="signOut()" data-i18n="signOut">Sign out</button>
         </div>
       </div>
 
@@ -127,16 +91,10 @@
         <button class="ctrl" onclick="applyLayout()">⟳</button>
         <button class="ctrl" onclick="fitGraph()">⤢</button>
 
-        <select
-          class="ctrl"
-          id="containment-select"
-          onchange="setContainmentMode(this.value)"
-        >
+        <select class="ctrl" id="containment-select" onchange="setContainmentMode(this.value)">
           <option value="none" data-i18n="cnNone">Nesting: none</option>
           <option value="edge" data-i18n="cnEdge">Nesting: edges ◆</option>
-          <option value="compound" data-i18n="cnCompound">
-            Nesting: shapes ⬚
-          </option>
+          <option value="compound" data-i18n="cnCompound">Nesting: shapes ⬚</option>
         </select>
 
         <div class="theme-switcher">
@@ -184,13 +142,8 @@
       <aside>
         <div class="sidebar-section">
           <div class="sidebar-header" onclick="toggleSection('sec-elem')">
-            <span class="sidebar-header-title" data-i18n="sectionElements"
-              >Entities</span
-            >
-            <div
-              class="sidebar-header-actions"
-              onclick="event.stopPropagation()"
-            >
+            <span class="sidebar-header-title" data-i18n="sectionElements">Entities</span>
+            <div class="sidebar-header-actions" onclick="event.stopPropagation()">
               <button
                 class="filter-icon-btn"
                 onclick="selectAll('elem', true)"
@@ -224,13 +177,8 @@
 
         <div class="sidebar-section">
           <div class="sidebar-header" onclick="toggleSection('sec-rel')">
-            <span class="sidebar-header-title" data-i18n="sectionRelations"
-              >Relationships</span
-            >
-            <div
-              class="sidebar-header-actions"
-              onclick="event.stopPropagation()"
-            >
+            <span class="sidebar-header-title" data-i18n="sectionRelations">Relationships</span>
+            <div class="sidebar-header-actions" onclick="event.stopPropagation()">
               <button
                 class="filter-icon-btn"
                 onclick="selectAll('rel', true)"
@@ -263,9 +211,7 @@
         </div>
 
         <div id="detail-panel">
-          <div class="detail-empty" data-i18n="detailEmpty">
-            Click a node to view details
-          </div>
+          <div class="detail-empty" data-i18n="detailEmpty">Click a node to view details</div>
         </div>
       </aside>
 
@@ -311,15 +257,9 @@
         </div>
 
         <div id="cy-controls" class="cy-controls">
-          <button data-i18n-tt="zoomIn" title="Zoom in" onclick="zoomIn()">
-            +
-          </button>
-          <button data-i18n-tt="zoomOut" title="Zoom out" onclick="zoomOut()">
-            −
-          </button>
-          <button data-i18n-tt="zoomFit" title="Fit" onclick="fitGraph()">
-            ⤢
-          </button>
+          <button data-i18n-tt="zoomIn" title="Zoom in" onclick="zoomIn()">+</button>
+          <button data-i18n-tt="zoomOut" title="Zoom out" onclick="zoomOut()">−</button>
+          <button data-i18n-tt="zoomFit" title="Fit" onclick="fitGraph()">⤢</button>
         </div>
 
         <div id="stats-bar">

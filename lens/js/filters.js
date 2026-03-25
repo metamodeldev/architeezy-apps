@@ -4,10 +4,10 @@
 // relationship types.  Visibility logic (applyVisibility, applyDrill, etc.)
 // lives in visibility.js; this module only handles the UI and filter state.
 
-import { state } from "./state.js";
-import { elemColor, relColor, escHtml } from "./utils.js";
-import { applyVisibility } from "./visibility.js";
-import { syncUrl } from "./routing.js";
+import { state } from './state.js';
+import { elemColor, relColor, escHtml } from './utils.js';
+import { applyVisibility } from './visibility.js';
+import { syncUrl } from './routing.js';
 
 // ── FILTER LIST BUILD ───────────────────────────────────────────────────────
 
@@ -27,16 +27,17 @@ export function buildFilters() {
   const elemIds = new Set(state.allElements.map((e) => e.id));
   const rc = {};
   state.allRelations.forEach((r) => {
-    if (elemIds.has(r.source) && elemIds.has(r.target))
+    if (elemIds.has(r.source) && elemIds.has(r.target)) {
       rc[r.type] = (rc[r.type] ?? 0) + 1;
+    }
   });
   state.relTypeTotals = { ...rc };
 
   state.activeElemTypes = new Set(Object.keys(ec));
   state.activeRelTypes = new Set(Object.keys(rc));
 
-  renderFilterList("elem", ec, elemColor);
-  renderFilterList("rel", rc, relColor);
+  renderFilterList('elem', ec, elemColor);
+  renderFilterList('rel', rc, relColor);
 }
 
 /**
@@ -48,18 +49,18 @@ export function buildFilters() {
  */
 function renderFilterList(kind, counts, colorFn) {
   const container = document.getElementById(`${kind}-filter-list`);
-  container.innerHTML = "";
+  container.innerHTML = '';
   Object.entries(counts)
     .sort((a, b) => b[1] - a[1])
     .forEach(([type, count]) => {
-      const item = document.createElement("label");
-      item.className = "filter-item";
+      const item = document.createElement('label');
+      item.className = 'filter-item';
       item.innerHTML = `
       <input type="checkbox" checked data-kind="${kind}" data-type="${escHtml(type)}">
       <span class="dot" style="background:${colorFn(type)}"></span>
       <span class="item-label" title="${escHtml(type)}">${escHtml(type)}</span>
       <span class="count">${count}</span>`;
-      item.querySelector("input").addEventListener("change", onFilterChange);
+      item.querySelector('input').addEventListener('change', onFilterChange);
       container.appendChild(item);
     });
 }
@@ -74,9 +75,12 @@ function renderFilterList(kind, counts, colorFn) {
  */
 function onFilterChange(e) {
   const { kind, type } = e.target.dataset;
-  const set = kind === "elem" ? state.activeElemTypes : state.activeRelTypes;
-  if (e.target.checked) set.add(type);
-  else set.delete(type);
+  const set = kind === 'elem' ? state.activeElemTypes : state.activeRelTypes;
+  if (e.target.checked) {
+    set.add(type);
+  } else {
+    set.delete(type);
+  }
   applyVisibility();
   saveFilterState();
   syncUrl();
@@ -91,9 +95,12 @@ function onFilterChange(e) {
 export function selectAll(kind, val) {
   document.querySelectorAll(`[data-kind="${kind}"]`).forEach((cb) => {
     cb.checked = val;
-    const set = kind === "elem" ? state.activeElemTypes : state.activeRelTypes;
-    if (val) set.add(cb.dataset.type);
-    else set.delete(cb.dataset.type);
+    const set = kind === 'elem' ? state.activeElemTypes : state.activeRelTypes;
+    if (val) {
+      set.add(cb.dataset.type);
+    } else {
+      set.delete(cb.dataset.type);
+    }
   });
   applyVisibility();
   saveFilterState();
@@ -112,14 +119,20 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
   document.querySelectorAll('[data-kind="elem"]').forEach((cb) => {
     const visible = visibleE.has(cb.dataset.type);
     cb.checked = visible;
-    if (visible) state.activeElemTypes.add(cb.dataset.type);
-    else state.activeElemTypes.delete(cb.dataset.type);
+    if (visible) {
+      state.activeElemTypes.add(cb.dataset.type);
+    } else {
+      state.activeElemTypes.delete(cb.dataset.type);
+    }
   });
   document.querySelectorAll('[data-kind="rel"]').forEach((cb) => {
     const visible = visibleR.has(cb.dataset.type);
     cb.checked = visible;
-    if (visible) state.activeRelTypes.add(cb.dataset.type);
-    else state.activeRelTypes.delete(cb.dataset.type);
+    if (visible) {
+      state.activeRelTypes.add(cb.dataset.type);
+    } else {
+      state.activeRelTypes.delete(cb.dataset.type);
+    }
   });
   applyVisibility();
 }
@@ -134,34 +147,28 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
 export function filterSearch(kind, query) {
   const q = query.toLowerCase();
   document.querySelectorAll(`[data-kind="${kind}"]`).forEach((cb) => {
-    cb.closest(".filter-item").style.display = cb.dataset.type
-      .toLowerCase()
-      .includes(q)
-      ? ""
-      : "none";
+    cb.closest('.filter-item').style.display = cb.dataset.type.toLowerCase().includes(q) ? '' : 'none';
   });
 }
 
 // ── FILTER STATE PERSISTENCE ────────────────────────────────────────────────
 
 // Stored as: { [namespaceURI]: { hiddenEntityTypes: string[], hiddenRelationshipTypes: string[] } }
-const LS_KEY = "architeezyLensFilter";
+const LS_KEY = 'architeezyLensFilter';
 
 /**
  * Persists the current filter state (hidden types) to localStorage,
  * keyed by the model's namespace URI.
  */
 export function saveFilterState() {
-  if (!state.currentModelNs) return;
+  if (!state.currentModelNs) {
+    return;
+  }
   const allETypes = new Set(state.allElements.map((e) => e.type));
   const allRTypes = new Set(state.allRelations.map((r) => r.type));
-  const hiddenEntityTypes = [...allETypes].filter(
-    (t) => !state.activeElemTypes.has(t),
-  );
-  const hiddenRelationshipTypes = [...allRTypes].filter(
-    (t) => !state.activeRelTypes.has(t),
-  );
-  const all = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+  const hiddenEntityTypes = [...allETypes].filter((t) => !state.activeElemTypes.has(t));
+  const hiddenRelationshipTypes = [...allRTypes].filter((t) => !state.activeRelTypes.has(t));
+  const all = JSON.parse(localStorage.getItem(LS_KEY) ?? '{}');
   all[state.currentModelNs] = { hiddenEntityTypes, hiddenRelationshipTypes };
   localStorage.setItem(LS_KEY, JSON.stringify(all));
 }
@@ -172,10 +179,14 @@ export function saveFilterState() {
  * that was previously hidden.  Does nothing if no saved state is found.
  */
 export function loadFilterState() {
-  if (!state.currentModelNs) return;
-  const all = JSON.parse(localStorage.getItem(LS_KEY) || "{}");
+  if (!state.currentModelNs) {
+    return;
+  }
+  const all = JSON.parse(localStorage.getItem(LS_KEY) ?? '{}');
   const saved = all[state.currentModelNs];
-  if (!saved) return;
+  if (!saved) {
+    return;
+  }
   const hiddenE = new Set(saved.hiddenEntityTypes ?? []);
   const hiddenR = new Set(saved.hiddenRelationshipTypes ?? []);
   document.querySelectorAll('[data-kind="elem"]').forEach((cb) => {

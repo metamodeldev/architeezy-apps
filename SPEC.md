@@ -31,9 +31,9 @@ Single-page, fully responsive at ≥ 320 px.
 
 - Left: logo image (`https://docs.architeezy.com/ru/img/logo.svg`) + wordmark
   **Architeezy** as a link to `https://architeezy.com`.
-- Centre: nav links — Home (`https://architeezy.com`),
-  About (`https://about.architeezy.com`),
-  Docs (`https://docs.architeezy.com`). Labels are localised.
+- Centre: nav links — Home (`https://architeezy.com`), About
+  (`https://about.architeezy.com`), Docs (`https://docs.architeezy.com`). Labels
+  are localised.
 - Right: theme switcher — three icon buttons 🌙 / ☀️ / 🖥.
 
 ### Page title
@@ -54,8 +54,8 @@ CSS Grid, `auto-fill`, min column width 240 px. Cards are equal height via
 | Description | One-sentence description, muted colour             |
 | Link        | "Open →" / "Открыть →" button, fills card bottom   |
 
-Entire card is a link (`<a>`); the CTA is a visual affordance only.
-Clicking anywhere on the card navigates to the app.
+Entire card is a link (`<a>`); the CTA is a visual affordance only. Clicking
+anywhere on the card navigates to the app.
 
 ---
 
@@ -113,9 +113,9 @@ and `STRINGS.ru.apps` — no other changes needed.
 ```js
 const APPS = [
   {
-    id: "lens",
-    href: "./lens/",
-    icon: "icon-lens", // matches a <symbol id="icon-lens"> in the SVG sprite
+    id: 'lens',
+    href: './lens/',
+    icon: 'icon-lens', // matches a <symbol id="icon-lens"> in the SVG sprite
   },
 ];
 ```

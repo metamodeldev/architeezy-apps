@@ -1,22 +1,33 @@
 # Architeezy Lens
 
-An interactive viewer for architecture models stored in [Architeezy](https://architeezy.com). Displays any model as a force-directed graph or a searchable table, with filtering, drill-down, and shareable deep links.
+An interactive viewer for architecture models stored in
+[Architeezy](https://architeezy.com). Displays any model as a force-directed
+graph or a searchable table, with filtering, drill-down, and shareable deep
+links.
 
-**No build step.** All dependencies are loaded from CDN; open `index.html` with any static file server.
+**No build step.** All dependencies are loaded from CDN; open `index.html` with
+any static file server.
 
 ---
 
 ## Features
 
-- **Graph view** — interactive Cytoscape.js graph with multiple layout algorithms (fCoSE, Dagre, CoSE, Breadth-first, Grid, Circle)
+- **Graph view** — interactive Cytoscape.js graph with multiple layout
+  algorithms (fCoSE, Dagre, CoSE, Breadth-first, Grid, Circle)
 - **Table view** — sortable, searchable elements and relationships table
-- **Filter panel** — show/hide element and relationship types; counts update live
-- **Drill-down** — double-click any node to explore its neighbourhood up to N hops (BFS); depth 1–5
-- **Containment** — parent–child relationships shown as edges with filled diamonds or as compound (nested) shapes
-- **Deep links** — all state (model, filters, drill node, depth, view) is encoded in the URL query string; share or bookmark any view
+- **Filter panel** — show/hide element and relationship types; counts update
+  live
+- **Drill-down** — double-click any node to explore its neighbourhood up to N
+  hops (BFS); depth 1–5
+- **Containment** — parent–child relationships shown as edges with filled
+  diamonds or as compound (nested) shapes
+- **Deep links** — all state (model, filters, drill node, depth, view) is
+  encoded in the URL query string; share or bookmark any view
 - **Dark / light / system theme**
-- **Internationalisation** — English and Russian, detected from `navigator.language`
-- **Authentication** — optional OAuth popup flow; anonymous access works for public models
+- **Internationalisation** — English and Russian, detected from
+  `navigator.language`
+- **Authentication** — optional OAuth popup flow; anonymous access works for
+  public models
 
 ---
 
@@ -78,7 +89,8 @@ state ────────────────────────�
 
 ## URL Parameters
 
-All state is reflected in the address bar. Parameters are set with `history.replaceState`.
+All state is reflected in the address bar. Parameters are set with
+`history.replaceState`.
 
 | Parameter       | Present when                  | Value                              |
 | --------------- | ----------------------------- | ---------------------------------- |
@@ -93,7 +105,9 @@ All state is reflected in the address bar. Parameters are set with `history.repl
 
 ## Authentication
 
-Lens uses an OAuth popup flow. The token is stored **in memory only** — never persisted to localStorage or cookies. See [`js/auth.js`](js/auth.js) and the [root README](../README.md#authentication) for details.
+Lens uses an OAuth popup flow. The token is stored **in memory only** — never
+persisted to localStorage or cookies. See [`js/auth.js`](js/auth.js) and the
+[root README](../README.md#authentication) for details.
 
 ---
 

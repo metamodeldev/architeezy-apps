@@ -5,9 +5,9 @@
 // entry/exit flow (drill.js).  Both modules import from this one; this module
 // does not import from either of them.
 
-import { state } from "./state.js";
-import { updateStats } from "./graph.js";
-import { renderTable } from "./table.js";
+import { state } from './state.js';
+import { updateStats } from './graph.js';
+import { renderTable } from './table.js';
 
 // ── PRIVATE HELPERS ─────────────────────────────────────────────────────────
 
@@ -19,21 +19,14 @@ import { renderTable } from "./table.js";
 function computeVisRelCounts() {
   const counts = {};
   state.allRelations.forEach((r) => {
-    if (
-      state.drillVisibleIds &&
-      (!state.drillVisibleIds.has(r.source) ||
-        !state.drillVisibleIds.has(r.target))
-    )
+    if (state.drillVisibleIds && (!state.drillVisibleIds.has(r.source) || !state.drillVisibleIds.has(r.target))) {
       return;
+    }
     const srcType = state.elemMap[r.source]?.type;
     const tgtType = state.elemMap[r.target]?.type;
-    if (
-      srcType &&
-      tgtType &&
-      state.activeElemTypes.has(srcType) &&
-      state.activeElemTypes.has(tgtType)
-    )
+    if (srcType && tgtType && state.activeElemTypes.has(srcType) && state.activeElemTypes.has(tgtType)) {
       counts[r.type] = (counts[r.type] ?? 0) + 1;
+    }
   });
   return counts;
 }
@@ -45,8 +38,9 @@ function computeVisRelCounts() {
 function computeDrillElemCounts() {
   const counts = {};
   state.allElements.forEach((e) => {
-    if (state.drillVisibleIds?.has(e.id))
+    if (state.drillVisibleIds?.has(e.id)) {
       counts[e.type] = (counts[e.type] ?? 0) + 1;
+    }
   });
   return counts;
 }
@@ -59,20 +53,17 @@ function computeDrillElemCounts() {
  * A type hidden by the user's checkbox is NOT dimmed — it is available, just filtered.
  */
 export function updateElemFilterDim() {
-  const drillCounts = state.drillNodeId ? computeDrillElemCounts() : null;
+  const drillCounts = state.drillNodeId ? computeDrillElemCounts() : undefined;
   document.querySelectorAll('[data-kind="elem"]').forEach((cb) => {
     const type = cb.dataset.type;
     const total = state.elemTypeTotals[type] ?? 0;
     const available = drillCounts ? (drillCounts[type] ?? 0) : total;
-    const item = cb.closest(".filter-item");
-    const countEl = item?.querySelector(".count");
+    const item = cb.closest('.filter-item');
+    const countEl = item?.querySelector('.count');
     if (countEl) {
-      countEl.textContent =
-        drillCounts && available !== total
-          ? `${available} / ${total}`
-          : `${total}`;
+      countEl.textContent = drillCounts && available !== total ? `${available} / ${total}` : `${total}`;
     }
-    item?.classList.toggle("dim", available === 0);
+    item?.classList.toggle('dim', available === 0);
   });
 }
 
@@ -83,11 +74,12 @@ export function updateRelFilterCounts() {
     const type = cb.dataset.type;
     const total = state.relTypeTotals[type] ?? 0;
     const vis = visCounts[type] ?? 0;
-    const item = cb.closest(".filter-item");
-    const countEl = item?.querySelector(".count");
-    if (countEl)
+    const item = cb.closest('.filter-item');
+    const countEl = item?.querySelector('.count');
+    if (countEl) {
       countEl.textContent = vis === total ? `${total}` : `${vis} / ${total}`;
-    item?.classList.toggle("dim", vis === 0);
+    }
+    item?.classList.toggle('dim', vis === 0);
   });
 }
 
@@ -102,17 +94,26 @@ export function updateRelFilterCounts() {
  * @param {function(cytoscape.NodeSingular): boolean} isVisible
  */
 export function syncCompoundParents(isVisible) {
-  if (state.containmentMode !== "compound") return;
+  if (state.containmentMode !== 'compound') {
+    return;
+  }
   state.cy.nodes().forEach((n) => {
-    const origParent = n.data("modelParent");
-    if (!origParent) return;
+    const origParent = n.data('modelParent');
+    if (!origParent) {
+      return;
+    }
     const parentNode = state.cy.$id(origParent);
     const parentOk = parentNode.length && isVisible(parentNode);
-    const currentParId = n.parent().length ? n.parent().id() : null;
+    const currentParId = n.parent().length ? n.parent().id() : undefined;
     if (isVisible(n) && parentOk) {
-      if (currentParId !== origParent) n.move({ parent: origParent });
+      if (currentParId !== origParent) {
+        n.move({ parent: origParent });
+      }
     } else {
-      if (currentParId !== null) n.move({ parent: null });
+      if (currentParId !== undefined) {
+        // eslint-disable-next-line unicorn/no-null
+        n.move({ parent: null });
+      }
     }
   });
 }
@@ -122,36 +123,33 @@ export function syncCompoundParents(isVisible) {
  * then refreshes filter UI and (if in table view) the table.
  */
 export function applyVisibility() {
-  if (!state.cy) return;
+  if (!state.cy) {
+    return;
+  }
   if (state.drillNodeId) {
     applyDrill();
     return;
   }
 
-  syncCompoundParents((n) => state.activeElemTypes.has(n.data("type")));
+  syncCompoundParents((n) => state.activeElemTypes.has(n.data('type')));
   state.cy.batch(() => {
-    state.cy
-      .nodes()
-      .forEach((n) =>
-        n.style(
-          "display",
-          state.activeElemTypes.has(n.data("type")) ? "element" : "none",
-        ),
-      );
+    state.cy.nodes().forEach((n) => n.style('display', state.activeElemTypes.has(n.data('type')) ? 'element' : 'none'));
     state.cy.edges().forEach((e) => {
-      const srcOk = state.activeElemTypes.has(e.source().data("type"));
-      const tgtOk = state.activeElemTypes.has(e.target().data("type"));
-      const show = e.data("isContainment")
+      const srcOk = state.activeElemTypes.has(e.source().data('type'));
+      const tgtOk = state.activeElemTypes.has(e.target().data('type'));
+      const show = e.data('isContainment')
         ? srcOk && tgtOk
-        : srcOk && tgtOk && state.activeRelTypes.has(e.data("type"));
-      e.style("display", show ? "element" : "none");
+        : srcOk && tgtOk && state.activeRelTypes.has(e.data('type'));
+      e.style('display', show ? 'element' : 'none');
     });
   });
 
   updateStats();
   updateElemFilterDim();
   updateRelFilterCounts();
-  if (state.currentView === "table") renderTable();
+  if (state.currentView === 'table') {
+    renderTable();
+  }
 }
 
 /**
@@ -169,11 +167,14 @@ export function applyVisibility() {
  *   boundary (depth = drillDepth), which would otherwise clutter the diagram.
  */
 export function applyDrill() {
-  if (!state.cy || !state.drillNodeId) return;
+  if (!state.cy || !state.drillNodeId) {
+    return;
+  }
 
   // Drill-root is always traversable even if its element type is filtered out.
-  const isTypeOk = (n) =>
-    state.activeElemTypes.has(n.data("type")) || n.id() === state.drillNodeId;
+  function isTypeOk(n) {
+    return state.activeElemTypes.has(n.data('type')) || n.id() === state.drillNodeId;
+  }
 
   const visible = new Set([state.drillNodeId]);
   const nodeDepth = new Map([[state.drillNodeId, 0]]);
@@ -185,12 +186,9 @@ export function applyDrill() {
       // One hop: follow active semantic edges + containment edges/compound links.
       let reachable = n
         .connectedEdges()
-        .filter(
-          (e) =>
-            state.activeRelTypes.has(e.data("type")) || e.data("isContainment"),
-        )
+        .filter((e) => state.activeRelTypes.has(e.data('type')) || e.data('isContainment'))
         .connectedNodes();
-      if (state.containmentMode === "compound") {
+      if (state.containmentMode === 'compound') {
         // Compound parent-child is not an edge — traverse explicitly.
         reachable = reachable.union(n.children()).union(n.parent());
       }
@@ -203,41 +201,41 @@ export function applyDrill() {
       });
     });
     frontier = next;
-    if (!frontier.length) break;
+    if (!frontier.length) {
+      break;
+    }
   }
 
   state.drillVisibleIds = visible;
 
   syncCompoundParents((n) => visible.has(n.id()));
   state.cy.batch(() => {
-    state.cy
-      .nodes()
-      .forEach((n) =>
-        n.style("display", visible.has(n.id()) ? "element" : "none"),
-      );
+    state.cy.nodes().forEach((n) => n.style('display', visible.has(n.id()) ? 'element' : 'none'));
     state.cy.edges().forEach((e) => {
       const srcId = e.source().id();
       const tgtId = e.target().id();
       let show = false;
       if (visible.has(srcId) && visible.has(tgtId)) {
-        const isRel = state.activeRelTypes.has(e.data("type"));
-        const isContainment = e.data("isContainment");
+        const isRel = state.activeRelTypes.has(e.data('type'));
+        const isContainment = e.data('isContainment');
         if (isRel || isContainment) {
           const dSrc = nodeDepth.get(srcId) ?? state.drillDepth;
           const dTgt = nodeDepth.get(tgtId) ?? state.drillDepth;
           show = Math.min(dSrc, dTgt) < state.drillDepth;
         }
       }
-      e.style("display", show ? "element" : "none");
+      e.style('display', show ? 'element' : 'none');
     });
   });
 
   // Bypass style has highest priority — guarantee drill-root is visible even
   // if its type was filtered out and the batch above would hide it.
-  state.cy.$id(state.drillNodeId).style("display", "element");
+  state.cy.$id(state.drillNodeId).style('display', 'element');
 
   updateStats();
   updateElemFilterDim();
   updateRelFilterCounts();
-  if (state.currentView === "table") renderTable();
+  if (state.currentView === 'table') {
+    renderTable();
+  }
 }

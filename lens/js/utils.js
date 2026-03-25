@@ -1,6 +1,6 @@
 // ── HELPERS ────────────────────────────────────────────────────────────────
 
-import { UUID_RE, PALETTE, BASE } from "./constants.js";
+import { UUID_RE, PALETTE, BASE } from './constants.js';
 
 /**
  * Returns true if `v` is a string that looks like a UUID or UUID-like identifier.
@@ -9,7 +9,7 @@ import { UUID_RE, PALETTE, BASE } from "./constants.js";
  * @returns {boolean}
  */
 export function isUUID(v) {
-  return typeof v === "string" && UUID_RE.test(v);
+  return typeof v === 'string' && UUID_RE.test(v);
 }
 
 /**
@@ -20,7 +20,9 @@ export function isUUID(v) {
  */
 export function hashStr(s) {
   let h = 5381;
-  for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+  }
   return h;
 }
 
@@ -53,11 +55,11 @@ export function relColor(typ) {
  * @returns {string} HTML-escaped string.
  */
 export function escHtml(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
@@ -68,11 +70,15 @@ export function escHtml(s) {
  * @returns {string} Short label, or "?" when no recognisable pattern is found.
  */
 export function modelTypeLabel(contentType) {
-  if (!contentType) return "?";
+  if (!contentType) {
+    return '?';
+  }
   const m = contentType.match(/\/metamodel\/([^/]+)\//);
-  if (m) return m[1].toUpperCase();
-  const hash = contentType.split("#")[1];
-  return hash ? hash.replace(/Model$/, "") : "?";
+  if (m) {
+    return m[1].toUpperCase();
+  }
+  const hash = contentType.split('#')[1];
+  return hash ? hash.replace(/Model$/, '') : '?';
 }
 
 /**
@@ -81,15 +87,19 @@ export function modelTypeLabel(contentType) {
  * canonical API path from the model's slug fields.
  *
  * @param {object} model - A model object from the API model list.
- * @returns {string|null} The content URL, or null if it cannot be resolved.
+ * @returns {string|undefined} The content URL, or undefined if it cannot be resolved.
  */
 export function modelContentUrl(model) {
   const links = model._links?.content;
-  if (Array.isArray(links) && links[0]?.href)
-    return links[0].href.replace(/\{[^}]*\}/g, "");
-  if (links?.href) return links.href.replace(/\{[^}]*\}/g, "");
+  if (Array.isArray(links) && links[0]?.href) {
+    return links[0].href.replace(/\{[^}]*\}/g, '');
+  }
+  if (links?.href) {
+    return links.href.replace(/\{[^}]*\}/g, '');
+  }
   const { scopeSlug, projectSlug, projectVersion, slug } = model;
-  if (scopeSlug && projectSlug && projectVersion && slug)
+  if (scopeSlug && projectSlug && projectVersion && slug) {
     return `${BASE}/api/models/${scopeSlug}/${projectSlug}/${projectVersion}/${slug}/content?format=json`;
-  return null;
+  }
+  return undefined;
 }

@@ -21,7 +21,7 @@
   --font: system-ui, -apple-system, sans-serif;
 }
 
-[data-theme="light"] {
+[data-theme='light'] {
   --bg: #f6f8fa;
   --bg-card: #fff;
   --bg-card-hov: #f0f3f6;
@@ -33,7 +33,7 @@
 }
 
 @media (prefers-color-scheme: light) {
-  [data-theme="system"] {
+  [data-theme='system'] {
     --bg: #f6f8fa;
     --bg-card: #fff;
     --bg-card-hov: #f0f3f6;

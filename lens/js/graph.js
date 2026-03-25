@@ -1,21 +1,17 @@
 // ── CYTOSCAPE LIFECYCLE ─────────────────────────────────────────────────────
 
-import { state } from "./state.js";
-import { elemColor, relColor } from "./utils.js";
-import { t } from "./i18n.js";
-import { buildCyStyles, createLabelMeasurer } from "./graph-styles.js";
-import {
-  TAP_DELAY_MS,
-  LAYOUT_ANIM_THRESHOLD,
-  FIT_PADDING,
-} from "./constants.js";
+import { state } from './state.js';
+import { elemColor, relColor } from './utils.js';
+import { t } from './i18n.js';
+import { buildCyStyles, createLabelMeasurer } from './graph-styles.js';
+import { TAP_DELAY_MS, LAYOUT_ANIM_THRESHOLD, FIT_PADDING } from './constants.js';
 
 // Re-export cyBg so callers (ui.js, etc.) don't need to know about graph-styles.js
-export { cyBg } from "./graph-styles.js";
+export { cyBg } from './graph-styles.js';
 
 // Tracks the AbortController for the current pointer interaction listeners so
 // that stale listeners are removed before a new set is attached on each rebuild.
-let _pointerController = null;
+let _pointerController;
 
 // ── NODE & EDGE DATA BUILDERS ───────────────────────────────────────────────
 
@@ -41,17 +37,13 @@ function buildNodes(elemIds) {
         nw,
         nh,
       };
-      if (
-        state.containmentMode === "compound" &&
-        e.parent &&
-        elemIds.has(e.parent)
-      ) {
+      if (state.containmentMode === 'compound' && e.parent && elemIds.has(e.parent)) {
         data.parent = e.parent;
         // modelParent preserves the original parent so it can be restored after
         // the node is detached from a compound container for visibility reasons.
         data.modelParent = e.parent;
       }
-      return { group: "nodes", data };
+      return { group: 'nodes', data };
     });
   } finally {
     // Always remove the measurement span, even if an error occurs mid-build.
@@ -71,7 +63,7 @@ function buildEdges(elemIds) {
   const edges = state.allRelations
     .filter((r) => elemIds.has(r.source) && elemIds.has(r.target))
     .map((r) => ({
-      group: "edges",
+      group: 'edges',
       data: {
         id: r.id,
         source: r.source,
@@ -84,18 +76,18 @@ function buildEdges(elemIds) {
 
   // Edge mode: add synthetic containment edges (parent → child) with a filled diamond.
   // Compound mode uses Cytoscape's native parent/child relationship instead.
-  if (state.containmentMode === "edge") {
+  if (state.containmentMode === 'edge') {
     state.allElements.forEach((e) => {
       if (e.parent && elemIds.has(e.parent)) {
         edges.push({
-          group: "edges",
+          group: 'edges',
           data: {
             id: `_c_${e.id}`,
             source: e.parent,
             target: e.id,
-            type: "_containment",
-            label: "",
-            color: "#9ca3af",
+            type: '_containment',
+            label: '',
+            color: '#9ca3af',
             isContainment: true,
           },
         });
@@ -119,22 +111,26 @@ function buildEdges(elemIds) {
  */
 function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
   // Single-tap is delayed to let double-tap cancel it first.
-  cy.on("tap", "node", (e) => {
+  cy.on('tap', 'node', (e) => {
     clearTimeout(state.tapTimer);
     state.tapTimer = setTimeout(() => onNodeTap(e.target.id()), TAP_DELAY_MS);
   });
-  cy.on("dbltap", "node", (e) => {
+  cy.on('dbltap', 'node', (e) => {
     clearTimeout(state.tapTimer);
     onNodeDblTap(e.target);
   });
-  cy.on("tap", (e) => {
-    if (e.target === cy) onCanvasTap();
+  cy.on('tap', (e) => {
+    if (e.target === cy) {
+      onCanvasTap();
+    }
   });
 
   // Cytoscape re-evaluates all styles after a node is deselected, which can
   // silently drop dynamically added classes (like .drill-root). Re-assert it.
-  cy.on("unselect", () => {
-    if (state.drillNodeId) cy.$id(state.drillNodeId).addClass("drill-root");
+  cy.on('unselect', () => {
+    if (state.drillNodeId) {
+      cy.$id(state.drillNodeId).addClass('drill-root');
+    }
   });
 }
 
@@ -150,50 +146,54 @@ function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
  */
 function setupPointerInteractions() {
   // Abort any listeners from a previous buildCytoscape call so they don't stack.
-  if (_pointerController) _pointerController.abort();
+  if (_pointerController) {
+    _pointerController.abort();
+  }
   _pointerController = new AbortController();
   const { signal } = _pointerController;
 
-  const container = document.getElementById("cy");
+  const container = document.getElementById('cy');
 
   // Middle-mouse pan
   container.addEventListener(
-    "mousedown",
+    'mousedown',
     (e) => {
-      if (e.button !== 1) return;
+      if (e.button !== 1) {
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       const panStart = { ...state.cy.pan() };
       const mouseStart = { x: e.clientX, y: e.clientY };
-      const onMove = (mv) =>
-        state.cy.pan({
+      function onMove(mv) {
+        return state.cy.pan({
           x: panStart.x + mv.clientX - mouseStart.x,
           y: panStart.y + mv.clientY - mouseStart.y,
         });
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
+      }
+      function onUp() {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     },
     { passive: false, signal },
   );
-  container.addEventListener("auxclick", (e) => e.preventDefault(), { signal });
+  container.addEventListener('auxclick', (e) => e.preventDefault(), { signal });
 
   // Custom wheel zoom — captured before Cytoscape to avoid the "wheelSensitivity" warning
   // while keeping precise control over the zoom factor (1.3× per notch, cursor-centred).
   container.addEventListener(
-    "wheel",
+    'wheel',
     (e) => {
-      if (!state.cy) return;
+      if (!state.cy) {
+        return;
+      }
       e.preventDefault();
       e.stopImmediatePropagation();
       const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-      const level = Math.max(
-        state.cy.minZoom(),
-        Math.min(state.cy.maxZoom(), state.cy.zoom() * factor),
-      );
+      const level = Math.max(state.cy.minZoom(), Math.min(state.cy.maxZoom(), state.cy.zoom() * factor));
       state.cy.zoom({
         level,
         renderedPosition: { x: e.offsetX, y: e.offsetY },
@@ -218,16 +218,16 @@ function setupPointerInteractions() {
 export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
   if (state.cy) {
     state.cy.destroy();
-    state.cy = null;
+    state.cy = undefined;
   }
 
   const elemIds = new Set(state.allElements.map((e) => e.id));
 
   state.cy = cytoscape({
-    container: document.getElementById("cy"),
+    container: document.getElementById('cy'),
     elements: { nodes: buildNodes(elemIds), edges: buildEdges(elemIds) },
     style: buildCyStyles(),
-    layout: { name: "grid" },
+    layout: { name: 'grid' },
     userZoomingEnabled: true,
     minZoom: 0.04,
     maxZoom: 6,
@@ -244,18 +244,20 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
  * After layout, updates compound node label widths to match their rendered size.
  */
 export function applyLayout() {
-  if (!state.cy) return;
-  const name = document.getElementById("layout-select").value;
+  if (!state.cy) {
+    return;
+  }
+  const name = document.getElementById('layout-select').value;
   // Run layout only on visible elements — on large models hidden nodes would
   // dominate computation and produce wrong positions for the visible subset.
-  const eles = state.cy.elements(":visible");
+  const eles = state.cy.elements(':visible');
   // Animate only for smaller graphs; animation is distracting on large ones.
   const anim = eles.nodes().length < LAYOUT_ANIM_THRESHOLD;
 
   const cfgMap = {
     fcose: {
-      name: "fcose",
-      quality: "default",
+      name: 'fcose',
+      quality: 'default',
       randomize: true,
       animate: anim,
       animationDuration: 800,
@@ -275,20 +277,20 @@ export function applyLayout() {
       tilingPaddingHorizontal: 15,
     },
     dagre: {
-      name: "dagre",
+      name: 'dagre',
       nodeDimensionsIncludeLabels: true,
-      rankDir: "TB",
+      rankDir: 'TB',
       rankSep: 60,
       nodeSep: 40,
       edgeSep: 10,
-      ranker: "longest-path",
+      ranker: 'longest-path',
       animate: anim,
       animationDuration: 600,
       fit: true,
       padding: 40,
     },
     cose: {
-      name: "cose",
+      name: 'cose',
       nodeDimensionsIncludeLabels: true,
       idealEdgeLength: 80,
       nodeOverlap: 20,
@@ -304,7 +306,7 @@ export function applyLayout() {
       animationDuration: 600,
     },
     breadthfirst: {
-      name: "breadthfirst",
+      name: 'breadthfirst',
       directed: true,
       padding: 40,
       spacingFactor: 1.6,
@@ -314,7 +316,7 @@ export function applyLayout() {
       nodeDimensionsIncludeLabels: true,
     },
     grid: {
-      name: "grid",
+      name: 'grid',
       padding: 30,
       fit: true,
       animate: anim,
@@ -322,7 +324,7 @@ export function applyLayout() {
       nodeDimensionsIncludeLabels: true,
     },
     circle: {
-      name: "circle",
+      name: 'circle',
       padding: 40,
       fit: true,
       animate: anim,
@@ -331,14 +333,12 @@ export function applyLayout() {
     },
   };
 
-  const layoutInst = eles.layout(
-    cfgMap[name] ?? { name, fit: true, padding: 30 },
-  );
-  layoutInst.on("layoutstop", () => {
+  const layoutInst = eles.layout(cfgMap[name] ?? { name, fit: true, padding: 30 });
+  layoutInst.on('layoutstop', () => {
     // After layout, set text-max-width on compound nodes to match their actual rendered width
     // so long labels wrap correctly rather than overflowing the container box.
-    state.cy.nodes(":parent:visible").forEach((n) => {
-      n.style("text-max-width", Math.max(n.width() - 24, 40) + "px");
+    state.cy.nodes(':parent:visible').forEach((n) => {
+      n.style('text-max-width', Math.max(n.width() - 24, 40) + 'px');
     });
   });
   layoutInst.run();
@@ -355,31 +355,23 @@ export function fitGraph() {
  * In drill mode, shows visible/total for both nodes and edges.
  */
 export function updateStats() {
-  if (!state.cy) return;
-  const vis = state.cy.elements(":visible");
+  if (!state.cy) {
+    return;
+  }
+  const vis = state.cy.elements(':visible');
   const visN = vis.nodes().length;
-  const visE = vis.edges().filter((e) => !e.data("isContainment")).length;
+  const visE = vis.edges().filter((e) => !e.data('isContainment')).length;
   const totN = state.allElements.length;
   const totE = state.allRelations.length;
 
   if (state.drillNodeId) {
     // Drill mode: show visible/total for both counts
-    document.getElementById("stat-nodes").textContent = t(
-      "statNodes",
-      `${visN} / ${totN}`,
-    );
-    document.getElementById("stat-edges").textContent = t(
-      "statEdges",
-      `${visE} / ${totE}`,
-    );
-    document.getElementById("stat-visible").textContent = "";
+    document.getElementById('stat-nodes').textContent = t('statNodes', `${visN} / ${totN}`);
+    document.getElementById('stat-edges').textContent = t('statEdges', `${visE} / ${totE}`);
+    document.getElementById('stat-visible').textContent = '';
   } else {
-    document.getElementById("stat-nodes").textContent = t("statNodes", totN);
-    document.getElementById("stat-edges").textContent = t("statEdges", totE);
-    document.getElementById("stat-visible").textContent = t(
-      "statVisible",
-      visN,
-      visE,
-    );
+    document.getElementById('stat-nodes').textContent = t('statNodes', totN);
+    document.getElementById('stat-edges').textContent = t('statEdges', totE);
+    document.getElementById('stat-visible').textContent = t('statVisible', visN, visE);
   }
 }

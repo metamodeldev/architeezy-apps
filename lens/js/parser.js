@@ -13,9 +13,9 @@
 //
 // content[0] is always the model root — only its data is walked (root itself skipped).
 
-import { ECORE_NS } from "./constants.js";
-import { isUUID } from "./utils.js";
-import { state } from "./state.js";
+import { ECORE_NS } from './constants.js';
+import { isUUID } from './utils.js';
+import { state } from './state.js';
 
 /**
  * Parses a raw Architeezy model JSON response into `state.allElements`,
@@ -33,26 +33,26 @@ export function parseModel(raw) {
   state.allElements = [];
   state.allRelations = [];
   state.elemMap = {};
-  state.currentModelNs = "";
+  state.currentModelNs = '';
   _idCounter = 0;
 
   const roots = Array.isArray(raw.content) ? raw.content : [raw];
   const rootObj = roots[0] ?? {};
 
   // Store ns map for use in walkNode (prefix → full URI resolution for ECORE_NS check etc.)
-  state.modelNsMap = raw.ns && typeof raw.ns === "object" ? raw.ns : {};
+  state.modelNsMap = raw.ns && typeof raw.ns === 'object' ? raw.ns : {};
 
   // Resolve model namespace: extract root eClass prefix, look up full URI in ns map.
   // ns is an object at the top level of the JSON response: { [prefix]: fullURI, … }
-  const rootEClass = rootObj.eClass ?? "";
+  const rootEClass = rootObj.eClass ?? '';
   const nsMap = state.modelNsMap;
-  const col = rootEClass.lastIndexOf(":");
+  const col = rootEClass.lastIndexOf(':');
   if (col > 0) {
     const prefix = rootEClass.slice(0, col);
     state.currentModelNs = nsMap[prefix] ?? prefix;
   }
 
-  roots.forEach((root) => walkData(root?.data ?? {}, null));
+  roots.forEach((root) => walkData(root?.data ?? {}, undefined));
 }
 
 /**
@@ -61,16 +61,20 @@ export function parseModel(raw) {
  * produce implicit edges from `parentId` to the referenced UUID.
  *
  * @param {object} d - The `data` object of a model node.
- * @param {string|null} parentId - ID of the containing element, or null at root level.
+ * @param {string|undefined} parentId - ID of the containing element, or undefined at root level.
  */
 function walkData(d, parentId) {
-  if (!d || typeof d !== "object") return;
+  if (!d || typeof d !== 'object') {
+    return;
+  }
   for (const [key, val] of Object.entries(d)) {
-    if (!Array.isArray(val)) continue;
+    if (!Array.isArray(val)) {
+      continue;
+    }
     const edgeType = key;
     for (let i = 0; i < val.length; i++) {
       const item = val[i];
-      if (item && typeof item === "object" && item.eClass) {
+      if (item && typeof item === 'object' && item.eClass) {
         walkNode(item, parentId);
       } else if (isUUID(item) && parentId) {
         state.allRelations.push({
@@ -78,7 +82,7 @@ function walkData(d, parentId) {
           type: edgeType,
           source: parentId,
           target: item,
-          name: "",
+          name: '',
         });
       }
     }
@@ -90,17 +94,19 @@ function walkData(d, parentId) {
  * or graph element, then recurses into its data.
  *
  * @param {object} node - Raw eClass node from the model JSON.
- * @param {string|null} parentId - ID of the containing element, or null at root level.
+ * @param {string|undefined} parentId - ID of the containing element, or undefined at root level.
  */
 function walkNode(node, parentId) {
   const raw = node.eClass;
-  const col = raw.lastIndexOf(":");
-  const ns = col >= 0 ? raw.slice(0, col) : "";
+  const col = raw.lastIndexOf(':');
+  const ns = col >= 0 ? raw.slice(0, col) : '';
   const type = col >= 0 ? raw.slice(col + 1) : raw;
   const fullNs = state.modelNsMap[ns] ?? ns; // resolve short prefix → full URI
 
   // Skip ecore internal key-value map entries — compare full namespace URI
-  if (type === "EStringToStringMapEntry" && fullNs === ECORE_NS) return;
+  if (type === 'EStringToStringMapEntry' && fullNs === ECORE_NS) {
+    return;
+  }
 
   const d = node.data ?? {};
   const id = node.id ?? `_${_idCounter++}`;
@@ -112,7 +118,7 @@ function walkNode(node, parentId) {
       type,
       source: d.source,
       target: d.target,
-      name: d.name || "",
+      name: d.name || '',
     });
     walkData(d, id);
     return;
@@ -125,21 +131,20 @@ function walkNode(node, parentId) {
       type,
       source: parentId,
       target: d.target,
-      name: d.name || "",
+      name: d.name || '',
     });
     return;
   }
 
   // Rule 3: graph node — track containment parent
-  const parentIsNode =
-    parentId != null && state.elemMap[parentId] !== undefined;
+  const parentIsNode = parentId !== undefined && state.elemMap[parentId] !== undefined;
   const elem = {
     id,
     type,
     ns,
     name: d.name || d.label || d.title || type,
-    doc: d.documentation || d.description || d.doc || "",
-    parent: parentIsNode ? parentId : null,
+    doc: d.documentation || d.description || d.doc || '',
+    parent: parentIsNode ? parentId : undefined,
   };
   state.allElements.push(elem);
   state.elemMap[id] = elem;

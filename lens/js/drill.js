@@ -1,16 +1,17 @@
 // ── DRILL-DOWN ─────────────────────────────────────────────────────────────
 
-import { state } from "./state.js";
-import { applyLayout, fitGraph } from "./graph.js";
-import { applyDrill, applyVisibility } from "./visibility.js";
-import { showDetail } from "./detail.js";
-import { renderTable } from "./table.js";
-import { syncUrl } from "./routing.js";
+import { state } from './state.js';
+import { applyLayout, fitGraph } from './graph.js';
+import { applyDrill, applyVisibility } from './visibility.js';
+import { showDetail } from './detail.js';
+import { renderTable } from './table.js';
+import { syncUrl } from './routing.js';
 
 /** Re-applies the .drill-root class after buildCytoscape() recreates the instance. */
 export function restoreDrillRootStyle() {
-  if (state.drillNodeId)
-    state.cy?.$id(state.drillNodeId).addClass("drill-root");
+  if (state.drillNodeId) {
+    state.cy?.$id(state.drillNodeId).addClass('drill-root');
+  }
 }
 
 /**
@@ -20,13 +21,13 @@ export function restoreDrillRootStyle() {
  * and syncs the URL.
  */
 export function buildDepthPicker() {
-  const picker = document.getElementById("depth-picker");
-  picker.innerHTML = "";
+  const picker = document.getElementById('depth-picker');
+  picker.innerHTML = '';
   [1, 2, 3, 4, 5].forEach((d) => {
-    const btn = document.createElement("button");
-    btn.className = "depth-btn" + (d === state.drillDepth ? " active" : "");
+    const btn = document.createElement('button');
+    btn.className = 'depth-btn' + (d === state.drillDepth ? ' active' : '');
     btn.textContent = d;
-    btn.addEventListener("click", () => {
+    btn.addEventListener('click', () => {
       state.drillDepth = d;
       buildDepthPicker();
       applyDrill();
@@ -47,14 +48,14 @@ export function buildDepthPicker() {
 export function onNodeDrill(node) {
   state.drillNodeId = node.id();
 
-  document.getElementById("drill-bar").classList.add("visible");
-  document.getElementById("drill-label").textContent = node.data("label");
+  document.getElementById('drill-bar').classList.add('visible');
+  document.getElementById('drill-label').textContent = node.data('label');
   buildDepthPicker();
   applyDrill();
 
   // Update class after applyDrill's cy.batch() completes so it isn't overridden.
-  state.cy.nodes().removeClass("drill-root");
-  state.cy.$id(state.drillNodeId).addClass("drill-root");
+  state.cy.nodes().removeClass('drill-root');
+  state.cy.$id(state.drillNodeId).addClass('drill-root');
 
   applyLayout();
   showDetail(state.drillNodeId, (targetNode) => onNodeDrill(targetNode));
@@ -67,12 +68,14 @@ export function onNodeDrill(node) {
  * fits the graph, and re-renders the table if it is active.
  */
 export function exitDrill() {
-  state.cy?.nodes().removeClass("drill-root");
-  state.drillNodeId = null;
-  state.drillVisibleIds = null;
-  document.getElementById("drill-bar").classList.remove("visible");
+  state.cy?.nodes().removeClass('drill-root');
+  state.drillNodeId = undefined;
+  state.drillVisibleIds = undefined;
+  document.getElementById('drill-bar').classList.remove('visible');
   applyVisibility();
   fitGraph();
-  if (state.currentView === "table") renderTable();
+  if (state.currentView === 'table') {
+    renderTable();
+  }
   syncUrl();
 }

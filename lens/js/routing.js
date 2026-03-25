@@ -3,7 +3,7 @@
 // Single source of truth: syncUrl() reads current state and updates the address
 // bar via history.replaceState. Call it whenever any URL-reflected state changes.
 
-import { state } from "./state.js";
+import { state } from './state.js';
 
 /**
  * Serialises the current application state into the URL query string and
@@ -20,8 +20,9 @@ import { state } from "./state.js";
 export function syncUrl() {
   const parts = [];
 
-  if (state.currentModelId)
+  if (state.currentModelId) {
     parts.push(`model=${encodeURIComponent(state.currentModelId)}`);
+  }
 
   if (state.drillNodeId) {
     parts.push(`entity=${encodeURIComponent(state.drillNodeId)}`);
@@ -32,43 +33,46 @@ export function syncUrl() {
   const allETypes = [...new Set(state.allElements.map((e) => e.type))];
   const activeE = allETypes.filter((type) => state.activeElemTypes.has(type));
   if (activeE.length < allETypes.length) {
-    parts.push(`entities=${activeE.map(encodeURIComponent).join(",")}`);
+    parts.push(`entities=${activeE.map(encodeURIComponent).join(',')}`);
   }
 
   // relationships — active (visible) types; omitted when all types are visible
   const allRTypes = [...new Set(state.allRelations.map((r) => r.type))];
   const activeR = allRTypes.filter((type) => state.activeRelTypes.has(type));
   if (activeR.length < allRTypes.length) {
-    parts.push(`relationships=${activeR.map(encodeURIComponent).join(",")}`);
+    parts.push(`relationships=${activeR.map(encodeURIComponent).join(',')}`);
   }
 
   // view — only when table is active
-  if (state.currentView === "table") parts.push("view=table");
+  if (state.currentView === 'table') {
+    parts.push('view=table');
+  }
 
-  const q = parts.join("&");
-  history.replaceState(null, "", location.pathname + (q ? "?" + q : ""));
+  const q = parts.join('&');
+  // eslint-disable-next-line unicorn/no-null
+  history.replaceState(null, '', location.pathname + (q ? '?' + q : ''));
 }
 
 /**
  * Reads and returns the recognised URL query parameters.
  *
  * @returns {{
- *   modelId: string|null,
- *   entityId: string|null,
- *   depth: number|null,
- *   entities: string|null,
- *   relationships: string|null,
- *   view: string|null
+ *   modelId: string|undefined,
+ *   entityId: string|undefined,
+ *   depth: number|undefined,
+ *   entities: string|undefined,
+ *   relationships: string|undefined,
+ *   view: string|undefined
  * }}
  */
 export function readUrlParams() {
   const sp = new URLSearchParams(location.search);
   return {
-    modelId: sp.get("model"),
-    entityId: sp.get("entity"),
-    depth: sp.has("depth") ? Number(sp.get("depth")) : null,
-    entities: sp.get("entities"), // null = absent (all visible); comma-separated active types
-    relationships: sp.get("relationships"),
-    view: sp.get("view"),
+    modelId: sp.get('model'),
+    entityId: sp.get('entity'),
+    depth: sp.has('depth') ? Number(sp.get('depth')) : undefined,
+    entities: sp.get('entities') ?? undefined,
+    relationships: sp.get('relationships') ?? undefined,
+    view: sp.get('view'),
   };
 }
