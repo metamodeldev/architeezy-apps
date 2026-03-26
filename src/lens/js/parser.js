@@ -11,10 +11,17 @@
 //   • Object items with eClass → walkNode(item, currentId)
 //   • UUID string items        → edge from currentId to that UUID
 //
-// content[0] is always the model root — only its data is walked (root itself skipped).
+// Content[0] is always the model root — only its data is walked (root itself skipped).
 
 import { ECORE_NS } from './constants.js';
 import { isUUID } from './utils.js';
+
+function parseEClass(eClassStr, nsMap) {
+  const sep = eClassStr.lastIndexOf(':');
+  const ns = sep >= 0 ? eClassStr.slice(0, sep) : '';
+  const type = sep >= 0 ? eClassStr.slice(sep + 1) : eClassStr;
+  return { ns, type, fullNs: nsMap[ns] ?? ns };
+}
 
 /**
  * Parses a raw Architeezy model JSON response into graph elements and relations.
@@ -27,6 +34,7 @@ import { isUUID } from './utils.js';
  *   currentModelNs: string;
  *   modelNsMap: object;
  * }}
+ *   The parsed graph elements and relations.
  */
 export function parseModel(raw) {
   const allElements = [];
@@ -74,11 +82,7 @@ export function parseModel(raw) {
   }
 
   function walkNode(node, parentId) {
-    const eClass = node.eClass;
-    const sep = eClass.lastIndexOf(':');
-    const ns = sep >= 0 ? eClass.slice(0, sep) : '';
-    const type = sep >= 0 ? eClass.slice(sep + 1) : eClass;
-    const fullNs = modelNsMap[ns] ?? ns;
+    const { ns, type, fullNs } = parseEClass(node.eClass, modelNsMap);
 
     // Skip ecore internal key-value map entries — compare full namespace URI
     if (type === 'EStringToStringMapEntry' && fullNs === ECORE_NS) {
@@ -128,7 +132,9 @@ export function parseModel(raw) {
     walkData(d, id);
   }
 
-  roots.forEach((root) => walkData(root?.data ?? {}, undefined));
+  for (const root of roots) {
+    walkData(root?.data ?? {});
+  }
 
   return { allElements, allRelations, elemMap, currentModelNs, modelNsMap };
 }

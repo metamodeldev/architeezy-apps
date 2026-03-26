@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi, waitForLoading } from './fixtures.js';
+
+import { mockApi, test, waitForLoading } from './fixtures.js';
 
 test.describe('drill-down mode', () => {
   test.beforeEach(async ({ page }) => {

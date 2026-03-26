@@ -1,7 +1,7 @@
 // ── UI UTILITIES ───────────────────────────────────────────────────────────
 
-import { state } from './state.js';
 import { cyBg } from './graph.js';
+import { state } from './state.js';
 
 /**
  * Shows the full-screen loading overlay with the given message.
@@ -19,7 +19,8 @@ export function hideLoading() {
 }
 
 /**
- * Shows the full-screen error panel (used only when no model is loaded yet). Also hides the loading overlay.
+ * Shows the full-screen error panel (used only when no model is loaded yet). Also hides the loading
+ * overlay.
  *
  * @param {string} msg - Error message to display.
  */
@@ -30,8 +31,8 @@ export function showError(msg) {
 }
 
 /**
- * Shows a dismissible toast notification when a model load fails but a previous model is still displayed.
- * Auto-dismisses after 7 s.
+ * Shows a dismissible toast notification when a model load fails but a previous model is still
+ * displayed. Auto-dismisses after 7 s.
  *
  * @param {string} msg - Error message to display in the toast.
  */
@@ -63,7 +64,8 @@ export function toggleSection(id) {
 // ── VIEW SWITCHING ─────────────────────────────────────────────────────────
 
 /**
- * Switches between the graph and table views. Updates tab button active states and element visibility.
+ * Switches between the graph and table views. Updates tab button active states and element
+ * visibility.
  *
  * @param {'graph' | 'table'} view - Target view.
  * @param {Function | null} afterSwitch - Optional callback invoked after switching to table view.
@@ -84,16 +86,20 @@ export function switchView(view, afterSwitch) {
 // ── THEME ──────────────────────────────────────────────────────────────────
 
 /**
- * Applies a colour theme globally and persists the choice to localStorage. Also refreshes the Cytoscape edge label
- * background to match the new canvas colour.
+ * Applies a colour theme globally and persists the choice to localStorage. Also refreshes the
+ * Cytoscape edge label background to match the new canvas colour.
  *
  * @param {'dark' | 'light' | 'system'} theme - Theme name.
  */
 export function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem('architeezyTheme', theme);
-  document.querySelectorAll('.theme-btn').forEach((b) => b.classList.toggle('active', b.id === `theme-btn-${theme}`));
+  for (const b of document.querySelectorAll('.theme-btn')) {
+    b.classList.toggle('active', b.id === `theme-btn-${theme}`);
+  }
   if (state.cy) {
-    requestAnimationFrame(() => state.cy.style().selector('edge').style('text-background-color', cyBg()).update());
+    requestAnimationFrame(() =>
+      state.cy.style().selector('edge').style('text-background-color', cyBg()).update(),
+    );
   }
 }

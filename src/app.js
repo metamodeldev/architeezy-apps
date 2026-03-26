@@ -37,10 +37,12 @@ const STRINGS = {
 };
 
 /**
- * Returns the localised string for `key` in the active locale. Falls back to English, then to the key itself.
+ * Returns the localised string for `key` in the active locale. Falls back to English, then to the
+ * key itself.
  *
  * @param {string} key - String key from the STRINGS map.
- * @returns {string | object}
+ * @returns {string | object} The localised string or nested object for the
+ * given key.
  */
 function t(key) {
   return (STRINGS[LANG] ?? STRINGS.en)[key] ?? STRINGS.en[key] ?? key;
@@ -69,7 +71,7 @@ document.getElementById('theme-btn-system').title = t('themeSystem');
 const grid = document.getElementById('app-grid');
 const appStrings = t('apps');
 
-APPS.forEach(({ id, href, img }) => {
+for (const { id, href, img } of APPS) {
   const strings = appStrings[id] ?? { name: id, description: '' };
   const a = document.createElement('a');
 
@@ -82,26 +84,26 @@ APPS.forEach(({ id, href, img }) => {
     <div class="card-desc">${strings.description}</div>
     <div class="card-cta">${t('openCta')}</div>
   `;
-  grid.appendChild(a);
-});
+  grid.append(a);
+}
 
 // ── Theme ─────────────────────────────────────────────────────────────
 const STORAGE_KEY = 'architeezyTheme';
 
 /**
- * Applies a colour theme to the page and persists the choice to localStorage. Updates the active state of all
- * `.theme-btn` elements.
+ * Applies a colour theme to the page and persists the choice to localStorage. Updates the active
+ * state of all `.theme-btn` elements.
  *
  * @param {'dark' | 'light' | 'system'} theme - Theme name.
  */
 function setTheme(theme) {
   document.documentElement.dataset.theme = theme;
   localStorage.setItem(STORAGE_KEY, theme);
-  document.querySelectorAll('.theme-btn').forEach((btn) => {
+  for (const btn of document.querySelectorAll('.theme-btn')) {
     btn.classList.toggle('active', btn.id === `theme-btn-${theme}`);
-  });
+  }
 }
 
-window.setTheme = setTheme;
+globalThis.setTheme = setTheme;
 
 setTheme(localStorage.getItem(STORAGE_KEY) ?? 'system');

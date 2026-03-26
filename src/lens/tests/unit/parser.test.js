@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { parseModel } from '../../js/parser.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -38,12 +37,12 @@ describe('modelNsMap', () => {
   it('is returned as-is when present', () => {
     const ns = { a: 'http://a', b: 'http://b' };
     const { modelNsMap } = parseModel({ ns, content: [] });
-    expect(modelNsMap).toEqual(ns);
+    expect(modelNsMap).toStrictEqual(ns);
   });
 
   it('defaults to empty object when ns is absent', () => {
     const { modelNsMap } = parseModel({ content: [] });
-    expect(modelNsMap).toEqual({});
+    expect(modelNsMap).toStrictEqual({});
   });
 });
 
@@ -63,7 +62,12 @@ describe('graph nodes (rule 3)', () => {
     };
     const { allElements, allRelations } = parseModel(raw);
     expect(allElements).toHaveLength(1);
-    expect(allElements[0]).toMatchObject({ id: 'e1', type: 'Element', ns: 'ns', name: 'Foo' });
+    expect(allElements[0]).toMatchObject({
+      id: 'e1',
+      type: 'Element',
+      ns: 'ns',
+      name: 'Foo',
+    });
     expect(allRelations).toHaveLength(0);
   });
 
@@ -73,7 +77,10 @@ describe('graph nodes (rule 3)', () => {
         {
           eClass: 'ns:Root',
           data: {
-            items: [node('ns:A', 'a1', { label: 'LabelA' }), node('ns:B', 'b1', { title: 'TitleB' })],
+            items: [
+              node('ns:A', 'a1', { label: 'LabelA' }),
+              node('ns:B', 'b1', { title: 'TitleB' }),
+            ],
           },
         },
       ],
@@ -137,7 +144,7 @@ describe('graph nodes (rule 3)', () => {
 
   it('does NOT set parent when containing node is a relation, not an element', () => {
     // Rule 1 edge acts as parentId for recursion, but since it is not in elemMap,
-    // child nodes inside it must have parent = undefined.
+    // Child nodes inside it must have parent = undefined.
     const raw = {
       content: [
         {
@@ -150,7 +157,7 @@ describe('graph nodes (rule 3)', () => {
                 data: {
                   source: 'src-0000000',
                   target: 'tgt-0000000',
-                  // embedded node inside the edge
+                  // Embedded node inside the edge
                   extras: [node('ns:Label', 'lbl1')],
                 },
               },
@@ -174,7 +181,13 @@ describe('standalone edges (rule 1)', () => {
         {
           eClass: 'ns:Root',
           data: {
-            rels: [node('ns:Flow', 'r1', { source: 'src-0000000', target: 'tgt-0000000', name: 'flow' })],
+            rels: [
+              node('ns:Flow', 'r1', {
+                source: 'src-0000000',
+                target: 'tgt-0000000',
+                name: 'flow',
+              }),
+            ],
           },
         },
       ],
@@ -197,7 +210,12 @@ describe('standalone edges (rule 1)', () => {
         {
           eClass: 'ns:Root',
           data: {
-            rels: [node('ns:Dep', 'r2', { source: 'aaa-00000000', target: 'bbb-00000000' })],
+            rels: [
+              node('ns:Dep', 'r2', {
+                source: 'aaa-00000000',
+                target: 'bbb-00000000',
+              }),
+            ],
           },
         },
       ],
@@ -236,9 +254,14 @@ describe('embedded reference edges (rule 2)', () => {
   });
 
   it('does NOT create an embedded ref when there is no parentId', () => {
-    // nodes at root data level have no parentId, so rule 2 should not fire
+    // Nodes at root data level have no parentId, so rule 2 should not fire
     const raw = {
-      content: [{ eClass: 'ns:Root', data: { items: [node('ns:Ref', 'r1', { target: 'x-000000' })] } }],
+      content: [
+        {
+          eClass: 'ns:Root',
+          data: { items: [node('ns:Ref', 'r1', { target: 'x-000000' })] },
+        },
+      ],
     };
     const { allRelations, allElements } = parseModel(raw);
     // No source → rule 2 requires parentId, which is undefined at top level.
@@ -250,7 +273,7 @@ describe('embedded reference edges (rule 2)', () => {
 
 // ── UUID string items → implicit edges ───────────────────────────────────────
 
-describe('UUID array items', () => {
+describe('uUID array items', () => {
   it('creates an implicit relation from parent to each UUID string', () => {
     const uuid1 = 'a1b2c3d4-0000-0000-0000-000000000001';
     const uuid2 = 'a1b2c3d4-0000-0000-0000-000000000002';
@@ -270,8 +293,16 @@ describe('UUID array items', () => {
     };
     const { allRelations } = parseModel(raw);
     expect(allRelations).toHaveLength(2);
-    expect(allRelations[0]).toMatchObject({ type: 'usedBy', source: 'comp1', target: uuid1 });
-    expect(allRelations[1]).toMatchObject({ type: 'usedBy', source: 'comp1', target: uuid2 });
+    expect(allRelations[0]).toMatchObject({
+      type: 'usedBy',
+      source: 'comp1',
+      target: uuid1,
+    });
+    expect(allRelations[1]).toMatchObject({
+      type: 'usedBy',
+      source: 'comp1',
+      target: uuid2,
+    });
   });
 
   it('ignores non-UUID strings in arrays', () => {
@@ -292,7 +323,7 @@ describe('UUID array items', () => {
 
 // ── EStringToStringMapEntry filtering ────────────────────────────────────────
 
-describe('EStringToStringMapEntry filtering', () => {
+describe('eStringToStringMapEntry filtering', () => {
   it('skips entries with ecore EStringToStringMapEntry type', () => {
     const ECORE_NS_PREFIX = 'ecore';
     const raw = {
@@ -302,7 +333,11 @@ describe('EStringToStringMapEntry filtering', () => {
           eClass: 'ns:Root',
           data: {
             entries: [
-              { eClass: `${ECORE_NS_PREFIX}:EStringToStringMapEntry`, id: 'skip1', data: {} },
+              {
+                eClass: `${ECORE_NS_PREFIX}:EStringToStringMapEntry`,
+                id: 'skip1',
+                data: {},
+              },
               node('ns:Real', 'real1'),
             ],
           },
@@ -321,7 +356,13 @@ describe('EStringToStringMapEntry filtering', () => {
         {
           eClass: 'ns:Root',
           data: {
-            entries: [{ eClass: 'other:EStringToStringMapEntry', id: 'kept1', data: {} }],
+            entries: [
+              {
+                eClass: 'other:EStringToStringMapEntry',
+                id: 'kept1',
+                data: {},
+              },
+            ],
           },
         },
       ],
@@ -332,6 +373,12 @@ describe('EStringToStringMapEntry filtering', () => {
 });
 
 // ── synthetic IDs ─────────────────────────────────────────────────────────────
+
+function syntheticIdsInput() {
+  return {
+    content: [{ eClass: 'ns:Root', data: { items: [{ eClass: 'ns:A', data: {} }] } }],
+  };
+}
 
 describe('synthetic IDs', () => {
   it('assigns synthetic _0, _1, … IDs to nodes without an id field', () => {
@@ -354,11 +401,8 @@ describe('synthetic IDs', () => {
   });
 
   it('resets counter between parseModel calls', () => {
-    function input() {
-      return { content: [{ eClass: 'ns:Root', data: { items: [{ eClass: 'ns:A', data: {} }] } }] };
-    }
-    const first = parseModel(input());
-    const second = parseModel(input());
+    const first = parseModel(syntheticIdsInput());
+    const second = parseModel(syntheticIdsInput());
     expect(first.allElements[0].id).toBe('_0');
     expect(second.allElements[0].id).toBe('_0');
   });
@@ -368,19 +412,25 @@ describe('synthetic IDs', () => {
 
 describe('purity', () => {
   it('does not mutate the input object', () => {
-    const raw = { content: [{ eClass: 'ns:Root', data: { items: [node('ns:E', 'e1')] } }] };
+    const raw = {
+      content: [{ eClass: 'ns:Root', data: { items: [node('ns:E', 'e1')] } }],
+    };
     const before = JSON.stringify(raw);
     parseModel(raw);
     expect(JSON.stringify(raw)).toBe(before);
   });
 
   it('two calls with different inputs return independent results', () => {
-    const rawA = { content: [{ eClass: 'ns:Root', data: { items: [node('ns:A', 'a1')] } }] };
-    const rawB = { content: [{ eClass: 'ns:Root', data: { items: [node('ns:B', 'b1')] } }] };
+    const rawA = {
+      content: [{ eClass: 'ns:Root', data: { items: [node('ns:A', 'a1')] } }],
+    };
+    const rawB = {
+      content: [{ eClass: 'ns:Root', data: { items: [node('ns:B', 'b1')] } }],
+    };
     const a = parseModel(rawA);
     const b = parseModel(rawB);
-    expect(a.allElements.map((e) => e.id)).toEqual(['a1']);
-    expect(b.allElements.map((e) => e.id)).toEqual(['b1']);
+    expect(a.allElements.map((e) => e.id)).toStrictEqual(['a1']);
+    expect(b.allElements.map((e) => e.id)).toStrictEqual(['b1']);
   });
 });
 
@@ -401,9 +451,14 @@ describe('edge cases', () => {
 
   it('skips non-array properties', () => {
     const raw = {
-      content: [{ eClass: 'ns:Root', data: { items: [node('ns:E', 'e1', { name: 'X', count: 5 })] } }],
+      content: [
+        {
+          eClass: 'ns:Root',
+          data: { items: [node('ns:E', 'e1', { name: 'X', count: 5 })] },
+        },
+      ],
     };
-    // count is not an array — should not throw or produce spurious edges
+    // Count is not an array — should not throw or produce spurious edges
     const { allElements, allRelations } = parseModel(raw);
     expect(allElements).toHaveLength(1);
     expect(allRelations).toHaveLength(0);

@@ -1,14 +1,14 @@
 // ── GRAPH STYLES & LABEL MEASUREMENT ───────────────────────────────────────
 //
 // Separated from graph.js so the Cytoscape style array and the label-size
-// helper can be read and tested independently of the graph lifecycle code.
+// Helper can be read and tested independently of the graph lifecycle code.
 
-import { LABEL_WRAP_W, LABEL_OUTLINE } from './constants.js';
+import { LABEL_OUTLINE, LABEL_WRAP_W } from './constants.js';
 
 const NODE_FONT_FAMILY = 'system-ui, -apple-system, sans-serif';
 const LINE_H = 13; // 10 px font + 3 px leading
-const H_PAD = 10; // horizontal padding inside a node box
-const V_PAD = 6; // vertical padding inside a node box
+const H_PAD = 10; // Horizontal padding inside a node box
+const V_PAD = 6; // Vertical padding inside a node box
 
 // ── LABEL MEASUREMENT ──────────────────────────────────────────────────────
 
@@ -51,20 +51,30 @@ function wrapLines(span, words, maxW) {
 }
 
 /**
- * Creates a temporary off-screen DOM span for measuring node label dimensions. The span matches the Cytoscape node
- * label font exactly. Call destroy() when all measurements are done to remove the span from the DOM.
+ * Creates a temporary off-screen DOM span for measuring node label dimensions. The span matches the
+ * Cytoscape node label font exactly. Call destroy() when all measurements are done to remove the
+ * span from the DOM.
  *
- * @returns {{ labelSize(text: string): { nw: number; nh: number }; destroy(): void }}
+ * @returns {{
+ *   labelSize(text: string): { nw: number; nh: number };
+ *   destroy(): void;
+ * }}
+ *   The label measurer object.
  */
 export function createLabelMeasurer() {
   const span = document.createElement('span');
   span.style.cssText =
     'position:absolute;top:-9999px;left:-9999px;visibility:hidden;' +
     `white-space:nowrap;font-size:10px;font-family:${NODE_FONT_FAMILY};`;
-  document.body.appendChild(span);
+  document.body.append(span);
 
   return {
-    /** Returns the pixel width/height a Cytoscape node needs to fit `text`. */
+    /**
+     * Returns the pixel width/height a Cytoscape node needs to fit `text`.
+     *
+     * @param {string} text - The label text to measure.
+     * @returns {{ nw: number; nh: number }} The computed node width and height.
+     */
     labelSize(text) {
       const words = String(text || '').split(/\s+/);
       const lines = wrapLines(span, words, LABEL_WRAP_W);
@@ -77,30 +87,36 @@ export function createLabelMeasurer() {
     },
     /** Removes the measurement span from the DOM. */
     destroy() {
-      document.body.removeChild(span);
+      span.remove();
     },
   };
 }
 
 // ── THEME HELPER ───────────────────────────────────────────────────────────
 
-/** Returns the Cytoscape canvas background color from the active CSS theme variable. */
+/**
+ * Returns the Cytoscape canvas background color from the active CSS theme variable.
+ *
+ * @returns {string} The CSS color value for the canvas background.
+ */
 export function cyBg() {
   return getComputedStyle(document.documentElement).getPropertyValue('--cy-bg').trim() || '#12172b';
 }
 
 // ── CYTOSCAPE STYLE ARRAY ──────────────────────────────────────────────────
 
-/** Builds and returns the full Cytoscape style array for the graph. */
+/**
+ * Builds and returns the full Cytoscape style array for the graph.
+ *
+ * @returns {Array} The Cytoscape style array.
+ */
 export function buildCyStyles() {
   return [
     {
       selector: 'node',
       style: {
         'label': 'data(label)',
-        'background-color': 'data(color)',
         'color': '#fff',
-        'text-outline-color': 'data(color)',
         'text-outline-width': LABEL_OUTLINE,
         'font-size': '10px',
         'font-family': NODE_FONT_FAMILY,
@@ -109,10 +125,19 @@ export function buildCyStyles() {
         'text-halign': 'center',
         'text-valign': 'center',
         'text-wrap': 'wrap',
-        'text-max-width': `${LABEL_WRAP_W}px`, // keep in sync with LABEL_WRAP_W
+        'text-max-width': `${LABEL_WRAP_W}px`, // Keep in sync with LABEL_WRAP_W
         'min-zoomed-font-size': 5,
         'border-width': 1,
         'border-color': 'rgba(255,255,255,0.18)',
+      },
+    },
+    {
+      // Only apply color mappings to nodes that have the `color` data field.
+      // Parent/compound nodes have no color and would trigger a Cytoscape warning.
+      selector: 'node[color]',
+      style: {
+        'background-color': 'data(color)',
+        'text-outline-color': 'data(color)',
       },
     },
     {
@@ -129,15 +154,15 @@ export function buildCyStyles() {
         'text-halign': 'center',
         'text-margin-y': 6,
         'text-wrap': 'wrap',
-        'text-max-width': `${LABEL_WRAP_W}px`, // updated per-node after layout
-        'padding-top': '50px', // room for up to ~3 label lines
+        'text-max-width': `${LABEL_WRAP_W}px`, // Updated per-node after layout
+        'padding-top': '50px', // Room for up to ~3 label lines
         'padding-right': '12px',
         'padding-bottom': '12px',
         'padding-left': '12px',
         'background-opacity': 0.12,
         'border-style': 'dashed',
         'border-width': 2,
-        'min-width': 60, // stay visible even when all children are hidden
+        'min-width': 60, // Stay visible even when all children are hidden
         'min-height': 30,
       },
     },
@@ -171,7 +196,7 @@ export function buildCyStyles() {
         'font-size': '8px',
         'color': '#aaa',
         'text-outline-width': 0,
-        // cyBg() reads the active CSS variable so the label background matches the canvas.
+        // CyBg() reads the active CSS variable so the label background matches the canvas.
         'text-background-color': cyBg(),
         'text-background-opacity': 0.7,
         'text-background-padding': '2px',

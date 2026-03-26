@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { buildStateQuery } from '../../js/routing.js';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -11,7 +10,12 @@ function rel(type) {
   return { type };
 }
 
-/** Minimal snapshot with all types visible and no drill/view state. */
+/**
+ * Minimal snapshot with all types visible and no drill/view state.
+ *
+ * @param {object} overrides - Optional property overrides for the snapshot.
+ * @returns {object} The base state snapshot object.
+ */
 function base(overrides = {}) {
   return {
     currentModelId: undefined,
@@ -79,15 +83,19 @@ describe('buildStateQuery — drill', () => {
 describe('buildStateQuery — entities', () => {
   it('omits entities= when all element types are active', () => {
     const elements = [elem('A'), elem('B'), elem('A')];
-    const q = buildStateQuery(base({ allElements: elements, activeElemTypes: new Set(['A', 'B']) }));
+    const q = buildStateQuery(
+      base({ allElements: elements, activeElemTypes: new Set(['A', 'B']) }),
+    );
     expect(q).not.toContain('entities');
   });
 
   it('includes entities= listing only the active types when some are hidden', () => {
     const elements = [elem('A'), elem('B'), elem('C')];
-    const q = buildStateQuery(base({ allElements: elements, activeElemTypes: new Set(['A', 'C']) }));
+    const q = buildStateQuery(
+      base({ allElements: elements, activeElemTypes: new Set(['A', 'C']) }),
+    );
     const sp = new URLSearchParams(q);
-    expect(sp.get('entities')?.split(',')).toEqual(expect.arrayContaining(['A', 'C']));
+    expect(sp.get('entities')?.split(',')).toStrictEqual(expect.arrayContaining(['A', 'C']));
     expect(sp.get('entities')?.split(',')).not.toContain('B');
   });
 
@@ -112,7 +120,9 @@ describe('buildStateQuery — entities', () => {
 
   it('percent-encodes element type names', () => {
     const elements = [elem('Type A'), elem('Type B')];
-    const q = buildStateQuery(base({ allElements: elements, activeElemTypes: new Set(['Type A']) }));
+    const q = buildStateQuery(
+      base({ allElements: elements, activeElemTypes: new Set(['Type A']) }),
+    );
     expect(q).toContain('Type%20A');
   });
 });
@@ -122,7 +132,12 @@ describe('buildStateQuery — entities', () => {
 describe('buildStateQuery — relationships', () => {
   it('omits relationships= when all relation types are active', () => {
     const relations = [rel('Flow'), rel('Use')];
-    const q = buildStateQuery(base({ allRelations: relations, activeRelTypes: new Set(['Flow', 'Use']) }));
+    const q = buildStateQuery(
+      base({
+        allRelations: relations,
+        activeRelTypes: new Set(['Flow', 'Use']),
+      }),
+    );
     expect(q).not.toContain('relationships');
   });
 
@@ -169,7 +184,7 @@ describe('buildStateQuery — combinations', () => {
       currentView: 'table',
     });
     const keys = [...new URLSearchParams(q).keys()];
-    expect(keys).toEqual(['model', 'entity', 'depth', 'entities', 'relationships', 'view']);
+    expect(keys).toStrictEqual(['model', 'entity', 'depth', 'entities', 'relationships', 'view']);
   });
 
   it('returns only model= when only a model is loaded with defaults', () => {

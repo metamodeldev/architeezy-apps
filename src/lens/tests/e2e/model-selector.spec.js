@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi } from './fixtures.js';
+
+import { mockApi, test } from './fixtures.js';
 
 test.describe('model selector', () => {
   test('opens automatically when no model is saved', async ({ page }) => {

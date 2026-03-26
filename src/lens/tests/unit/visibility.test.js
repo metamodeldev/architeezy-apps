@@ -1,5 +1,4 @@
-import { describe, it, expect } from 'vitest';
-import { computeVisRelCounts, computeDrillBfs } from '../../js/visibility.js';
+import { computeDrillBfs, computeVisRelCounts } from '../../js/visibility.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,7 +20,7 @@ function elemMap(...nodes) {
 
 // ── computeVisRelCounts ───────────────────────────────────────────────────────
 
-describe('computeVisRelCounts', () => {
+describe(computeVisRelCounts, () => {
   it('counts relations when both endpoint types are active', () => {
     const map = elemMap(node('a', 'Actor'), node('b', 'System'));
     const counts = computeVisRelCounts({
@@ -30,7 +29,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['Actor', 'System']),
       drillVisibleIds: undefined,
     });
-    expect(counts).toEqual({ Uses: 1 });
+    expect(counts).toStrictEqual({ Uses: 1 });
   });
 
   it('excludes relation when source type is inactive', () => {
@@ -41,7 +40,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['System']), // Actor inactive
       drillVisibleIds: undefined,
     });
-    expect(counts).toEqual({});
+    expect(counts).toStrictEqual({});
   });
 
   it('excludes relation when target type is inactive', () => {
@@ -52,7 +51,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['Actor']), // System inactive
       drillVisibleIds: undefined,
     });
-    expect(counts).toEqual({});
+    expect(counts).toStrictEqual({});
   });
 
   it('excludes relation when source is not in elemMap (edge to non-element)', () => {
@@ -63,7 +62,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['System']),
       drillVisibleIds: undefined,
     });
-    expect(counts).toEqual({});
+    expect(counts).toStrictEqual({});
   });
 
   it('excludes relation when target is not in elemMap', () => {
@@ -74,7 +73,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['Actor']),
       drillVisibleIds: undefined,
     });
-    expect(counts).toEqual({});
+    expect(counts).toStrictEqual({});
   });
 
   it('with drillVisibleIds: excludes relation whose source is outside drill scope', () => {
@@ -85,7 +84,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['Actor', 'System']),
       drillVisibleIds: new Set(['b']), // 'a' not in scope
     });
-    expect(counts).toEqual({});
+    expect(counts).toStrictEqual({});
   });
 
   it('with drillVisibleIds: excludes relation whose target is outside drill scope', () => {
@@ -96,7 +95,7 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['Actor', 'System']),
       drillVisibleIds: new Set(['a']), // 'b' not in scope
     });
-    expect(counts).toEqual({});
+    expect(counts).toStrictEqual({});
   });
 
   it('with drillVisibleIds: counts relation when both endpoints are in scope', () => {
@@ -107,24 +106,33 @@ describe('computeVisRelCounts', () => {
       activeElemTypes: new Set(['Actor', 'System']),
       drillVisibleIds: new Set(['a', 'b']),
     });
-    expect(counts).toEqual({ Uses: 1 });
+    expect(counts).toStrictEqual({ Uses: 1 });
   });
 
   it('counts multiple relation types and accumulates correctly', () => {
     const map = elemMap(node('a', 'Actor'), node('b', 'System'), node('c', 'DB'));
     const counts = computeVisRelCounts({
-      allRelations: [rel('r1', 'Uses', 'a', 'b'), rel('r2', 'Uses', 'b', 'c'), rel('r3', 'Dep', 'a', 'c')],
+      allRelations: [
+        rel('r1', 'Uses', 'a', 'b'),
+        rel('r2', 'Uses', 'b', 'c'),
+        rel('r3', 'Dep', 'a', 'c'),
+      ],
       elemMap: map,
       activeElemTypes: new Set(['Actor', 'System', 'DB']),
       drillVisibleIds: undefined,
     });
-    expect(counts).toEqual({ Uses: 2, Dep: 1 });
+    expect(counts).toStrictEqual({ Uses: 2, Dep: 1 });
   });
 
   it('returns empty object when there are no relations', () => {
     expect(
-      computeVisRelCounts({ allRelations: [], elemMap: {}, activeElemTypes: new Set(), drillVisibleIds: undefined }),
-    ).toEqual({});
+      computeVisRelCounts({
+        allRelations: [],
+        elemMap: {},
+        activeElemTypes: new Set(),
+        drillVisibleIds: undefined,
+      }),
+    ).toStrictEqual({});
   });
 });
 
@@ -141,7 +149,7 @@ describe('computeDrillBfs — basic traversal', () => {
       activeRelTypes: new Set(),
       containmentMode: 'none',
     });
-    expect([...visibleIds]).toEqual(['root']);
+    expect([...visibleIds]).toStrictEqual(['root']);
   });
 
   it('depth 1: includes direct neighbors via active relation type', () => {
@@ -193,7 +201,7 @@ describe('computeDrillBfs — basic traversal', () => {
       rootId: 'root',
       drillDepth: 1,
       nodes: [node('root', 'A'), node('other', 'A')],
-      edges: [edge('e1', 'Uses', 'other', 'root')], // root is the target, not source
+      edges: [edge('e1', 'Uses', 'other', 'root')], // Root is the target, not source
       activeElemTypes: new Set(['A']),
       activeRelTypes: new Set(['Uses']),
       containmentMode: 'none',
@@ -226,7 +234,7 @@ describe('computeDrillBfs — type filtering', () => {
       drillDepth: 1,
       nodes: [node('root', 'Filtered'), node('nb', 'Active')],
       edges: [edge('e1', 'Uses', 'root', 'nb')],
-      activeElemTypes: new Set(['Active']), // root type 'Filtered' is inactive
+      activeElemTypes: new Set(['Active']), // Root type 'Filtered' is inactive
       activeRelTypes: new Set(['Uses']),
       containmentMode: 'none',
     });
@@ -268,9 +276,9 @@ describe('computeDrillBfs — containment edges', () => {
       rootId: 'root',
       drillDepth: 1,
       nodes: [node('root', 'A'), node('child', 'A')],
-      edges: [edge('e1', 'Contains', 'root', 'child', true)], // isContainment = true
+      edges: [edge('e1', 'Contains', 'root', 'child', true)], // IsContainment = true
       activeElemTypes: new Set(['A']),
-      activeRelTypes: new Set(), // empty — but containment is always followed
+      activeRelTypes: new Set(), // Empty — but containment is always followed
       containmentMode: 'none',
     });
     expect(visibleIds).toContain('child');
@@ -314,7 +322,7 @@ describe('computeDrillBfs — compound mode', () => {
       edges: [],
       activeElemTypes: new Set(['Group', 'Item']),
       activeRelTypes: new Set(),
-      containmentMode: 'edge', // compound links not traversed
+      containmentMode: 'edge', // Compound links not traversed
     });
     expect(visibleIds).not.toContain('parent');
   });
@@ -333,14 +341,14 @@ describe('computeDrillBfs — cycles', () => {
       activeRelTypes: new Set(['R']),
       containmentMode: 'none',
     });
-    expect(visibleIds.size).toBe(3); // all three, no duplicates
+    expect(visibleIds.size).toBe(3); // All three, no duplicates
   });
 
   it('each node appears in nodeDepth exactly once (first-visit depth wins)', () => {
     const { nodeDepth } = computeDrillBfs({
       rootId: 'a',
       drillDepth: 3,
-      // diamond: a→b, a→c, b→d, c→d
+      // Diamond: a→b, a→c, b→d, c→d
       nodes: [node('a', 'X'), node('b', 'X'), node('c', 'X'), node('d', 'X')],
       edges: [
         edge('e1', 'R', 'a', 'b'),
@@ -378,7 +386,11 @@ describe('computeDrillBfs — nodeDepth', () => {
       rootId: 'n0',
       drillDepth: 3,
       nodes: [node('n0', 'A'), node('n1', 'A'), node('n2', 'A'), node('n3', 'A')],
-      edges: [edge('e1', 'R', 'n0', 'n1'), edge('e2', 'R', 'n1', 'n2'), edge('e3', 'R', 'n2', 'n3')],
+      edges: [
+        edge('e1', 'R', 'n0', 'n1'),
+        edge('e2', 'R', 'n1', 'n2'),
+        edge('e3', 'R', 'n2', 'n3'),
+      ],
       activeElemTypes: new Set(['A']),
       activeRelTypes: new Set(['R']),
       containmentMode: 'none',

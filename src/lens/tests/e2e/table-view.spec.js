@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi, loadTestModelFromSelector } from './fixtures.js';
+
+import { loadTestModelFromSelector, mockApi, test } from './fixtures.js';
 
 test.describe('table view', () => {
   test.beforeEach(async ({ page }) => {

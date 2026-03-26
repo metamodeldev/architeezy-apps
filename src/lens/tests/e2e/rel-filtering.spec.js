@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi, loadTestModelFromSelector } from './fixtures.js';
+
+import { loadTestModelFromSelector, mockApi, test } from './fixtures.js';
 
 test.describe('relationship type filtering', () => {
   test.beforeEach(async ({ page }) => {
@@ -13,15 +14,21 @@ test.describe('relationship type filtering', () => {
   });
 
   test('unchecking a relationship type removes it from the table', async ({ page }) => {
-    const assocCheckbox = page.locator('input[data-kind="rel"][data-type="AssociationRelationship"]');
+    const assocCheckbox = page.locator(
+      'input[data-kind="rel"][data-type="AssociationRelationship"]',
+    );
     await assocCheckbox.uncheck();
 
-    await expect(page.locator('#table-body tr').filter({ hasText: 'AssociationRelationship' })).toHaveCount(0);
+    await expect(
+      page.locator('#table-body tr').filter({ hasText: 'AssociationRelationship' }),
+    ).toHaveCount(0);
     await expect(page.locator('#table-body tr')).toHaveCount(1);
   });
 
   test('re-checking a relationship type restores it in the table', async ({ page }) => {
-    const assocCheckbox = page.locator('input[data-kind="rel"][data-type="AssociationRelationship"]');
+    const assocCheckbox = page.locator(
+      'input[data-kind="rel"][data-type="AssociationRelationship"]',
+    );
     await assocCheckbox.uncheck();
     await expect(page.locator('#table-body tr')).toHaveCount(1);
 

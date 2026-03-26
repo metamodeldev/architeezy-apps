@@ -1,14 +1,15 @@
 // ── TABLE VIEW ─────────────────────────────────────────────────────────────
 
-import { state } from './state.js';
-import { elemColor, relColor, escHtml } from './utils.js';
-import { t } from './i18n.js';
-import { switchView } from './ui.js';
-import { showDetail } from './detail.js';
 import { FOCUS_ZOOM } from './constants.js';
+import { showDetail } from './detail.js';
+import { t } from './i18n.js';
+import { state } from './state.js';
+import { switchView } from './ui.js';
+import { elemColor, escHtml, relColor } from './utils.js';
 
 /**
- * Switches the active table tab (elements or relationships). Resets the sort state and re-renders the table.
+ * Switches the active table tab (elements or relationships). Resets the sort state and re-renders
+ * the table.
  *
  * @param {'elements' | 'relationships'} tab - The tab to activate.
  */
@@ -22,8 +23,8 @@ export function switchTableTab(tab) {
 }
 
 /**
- * Renders the table for the currently active tab, applying the search query from `#table-search` and the current sort
- * state.
+ * Renders the table for the currently active tab, applying the search query from `#table-search`
+ * and the current sort state.
  */
 export function renderTable() {
   const q = document.getElementById('table-search').value.toLowerCase();
@@ -45,36 +46,33 @@ export function renderTable() {
  * @returns {string} HTML for a `<tr>` containing `<th>` elements.
  */
 function thHtml(cols) {
-  return (
-    '<tr>' +
-    cols
-      .map((c, i) => {
-        const sorted = state.tableSortCol === i;
-        return `<th class="${sorted ? 'sorted' : ''}" data-col="${i}">
+  return `<tr>${cols
+    .map((c, i) => {
+      const sorted = state.tableSortCol === i;
+      return `<th class="${sorted ? 'sorted' : ''}" data-col="${i}">
       ${escHtml(c)} <span class="sort-icon">${sorted ? (state.tableSortAsc ? '▲' : '▼') : '⇅'}</span></th>`;
-      })
-      .join('') +
-    '</tr>'
-  );
+    })
+    .join('')}</tr>`;
 }
 
 /**
- * Attaches click handlers to all `<th>` elements in `#table-head` to toggle sort column and direction, then re-renders
- * the table.
+ * Attaches click handlers to all `<th>` elements in `#table-head` to toggle sort column and
+ * direction, then re-renders the table.
  */
 function bindSortClicks() {
-  document.querySelectorAll('#table-head th').forEach((th) =>
+  for (const th of document.querySelectorAll('#table-head th')) {
     th.addEventListener('click', () => {
       const col = Number(th.dataset.col);
       state.tableSortAsc = state.tableSortCol === col ? !state.tableSortAsc : true;
       state.tableSortCol = col;
       renderTable();
-    }),
-  );
+    });
+  }
 }
 
 /**
- * Sorts `rows` by column index using `getKey(row) → string`. Returns the original array if no sort column is selected.
+ * Sorts `rows` by column index using `getKey(row) → string`. Returns the original array if no sort
+ * column is selected.
  *
  * @template T
  * @param {T[]} rows - Rows to sort.
@@ -85,7 +83,7 @@ function sortRows(rows, getKey) {
   if (state.tableSortCol === undefined) {
     return rows;
   }
-  return [...rows].sort((a, b) => {
+  return [...rows].toSorted((a, b) => {
     const av = getKey(a) ?? '';
     const bv = getKey(b) ?? '';
     return state.tableSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
@@ -108,13 +106,16 @@ function updateTableCount(visible, total) {
  * @param {HTMLTableSectionElement} body - The `<tbody>` element containing rows.
  */
 function bindRowClicks(body) {
-  body.querySelectorAll('tr[data-id]').forEach((tr) => tr.addEventListener('click', () => focusNode(tr.dataset.id)));
+  for (const tr of body.querySelectorAll('tr[data-id]')) {
+    tr.addEventListener('click', () => focusNode(tr.dataset.id));
+  }
 }
 
 // ── ELEMENT TABLE ───────────────────────────────────────────────────────────
 
 /**
- * Renders the elements table filtered by `q`, respecting the active element type filter and the current drill scope.
+ * Renders the elements table filtered by `q`, respecting the active element type filter and the
+ * current drill scope.
  *
  * @param {string} q - Lowercase search query.
  * @param {HTMLElement} head - The `<thead>` element.
@@ -153,7 +154,8 @@ function renderElemsTable(q, head, body) {
 // ── RELATIONSHIP TABLE ──────────────────────────────────────────────────────
 
 /**
- * Renders the relationships table filtered by `q`, respecting active type filters and the current drill scope.
+ * Renders the relationships table filtered by `q`, respecting active type filters and the current
+ * drill scope.
  *
  * @param {string} q - Lowercase search query.
  * @param {HTMLElement} head - The `<thead>` element.
@@ -175,7 +177,10 @@ function renderRelsTable(q, head, body) {
     if (tgtType && !state.activeElemTypes.has(tgtType)) {
       return false;
     }
-    if (state.drillVisibleIds && (!state.drillVisibleIds.has(r.source) || !state.drillVisibleIds.has(r.target))) {
+    if (
+      state.drillVisibleIds &&
+      (!state.drillVisibleIds.has(r.source) || !state.drillVisibleIds.has(r.target))
+    ) {
       return false;
     }
     if (!q) {
@@ -187,7 +192,12 @@ function renderRelsTable(q, head, body) {
   });
 
   rows = sortRows(rows, (r) => {
-    const vals = [state.elemMap[r.source]?.name ?? '', r.type, state.elemMap[r.target]?.name ?? '', r.name ?? ''];
+    const vals = [
+      state.elemMap[r.source]?.name ?? '',
+      r.type,
+      state.elemMap[r.target]?.name ?? '',
+      r.name ?? '',
+    ];
     return vals[state.tableSortCol] ?? '';
   });
 
@@ -213,12 +223,13 @@ function renderRelsTable(q, head, body) {
 // ── FOCUS NODE ──────────────────────────────────────────────────────────────
 
 /**
- * Switches to the graph view, animates the camera to the node with `id`, selects it, and opens its detail panel.
+ * Switches to the graph view, animates the camera to the node with `id`, selects it, and opens its
+ * detail panel.
  *
  * @param {string} id - ID of the element to focus.
  */
 export function focusNode(id) {
-  switchView('graph', undefined);
+  switchView('graph');
   requestAnimationFrame(() => {
     state.cy?.resize();
     const node = state.cy?.$id(id);
@@ -226,9 +237,9 @@ export function focusNode(id) {
       return;
     }
     // Always zoom to FOCUS_ZOOM so the node is comfortably visible regardless
-    // of the current zoom level (whether it was very far in or out).
+    // Of the current zoom level (whether it was very far in or out).
     state.cy.animate({ center: { eles: node }, zoom: FOCUS_ZOOM }, { duration: 400 });
     node.select();
-    showDetail(id, undefined);
+    showDetail(id);
   });
 }

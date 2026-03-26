@@ -109,12 +109,12 @@ const STRINGS = {
 };
 
 /**
- * Returns the localised string for `key` in the active locale. Falls back to the English string, then to the key
- * itself. When the string is a function, calls it with any extra `args`.
+ * Returns the localised string for `key` in the active locale. Falls back to the English string,
+ * then to the key itself. When the string is a function, calls it with any extra `args`.
  *
  * @param {string} key - String key from the STRINGS map.
  * @param {...unknown} args - Arguments forwarded to function-valued strings.
- * @returns {string}
+ * @returns {string} The localised string for the given key.
  */
 export function t(key, ...args) {
   const str = (STRINGS[LANG] ?? STRINGS.en)[key] ?? STRINGS.en[key] ?? key;
@@ -122,18 +122,19 @@ export function t(key, ...args) {
 }
 
 /**
- * Applies the active locale to all i18n-annotated DOM elements: - `[data-i18n]` → sets `textContent` - `[data-i18n-ph]`
- * → sets `placeholder` - `[data-i18n-tt]` → sets `title` (tooltip)
+ * Applies the active locale to all i18n-annotated DOM elements: - `[data-i18n]` → sets
+ * `textContent` - `[data-i18n-ph]` → sets `placeholder` - `[data-i18n-tt]` → sets `title`
+ * (tooltip)
  */
 export function applyLocale() {
   document.documentElement.lang = LANG;
-  document.querySelectorAll('[data-i18n]').forEach((el) => {
+  for (const el of document.querySelectorAll('[data-i18n]')) {
     el.textContent = t(el.dataset.i18n);
-  });
-  document.querySelectorAll('[data-i18n-ph]').forEach((el) => {
+  }
+  for (const el of document.querySelectorAll('[data-i18n-ph]')) {
     el.placeholder = t(el.dataset.i18nPh);
-  });
-  document.querySelectorAll('[data-i18n-tt]').forEach((el) => {
+  }
+  for (const el of document.querySelectorAll('[data-i18n-tt]')) {
     el.title = t(el.dataset.i18nTt);
-  });
+  }
 }

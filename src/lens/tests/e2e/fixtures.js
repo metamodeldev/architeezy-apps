@@ -2,9 +2,11 @@ import { test as playwrightTest } from '@playwright/test';
 
 // ── Fixture data ──────────────────────────────────────────────────────────────
 
-export const MODEL_CONTENT_URL = 'https://architeezy.com/api/models/test/test/1/test-model/content?format=json';
+export const MODEL_CONTENT_URL =
+  'https://architeezy.com/api/models/test/test/1/test-model/content?format=json';
 
-const OTHER_CONTENT_URL = 'https://architeezy.com/api/models/test/test/1/other-model/content?format=json';
+const OTHER_CONTENT_URL =
+  'https://architeezy.com/api/models/test/test/1/other-model/content?format=json';
 
 export const MODEL_LIST = {
   _embedded: {
@@ -72,24 +74,29 @@ export const MODEL_CONTENT = {
 
 // ── API helpers ───────────────────────────────────────────────────────────────
 
-/** Registers API mocks. Pass `{ modelListStatus: 500 }` to simulate a server error. */
+/**
+ * Registers API mocks. Pass `{ modelListStatus: 500 }` to simulate a server error.
+ *
+ * @param {import('@playwright/test').Page} page - The Playwright page object.
+ * @param {{ modelListStatus?: number }} [options] - Optional configuration for mock behavior.
+ */
 export async function mockApi(page, { modelListStatus = 200 } = {}) {
   // Auth probe — 401 means anonymous; app handles this gracefully
-  await page.route('https://architeezy.com/api/users/current', (r) => r.fulfill({ status: 401, body: 'Unauthorized' }));
+  await page.route('https://architeezy.com/api/users/current', (r) =>
+    r.fulfill({ status: 401, body: 'Unauthorized' }),
+  );
 
-  if (modelListStatus !== 200) {
-    await page.route('https://architeezy.com/api/models*', (r) =>
-      r.fulfill({ status: modelListStatus, body: 'Server Error' }),
-    );
-  } else {
-    await page.route('https://architeezy.com/api/models*', (r) =>
-      r.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(MODEL_LIST),
-      }),
-    );
-  }
+  await page.route(
+    'https://architeezy.com/api/models*',
+    modelListStatus === 200
+      ? (r) =>
+          r.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify(MODEL_LIST),
+          })
+      : (r) => r.fulfill({ status: modelListStatus, body: 'Server Error' }),
+  );
 
   await page.route(`${MODEL_CONTENT_URL}*`, (r) =>
     r.fulfill({
@@ -100,14 +107,20 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
   );
 }
 
-/** Wait for the loading spinner to disappear. */
+/**
+ * Wait for the loading spinner to disappear.
+ *
+ * @param {import('@playwright/test').Page} page - The Playwright page object.
+ */
 export async function waitForLoading(page) {
   await page.locator('#loading').waitFor({ state: 'hidden', timeout: 10_000 });
 }
 
 /**
- * Load the test model by clicking its entry in the already-open model selector. Callers must ensure the modal is
- * visible before calling this.
+ * Load the test model by clicking its entry in the already-open model selector. Callers must ensure
+ * the modal is visible before calling this.
+ *
+ * @param {import('@playwright/test').Page} page - The Playwright page object.
  */
 export async function loadTestModelFromSelector(page) {
   await page.locator('.model-item', { hasText: 'Test Architecture' }).click();
@@ -126,7 +139,7 @@ export const test = playwrightTest.extend({
         const { addCoverageReport } = await import('monocart-reporter');
         await addCoverageReport([...coverage], test.info());
       } catch {
-        /* not available outside Playwright/Chromium */
+        /* Not available outside Playwright/Chromium */
       }
     },
     { scope: 'test', auto: true },

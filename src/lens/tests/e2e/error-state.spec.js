@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi } from './fixtures.js';
+
+import { mockApi, test } from './fixtures.js';
 
 test.describe('error state', () => {
   test('shows error panel when model list fetch fails', async ({ page }) => {

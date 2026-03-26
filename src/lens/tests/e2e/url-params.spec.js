@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi, waitForLoading } from './fixtures.js';
+
+import { mockApi, test, waitForLoading } from './fixtures.js';
 
 test.describe('URL params', () => {
   test('?model= auto-loads the matching model without opening the selector', async ({ page }) => {
@@ -28,12 +29,14 @@ test.describe('URL params', () => {
     await page.goto('/lens/?model=model-test&entities=ApplicationComponent');
     await waitForLoading(page);
 
-    // data-kind and data-type are attributes on the input element itself
+    // Data-kind and data-type are attributes on the input element itself
     const svcCheckbox = page.locator('input[data-kind="elem"][data-type="ApplicationService"]');
     await expect(svcCheckbox).not.toBeChecked();
   });
 
-  test('?relationships= unchecks excluded relationship types in the filter panel', async ({ page }) => {
+  test('?relationships= unchecks excluded relationship types in the filter panel', async ({
+    page,
+  }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
     await page.goto('/lens/?model=model-test&relationships=AssociationRelationship');

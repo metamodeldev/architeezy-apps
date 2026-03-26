@@ -1,16 +1,17 @@
 // ── DETAIL PANEL ───────────────────────────────────────────────────────────
 
+import { t } from './i18n.js';
 import { state } from './state.js';
 import { escHtml } from './utils.js';
-import { t } from './i18n.js';
 
 /**
- * Renders the detail panel for the element with the given `id`. Lists the element's name, type, optional documentation,
- * and all connections. Each connection item fires `drillCallback` when clicked if provided.
+ * Renders the detail panel for the element with the given `id`. Lists the element's name, type,
+ * optional documentation, and all connections. Each connection item fires `drillCallback` when
+ * clicked if provided.
  *
  * @param {string} id - ID of the element to display.
- * @param {Function | null} drillCallback - Called with the target Cytoscape node when a connection item is clicked, or
- *   null to disable drill navigation from the panel.
+ * @param {Function | null} drillCallback - Called with the target Cytoscape node when a connection
+ *   item is clicked, or null to disable drill navigation from the panel.
  */
 export function showDetail(id, drillCallback) {
   const elem = state.elemMap[id];
@@ -41,19 +42,20 @@ export function showDetail(id, drillCallback) {
     <div class="detail-conn">${connItems || `<span style="color:var(--text-muted)">${t('detailNoRelations')}</span>`}</div>`;
 
   if (drillCallback) {
-    document.querySelectorAll('.detail-conn-item[data-target]').forEach((el) =>
+    for (const el of document.querySelectorAll('.detail-conn-item[data-target]')) {
       el.addEventListener('click', () => {
         const n = state.cy?.$id(el.dataset.target);
         if (n?.length) {
           clearTimeout(state.tapTimer);
           drillCallback(n);
         }
-      }),
-    );
+      });
+    }
   }
 }
 
 /** Resets the detail panel to its empty placeholder state. */
 export function clearDetail() {
-  document.getElementById('detail-panel').innerHTML = `<div class="detail-empty">${t('detailEmpty')}</div>`;
+  document.getElementById('detail-panel').innerHTML =
+    `<div class="detail-empty">${t('detailEmpty')}</div>`;
 }

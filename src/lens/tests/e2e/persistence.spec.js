@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test';
-import { test, mockApi, loadTestModelFromSelector, waitForLoading } from './fixtures.js';
+
+import { loadTestModelFromSelector, mockApi, test, waitForLoading } from './fixtures.js';
 
 test.describe('localStorage persistence', () => {
   test('model URL is remembered and auto-loaded on the next visit', async ({ page }) => {

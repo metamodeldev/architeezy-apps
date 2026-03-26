@@ -1,23 +1,24 @@
 // ── CYTOSCAPE LIFECYCLE ─────────────────────────────────────────────────────
 
+import { FIT_PADDING, LAYOUT_ANIM_THRESHOLD, TAP_DELAY_MS } from './constants.js';
+import { buildCyStyles, createLabelMeasurer } from './graph-styles.js';
+import { t } from './i18n.js';
 import { state } from './state.js';
 import { elemColor, relColor } from './utils.js';
-import { t } from './i18n.js';
-import { buildCyStyles, createLabelMeasurer } from './graph-styles.js';
-import { TAP_DELAY_MS, LAYOUT_ANIM_THRESHOLD, FIT_PADDING } from './constants.js';
 
 // Re-export cyBg so callers (ui.js, etc.) don't need to know about graph-styles.js
 export { cyBg } from './graph-styles.js';
 
 // Tracks the AbortController for the current pointer interaction listeners so
-// that stale listeners are removed before a new set is attached on each rebuild.
+// That stale listeners are removed before a new set is attached on each rebuild.
 let _pointerController;
 
 // ── NODE & EDGE DATA BUILDERS ───────────────────────────────────────────────
 
 /**
- * Builds the Cytoscape node data array for all elements in `state.allElements`. Uses a temporary label measurer to
- * compute node dimensions; the measurer is always destroyed in the `finally` block to avoid DOM leaks.
+ * Builds the Cytoscape node data array for all elements in `state.allElements`. Uses a temporary
+ * label measurer to compute node dimensions; the measurer is always destroyed in the `finally`
+ * block to avoid DOM leaks.
  *
  * @param {Set<string>} elemIds - Set of all element IDs (used to resolve compound parents).
  * @returns {Array} Cytoscape node descriptors.
@@ -38,8 +39,8 @@ function buildNodes(elemIds) {
       };
       if (state.containmentMode === 'compound' && e.parent && elemIds.has(e.parent)) {
         data.parent = e.parent;
-        // modelParent preserves the original parent so it can be restored after
-        // the node is detached from a compound container for visibility reasons.
+        // ModelParent preserves the original parent so it can be restored after
+        // The node is detached from a compound container for visibility reasons.
         data.modelParent = e.parent;
       }
       return { group: 'nodes', data };
@@ -51,8 +52,9 @@ function buildNodes(elemIds) {
 }
 
 /**
- * Builds the Cytoscape edge data array for all relations whose both endpoints exist in `elemIds`. In "edge" containment
- * mode, also adds synthetic containment edges (filled diamond) for parent–child relationships.
+ * Builds the Cytoscape edge data array for all relations whose both endpoints exist in `elemIds`.
+ * In "edge" containment mode, also adds synthetic containment edges (filled diamond) for
+ * parent–child relationships.
  *
  * @param {Set<string>} elemIds - Set of element IDs used to filter dangling edges.
  * @returns {Array} Cytoscape edge descriptors.
@@ -75,7 +77,7 @@ function buildEdges(elemIds) {
   // Edge mode: add synthetic containment edges (parent → child) with a filled diamond.
   // Compound mode uses Cytoscape's native parent/child relationship instead.
   if (state.containmentMode === 'edge') {
-    state.allElements.forEach((e) => {
+    for (const e of state.allElements) {
       if (e.parent && elemIds.has(e.parent)) {
         edges.push({
           group: 'edges',
@@ -90,7 +92,7 @@ function buildEdges(elemIds) {
           },
         });
       }
-    });
+    }
   }
 
   return edges;
@@ -99,12 +101,13 @@ function buildEdges(elemIds) {
 // ── EVENT BINDING ───────────────────────────────────────────────────────────
 
 /**
- * Attaches Cytoscape event handlers for tap, double-tap, canvas tap, and unselect. Single-tap is debounced by
- * `TAP_DELAY_MS` to let double-tap cancel it first.
+ * Attaches Cytoscape event handlers for tap, double-tap, canvas tap, and unselect. Single-tap is
+ * debounced by `TAP_DELAY_MS` to let double-tap cancel it first.
  *
- * @param {cytoscape.Core} cy
+ * @param {cytoscape.Core} cy - The Cytoscape instance.
  * @param {function(string): void} onNodeTap - Called with the node ID on single tap.
- * @param {function(cytoscape.NodeSingular): void} onNodeDblTap - Called with the node on double tap.
+ * @param {function(cytoscape.NodeSingular): void} onNodeDblTap - Called with the node on double
+ *   tap.
  * @param {function(): void} onCanvasTap - Called when the canvas background is tapped.
  */
 function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
@@ -124,7 +127,7 @@ function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
   });
 
   // Cytoscape re-evaluates all styles after a node is deselected, which can
-  // silently drop dynamically added classes (like .drill-root). Re-assert it.
+  // Silently drop dynamically added classes (like .drill-root). Re-assert it.
   cy.on('unselect', () => {
     if (state.drillNodeId) {
       cy.$id(state.drillNodeId).addClass('drill-root');
@@ -135,11 +138,11 @@ function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
 // ── POINTER INTERACTIONS ────────────────────────────────────────────────────
 
 /**
- * Attaches native DOM event listeners to the Cytoscape container for: - Middle-mouse button panning - Wheel zoom
- * (cursor-centred, 1.3× per notch)
+ * Attaches native DOM event listeners to the Cytoscape container for: - Middle-mouse button panning
+ * - Wheel zoom (cursor-centred, 1.3× per notch)
  *
- * These are handled outside Cytoscape's event system to avoid the `wheelSensitivity` deprecation warning and to gain
- * precise zoom control.
+ * These are handled outside Cytoscape's event system to avoid the `wheelSensitivity` deprecation
+ * warning and to gain precise zoom control.
  */
 function setupPointerInteractions() {
   // Abort any listeners from a previous buildCytoscape call so they don't stack.
@@ -180,7 +183,7 @@ function setupPointerInteractions() {
   container.addEventListener('auxclick', (e) => e.preventDefault(), { signal });
 
   // Custom wheel zoom — captured before Cytoscape to avoid the "wheelSensitivity" warning
-  // while keeping precise control over the zoom factor (1.3× per notch, cursor-centred).
+  // While keeping precise control over the zoom factor (1.3× per notch, cursor-centred).
   container.addEventListener(
     'wheel',
     (e) => {
@@ -190,7 +193,10 @@ function setupPointerInteractions() {
       e.preventDefault();
       e.stopImmediatePropagation();
       const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-      const level = Math.max(state.cy.minZoom(), Math.min(state.cy.maxZoom(), state.cy.zoom() * factor));
+      const level = Math.max(
+        state.cy.minZoom(),
+        Math.min(state.cy.maxZoom(), state.cy.zoom() * factor),
+      );
       state.cy.zoom({
         level,
         renderedPosition: { x: e.offsetX, y: e.offsetY },
@@ -203,8 +209,8 @@ function setupPointerInteractions() {
 // ── PUBLIC API ──────────────────────────────────────────────────────────────
 
 /**
- * Destroys any existing Cytoscape instance and creates a new one from current state. Binds node/edge/canvas tap
- * handlers and sets up pointer interactions.
+ * Destroys any existing Cytoscape instance and creates a new one from current state. Binds
+ * node/edge/canvas tap handlers and sets up pointer interactions.
  *
  * @param {{
  *   onNodeTap: function(string): void,
@@ -221,6 +227,7 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
 
   const elemIds = new Set(state.allElements.map((e) => e.id));
 
+  // oxlint-disable-next-line no-undef
   state.cy = cytoscape({
     container: document.getElementById('cy'),
     elements: { nodes: buildNodes(elemIds), edges: buildEdges(elemIds) },
@@ -237,9 +244,9 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
 }
 
 /**
- * Runs the layout selected in `#layout-select` on all currently visible elements. Animates only when the visible node
- * count is below `LAYOUT_ANIM_THRESHOLD`. After layout, updates compound node label widths to match their rendered
- * size.
+ * Runs the layout selected in `#layout-select` on all currently visible elements. Animates only
+ * when the visible node count is below `LAYOUT_ANIM_THRESHOLD`. After layout, updates compound node
+ * label widths to match their rendered size.
  */
 export function applyLayout() {
   if (!state.cy) {
@@ -247,7 +254,7 @@ export function applyLayout() {
   }
   const name = document.getElementById('layout-select').value;
   // Run layout only on visible elements — on large models hidden nodes would
-  // dominate computation and produce wrong positions for the visible subset.
+  // Dominate computation and produce wrong positions for the visible subset.
   const eles = state.cy.elements(':visible');
   // Animate only for smaller graphs; animation is distracting on large ones.
   const anim = eles.nodes().length < LAYOUT_ANIM_THRESHOLD;
@@ -296,7 +303,7 @@ export function applyLayout() {
       padding: 40,
       randomize: true,
       componentSpacing: 80,
-      nodeRepulsion: () => 700000,
+      nodeRepulsion: () => 700_000,
       edgeElasticity: () => 100,
       gravity: 80,
       numIter: 1000,
@@ -334,10 +341,10 @@ export function applyLayout() {
   const layoutInst = eles.layout(cfgMap[name] ?? { name, fit: true, padding: 30 });
   layoutInst.on('layoutstop', () => {
     // After layout, set text-max-width on compound nodes to match their actual rendered width
-    // so long labels wrap correctly rather than overflowing the container box.
-    state.cy.nodes(':parent:visible').forEach((n) => {
-      n.style('text-max-width', Math.max(n.width() - 24, 40) + 'px');
-    });
+    // So long labels wrap correctly rather than overflowing the container box.
+    for (const n of state.cy.nodes(':parent:visible')) {
+      n.style('text-max-width', `${Math.max(n.width() - 24, 40)}px`);
+    }
   });
   layoutInst.run();
 }
@@ -348,8 +355,8 @@ export function fitGraph() {
 }
 
 /**
- * Updates the stats bar (#stat-nodes, #stat-edges, #stat-visible) based on the current visible element and relationship
- * counts. In drill mode, shows visible/total for both nodes and edges.
+ * Updates the stats bar (#stat-nodes, #stat-edges, #stat-visible) based on the current visible
+ * element and relationship counts. In drill mode, shows visible/total for both nodes and edges.
  */
 export function updateStats() {
   if (!state.cy) {

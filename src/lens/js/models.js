@@ -1,13 +1,14 @@
 // ── MODEL LIST ─────────────────────────────────────────────────────────────
 
-import { state } from './state.js';
 import { apiFetch } from './auth.js';
-import { t } from './i18n.js';
-import { escHtml, modelTypeLabel, modelContentUrl } from './utils.js';
 import { MODELS_API } from './constants.js';
+import { t } from './i18n.js';
+import { state } from './state.js';
+import { escHtml, modelContentUrl, modelTypeLabel } from './utils.js';
 
 /**
- * Fetches the full paginated model list from the API. Follows `_links.next` until all pages are consumed.
+ * Fetches the full paginated model list from the API. Follows `_links.next` until all pages are
+ * consumed.
  *
  * @returns {Promise<Array>} Resolved list of model objects.
  * @throws {Error} If any page request fails or the list is empty.
@@ -47,8 +48,8 @@ export function closeModelSelector() {
 }
 
 /**
- * Renders the model list inside the modal, filtered by `query`. Items without a resolvable content URL are shown as
- * disabled.
+ * Renders the model list inside the modal, filtered by `query`. Items without a resolvable content
+ * URL are shown as disabled.
  *
  * @param {Array} models - List of model objects from the API.
  * @param {string} query - Filter string (matched against name, type label, and description).
@@ -59,7 +60,7 @@ export function renderModelList(models, query) {
   const currentUrl = localStorage.getItem('architeezyLensModelUrl');
   container.innerHTML = '';
 
-  models.forEach((model) => {
+  for (const model of models) {
     const typeLabel = modelTypeLabel(model.contentType);
     const url = modelContentUrl(model);
     if (
@@ -68,7 +69,7 @@ export function renderModelList(models, query) {
       !typeLabel.toLowerCase().includes(q) &&
       !(model.description ?? '').toLowerCase().includes(q)
     ) {
-      return;
+      continue;
     }
 
     const item = document.createElement('div');
@@ -87,7 +88,7 @@ export function renderModelList(models, query) {
       item.addEventListener('click', () => {
         closeModelSelector();
         setCurrentModelName(model.name);
-        // loadModel is in app.js; use a custom event to avoid circular dependency
+        // LoadModel is in app.js; use a custom event to avoid circular dependency
         document.dispatchEvent(
           new CustomEvent('loadModel', {
             detail: { url, modelId: model.id ?? undefined },
@@ -98,8 +99,8 @@ export function renderModelList(models, query) {
       item.style.opacity = '0.4';
       item.style.cursor = 'not-allowed';
     }
-    container.appendChild(item);
-  });
+    container.append(item);
+  }
 
   if (!container.children.length) {
     container.innerHTML = `<div class="model-list-loading">${t('noResults')}</div>`;
@@ -107,8 +108,8 @@ export function renderModelList(models, query) {
 }
 
 /**
- * Re-renders the model list using the cached model array, filtered by `query`. Bound to the search input's `oninput`
- * event.
+ * Re-renders the model list using the cached model array, filtered by `query`. Bound to the search
+ * input's `oninput` event.
  *
  * @param {string} query - Search string typed by the user.
  */

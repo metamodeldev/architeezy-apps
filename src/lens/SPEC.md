@@ -2,34 +2,30 @@
 
 ## Overview
 
-**Architeezy Lens** is a single-page web application for visualising any
-graph-based model served by the Architeezy API. No build step required; all
-dependencies loaded from CDN.
+**Architeezy Lens** is a single-page web application for visualising any graph-based model served by
+the Architeezy API. No build step required; all dependencies loaded from CDN.
 
 ---
 
 ## Authentication
 
-Authentication is **optional** — the app works anonymously without a token;
-signing in may unlock additional models or content.
+Authentication is **optional** — the app works anonymously without a token; signing in may unlock
+additional models or content.
 
 ### Token storage
 
-The token is stored in a JS variable (`authToken`) **in memory only** — never
-written to `localStorage` or cookies. This avoids XSS-driven token theft via
-persistent storage. The trade-off is that the user must sign in again on each
-page load.
+The token is stored in a JS variable (`authToken`) **in memory only** — never written to
+`localStorage` or cookies. This avoids XSS-driven token theft via persistent storage. The trade-off
+is that the user must sign in again on each page load.
 
 ### Auth UI (always visible in header)
 
 - **Anonymous:** "Sign in" button.
-- **Signed in:** current user's display name (from `GET /api/users/current`) +
-  "Sign out" button.
+- **Signed in:** current user's display name (from `GET /api/users/current`) + "Sign out" button.
 
 ### Sign-in flow
 
-1. User clicks "Sign in" → `startAuth()` opens a popup to
-   `https://architeezy.com/-/auth`.
+1. User clicks "Sign in" → `startAuth()` opens a popup to `https://architeezy.com/-/auth`.
 2. After successful login the auth page posts:
 
    ```js
@@ -39,25 +35,22 @@ page load.
    );
    ```
 
-3. The app saves the token in memory, closes the popup, fetches the current
-   user's name, and re-runs `init()` if no model list was loaded yet.
+3. The app saves the token in memory, closes the popup, fetches the current user's name, and re-runs
+   `init()` if no model list was loaded yet.
 
 ### Token usage
 
-Every API request goes through `apiFetch(url)` which adds
-`Authorization: Bearer <token>` when a token is present, and omits the header
-when anonymous.
+Every API request goes through `apiFetch(url)` which adds `Authorization: Bearer <token>` when a
+token is present, and omits the header when anonymous.
 
 ### 401 handling
 
-If any `apiFetch` call receives HTTP 401, the token is cleared from memory,
-`updateAuthUI()` resets the header to the sign-in state, and an `authRequired`
-error is thrown.
+If any `apiFetch` call receives HTTP 401, the token is cleared from memory, `updateAuthUI()` resets
+the header to the sign-in state, and an `authRequired` error is thrown.
 
 ### Sign-out
 
-"Sign out" clears the token from memory and updates the header. The current
-model remains visible.
+"Sign out" clears the token from memory and updates the header. The current model remains visible.
 
 ---
 
@@ -69,8 +62,8 @@ model remains visible.
 GET https://architeezy.com/api/models?size=100
 ```
 
-Paginated — all pages are fetched automatically until `_links.next` is absent.
-Response: Spring HATEOAS / HAL `_embedded.models[]` — array of model descriptors
+Paginated — all pages are fetched automatically until `_links.next` is absent. Response: Spring
+HATEOAS / HAL `_embedded.models[]` — array of model descriptors
 
 | Field              | Description                                      |
 | ------------------ | ------------------------------------------------ |
@@ -84,9 +77,8 @@ Response: Spring HATEOAS / HAL `_embedded.models[]` — array of model descripto
 | `contentType`      | Metamodel URL (e.g. `…/metamodel/eip/dev/eip#…`) |
 | `_links.content[]` | Array of content links with `href` (templated)   |
 
-Content URL derived from `_links.content[0].href` by stripping `{&inline}`
-template suffix. Fallback construction:
-`/api/models/{scopeSlug}/{projectSlug}/{projectVersion}/{slug}/content?format=json`
+Content URL derived from `_links.content[0].href` by stripping `{&inline}` template suffix. Fallback
+construction: `/api/models/{scopeSlug}/{projectSlug}/{projectVersion}/{slug}/content?format=json`
 
 ### Model content
 
@@ -104,9 +96,8 @@ All models share the same envelope:
 
 ## Universal Parser
 
-Fully structural — no hardcoded type names or property keys. Works for all
-observed model types (ArchiMate, C4, EIP, Domain, Class model, etc.) and any
-future model.
+Fully structural — no hardcoded type names or property keys. Works for all observed model types
+(ArchiMate, C4, EIP, Domain, Class model, etc.) and any future model.
 
 ### Rules (applied in order to every object with `eClass`)
 
@@ -118,48 +109,44 @@ future model.
 
 ### Child traversal
 
-ALL array-valued properties of `data` are walked — no key whitelist. For each
-array item:
+ALL array-valued properties of `data` are walked — no key whitelist. For each array item:
 
 - Object with `eClass` → `walkNode(item, parentId)`
-- UUID string → edge from `parentId` to that UUID (edge type = array key name
-  as-is, no transformation)
+- UUID string → edge from `parentId` to that UUID (edge type = array key name as-is, no
+  transformation)
 
 ### Root skipping
 
-`content[0]` is **always** skipped as a node (it is the model root container
-regardless of type). Only its `data` is walked.
+`content[0]` is **always** skipped as a node (it is the model root container regardless of type).
+Only its `data` is walked.
 
 ### Name fallback
 
-If `data.name` / `data.label` / `data.title` are all absent, the element's
-**type** is used as its display name.
+If `data.name` / `data.label` / `data.title` are all absent, the element's **type** is used as its
+display name.
 
 ### Filtered objects
 
-Objects whose `eClass` type is `EStringToStringMapEntry` and whose **resolved**
-namespace equals exactly `http://www.eclipse.org/emf/2002/Ecore` are silently
-skipped — they are internal EMF key-value map entries with no semantic meaning.
-The namespace is resolved by looking up the short prefix (extracted from
-`eClass`) in the top-level `ns` map of the JSON response, so both
+Objects whose `eClass` type is `EStringToStringMapEntry` and whose **resolved** namespace equals
+exactly `http://www.eclipse.org/emf/2002/Ecore` are silently skipped — they are internal EMF
+key-value map entries with no semantic meaning. The namespace is resolved by looking up the short
+prefix (extracted from `eClass`) in the top-level `ns` map of the JSON response, so both
 `"ecore:EStringToStringMapEntry"` and
-`"http://www.eclipse.org/emf/2002/Ecore:EStringToStringMapEntry"` are correctly
-filtered.
+`"http://www.eclipse.org/emf/2002/Ecore:EStringToStringMapEntry"` are correctly filtered.
 
 ### Containment tracking
 
-Every graph node records the ID of its **direct parent node** (the enclosing
-node whose `data` array contained it). Used by FR-9 containment display. A
-parent reference is set only when the enclosing object is itself a graph node.
+Every graph node records the ID of its **direct parent node** (the enclosing node whose `data` array
+contained it). Used by FR-9 containment display. A parent reference is set only when the enclosing
+object is itself a graph node.
 
 ### Model namespace
 
-The `currentModelNs` key used for per-type filter state persistence (FR-5) is
-resolved from the root content object's `eClass` prefix and the **`ns` namespace
-map** at the **top level of the JSON response** (not inside `content[0]`).
+The `currentModelNs` key used for per-type filter state persistence (FR-5) is resolved from the root
+content object's `eClass` prefix and the **`ns` namespace map** at the **top level of the JSON
+response** (not inside `content[0]`).
 
-`ns` is a plain object where each key is a short prefix and each value is the
-full namespace URI:
+`ns` is a plain object where each key is a short prefix and each value is the full namespace URI:
 
 ```json
 { "ns": { "archimate": "http://www.archimatetool.com/archimate" }, "content": [ … ] }
@@ -167,10 +154,9 @@ full namespace URI:
 
 Resolution algorithm:
 
-1. Extract the prefix from `content[0].eClass` using `lastIndexOf(':')` (prefix
-   is always a short name, never a URI).
-2. Look up `raw.ns[prefix]` to get the full URI. If absent, fall back to the
-   prefix string.
+1. Extract the prefix from `content[0].eClass` using `lastIndexOf(':')` (prefix is always a short
+   name, never a URI).
+2. Look up `raw.ns[prefix]` to get the full URI. If absent, fall back to the prefix string.
 
 ---
 
@@ -186,35 +172,32 @@ Resolution algorithm:
 
 ### FR-2: Data Loading
 
-- All API requests include `credentials: 'include'` so session cookies are sent
-  automatically on same-domain deployments.
-- When a Bearer token is present it is sent as `Authorization: Bearer <token>`;
-  anonymous requests omit the header.
+- All API requests include `credentials: 'include'` so session cookies are sent automatically on
+  same-domain deployments.
+- When a Bearer token is present it is sent as `Authorization: Bearer <token>`; anonymous requests
+  omit the header.
 - Show loading spinner during fetch.
-- **Model list failure** (HTTP error or network error): full-screen error with
-  "Retry" button.
-- **Model content failure when no graph is loaded**: saved model URL is removed
-  from `localStorage` and the model selector is opened so the user can choose
-  another model. No full-screen error is shown.
-- **Model content failure when a graph is already displayed**: keep the current
-  model visible and show a dismissible toast notification (slides in from
-  top-right, auto-dismisses after 7 s, has a close button).
+- **Model list failure** (HTTP error or network error): full-screen error with "Retry" button.
+- **Model content failure when no graph is loaded**: saved model URL is removed from `localStorage`
+  and the model selector is opened so the user can choose another model. No full-screen error is
+  shown.
+- **Model content failure when a graph is already displayed**: keep the current model visible and
+  show a dismissible toast notification (slides in from top-right, auto-dismisses after 7 s, has a
+  close button).
 
 ### FR-3: Graph Visualization (Cytoscape.js v3.33.1)
 
-- Nodes: color-coded by element type (deterministic palette hash). Node width
-  and height auto-fit their label (`min-width: 'label', min-height: 'label'`)
-  with 8 px padding.
-- Edges: color-coded by relationship type. Edge label background colour is read
-  from the `--cy-bg` CSS variable at graph-build time and updated on theme
-  change.
+- Nodes: color-coded by element type (deterministic palette hash). Node width and height auto-fit
+  their label (`min-width: 'label', min-height: 'label'`) with 8 px padding.
+- Edges: color-coded by relationship type. Edge label background colour is read from the `--cy-bg`
+  CSS variable at graph-build time and updated on theme change.
 - Default layout: **fCoSE** (prevents overlap, good edge lengths).
 - Available layouts: fCoSE, Dagre, CoSE, Breadthfirst, Grid, Circle.
-- Layout always runs on **visible elements only** (`eles.layout()`), so it
-  remains fast in drill-down mode on large models.
-- Zoom: handled by a custom capturing wheel-event listener (factor 1.3 per
-  notch, centred on cursor position) that intercepts the event before Cytoscape,
-  providing fast zoom without triggering Cytoscape's `wheelSensitivity` warning.
+- Layout always runs on **visible elements only** (`eles.layout()`), so it remains fast in
+  drill-down mode on large models.
+- Zoom: handled by a custom capturing wheel-event listener (factor 1.3 per notch, centred on cursor
+  position) that intercepts the event before Cytoscape, providing fast zoom without triggering
+  Cytoscape's `wheelSensitivity` warning.
 - Pan, fit-to-screen, zoom buttons in header and overlaid on the canvas.
 
 ### FR-4: Interaction Model
@@ -231,141 +214,121 @@ Resolution algorithm:
 
 ### FR-5: Type Filtering
 
-- Sidebar panels named **Entities** (element types) and **Relationships**
-  (relationship types) with checkboxes for all types present in the loaded
-  model.
+- Sidebar panels named **Entities** (element types) and **Relationships** (relationship types) with
+  checkboxes for all types present in the loaded model.
 - Toggling a type hides/shows matching nodes or edges instantly.
-- Clicking anywhere on a filter row (checkbox, dot, label, count) toggles the
-  type.
-- Each panel header contains **✓ / ✗ icon buttons** (select-all / select-none)
-  inline with the section title, so they are always visible without scrolling.
-  Per-panel text search below the header.
+- Clicking anywhere on a filter row (checkbox, dot, label, count) toggles the type.
+- Each panel header contains **✓ / ✗ icon buttons** (select-all / select-none) inline with the
+  section title, so they are always visible without scrolling. Per-panel text search below the
+  header.
 - Colored dot per type (matches node/edge color).
-- **Relationship type counts** reflect the current element filter and drill-down
-  scope:
-  - Shows **N / M** where M is the total count of that relationship type (both
-    endpoints are graph nodes) and N is the count where both endpoint element
-    types are currently visible (and within drill scope if active).
+- **Relationship type counts** reflect the current element filter and drill-down scope:
+  - Shows **N / M** where M is the total count of that relationship type (both endpoints are graph
+    nodes) and N is the count where both endpoint element types are currently visible (and within
+    drill scope if active).
   - If N = M, only N is shown.
-- **Element type rows are dimmed** when there are no elements of that type
-  available in the current context (0 in the drill scope when drilling; 0 in the
-  full model when not drilling). A type hidden by its own checkbox is **not**
-  dimmed — it is available, just filtered out.
-- **Relationship type rows are dimmed** when their visible count (both endpoint
-  element types currently shown) drops to 0 in the current context.
-- **Filter state is persisted per model namespace** in the
-  `architeezyLensFilter` localStorage entry — a JSON object keyed by
-  `currentModelNs` (the full namespace URI, e.g.
-  `http://www.archimatetool.com/archimate`, derived from child elements). Each
-  entry has fields `hiddenEntityTypes` and `hiddenRelationshipTypes`. Hidden
-  types are restored automatically when a model of the same namespace is loaded.
-- **Filter state is also reflected in the URL** (FR-12): when any types are
-  hidden, `?entities=…` and/or `?relationships=…` list the **visible** (active)
-  types in the address bar. Parameters are absent when all types are visible.
-  URL filter state takes priority over localStorage when opening a shared link.
+- **Element type rows are dimmed** when there are no elements of that type available in the current
+  context (0 in the drill scope when drilling; 0 in the full model when not drilling). A type hidden
+  by its own checkbox is **not** dimmed — it is available, just filtered out.
+- **Relationship type rows are dimmed** when their visible count (both endpoint element types
+  currently shown) drops to 0 in the current context.
+- **Filter state is persisted per model namespace** in the `architeezyLensFilter` localStorage entry
+  — a JSON object keyed by `currentModelNs` (the full namespace URI, e.g.
+  `http://www.archimatetool.com/archimate`, derived from child elements). Each entry has fields
+  `hiddenEntityTypes` and `hiddenRelationshipTypes`. Hidden types are restored automatically when a
+  model of the same namespace is loaded.
+- **Filter state is also reflected in the URL** (FR-12): when any types are hidden, `?entities=…`
+  and/or `?relationships=…` list the **visible** (active) types in the address bar. Parameters are
+  absent when all types are visible. URL filter state takes priority over localStorage when opening
+  a shared link.
 
 ### FR-6: Drill-Down View
 
 - Entered by double-clicking a node.
-- Shows the focal node and all nodes reachable within N hops via **semantic
-  relationship edges and containment** (parent↔child), subject to the active
-  element and relationship type filters.
+- Shows the focal node and all nodes reachable within N hops via **semantic relationship edges and
+  containment** (parent↔child), subject to the active element and relationship type filters.
 - **BFS traversal rules:**
   - Semantic edges whose type is currently checked are traversed.
-  - **Element type filter is respected during BFS**: a node is only added to the
-    reachable set (and used as a stepping stone) if its element type is
-    currently active. This ensures nodes that are reachable only _through_
-    filtered-out nodes are not shown — every visible node has an unbroken path
-    to the drill-root through visible nodes.
-  - The drill-root is always traversable and always visible even if its element
-    type is filtered out (see below).
-  - Containment is traversed as regular hops (N levels of children **and** N
-    levels of parents) — independent of whether containment is shown as edges or
-    compound shapes.
-  - When containment display is **None**, containment is not traversed and
-    contained/containing objects are not included.
-  - In edge mode, containment edges (`isContainment`) are traversed via
-    `connectedEdges`; in compound mode, `node.children()` and `node.parent()`
-    are used instead.
-- **Edge visibility rule (universal)**: an edge (semantic or containment) is
-  shown only if `min(depth[src], depth[tgt]) < drillDepth`. This hides
-  cross-edges at the outermost hop regardless of depth setting.
-- **Layout runs on the visible subset only** (`eles.layout()` instead of
-  `cy.layout()`). On drill entry and depth change the layout is re-run
-  automatically; on filter toggles within drill the positions are kept (only
-  visibility changes).
-- Drill bar (visible when active): focal node name + depth selector 1–5 with
-  visible active highlight.
+  - **Element type filter is respected during BFS**: a node is only added to the reachable set (and
+    used as a stepping stone) if its element type is currently active. This ensures nodes that are
+    reachable only _through_ filtered-out nodes are not shown — every visible node has an unbroken
+    path to the drill-root through visible nodes.
+  - The drill-root is always traversable and always visible even if its element type is filtered out
+    (see below).
+  - Containment is traversed as regular hops (N levels of children **and** N levels of parents) —
+    independent of whether containment is shown as edges or compound shapes.
+  - When containment display is **None**, containment is not traversed and contained/containing
+    objects are not included.
+  - In edge mode, containment edges (`isContainment`) are traversed via `connectedEdges`; in
+    compound mode, `node.children()` and `node.parent()` are used instead.
+- **Edge visibility rule (universal)**: an edge (semantic or containment) is shown only if
+  `min(depth[src], depth[tgt]) < drillDepth`. This hides cross-edges at the outermost hop regardless
+  of depth setting.
+- **Layout runs on the visible subset only** (`eles.layout()` instead of `cy.layout()`). On drill
+  entry and depth change the layout is re-run automatically; on filter toggles within drill the
+  positions are kept (only visibility changes).
+- Drill bar (visible when active): focal node name + depth selector 1–5 with visible active
+  highlight.
 - Depth change updates the layout immediately.
 - "← Full model" button exits drill-down.
-- Detail panel shows connections to/from the focal node; clicking a connection
-  item enters drill-down on that node.
+- Detail panel shows connections to/from the focal node; clicking a connection item enters
+  drill-down on that node.
 - Table view is also filtered to drill-down scope while drill is active.
-- **Stats bar in drill mode** shows N / M format for both nodes and edges (N =
-  visible in drill scope, M = total in model). The stats bar is always visible
-  at the bottom of the main area.
-- **Element type filter in drill mode** shows N / M per type (N = elements of
-  that type currently visible in the drill scope, M = total elements of that
-  type in the model). N reflects both the BFS depth limit and the active type
-  filter. If N = M, only M is shown.
-- **Drill-root visual indicator**: the focal node always has a **green border**
-  (`#22c55e`, 3 px) to identify it at a glance regardless of selection state.
-  When the drill-root node is simultaneously selected (detail panel open), the
-  border turns **red** (`#e94560`) as for any selected node — the selected style
-  takes priority.
-- **Drill-root always visible**: the focal node is always rendered even if its
-  element type is currently hidden by the filter. Edges connecting it to other
-  visible nodes are also shown regardless of the root's type filter state.
+- **Stats bar in drill mode** shows N / M format for both nodes and edges (N = visible in drill
+  scope, M = total in model). The stats bar is always visible at the bottom of the main area.
+- **Element type filter in drill mode** shows N / M per type (N = elements of that type currently
+  visible in the drill scope, M = total elements of that type in the model). N reflects both the BFS
+  depth limit and the active type filter. If N = M, only M is shown.
+- **Drill-root visual indicator**: the focal node always has a **green border** (`#22c55e`, 3 px) to
+  identify it at a glance regardless of selection state. When the drill-root node is simultaneously
+  selected (detail panel open), the border turns **red** (`#e94560`) as for any selected node — the
+  selected style takes priority.
+- **Drill-root always visible**: the focal node is always rendered even if its element type is
+  currently hidden by the filter. Edges connecting it to other visible nodes are also shown
+  regardless of the root's type filter state.
 
 ### FR-7: Detail Panel
 
 - Shown on single click of a node.
-- Contains: name, type · namespace, documentation/description, list of all
-  direct connections.
-- Each connection item shows: direction arrow, name of connected node,
-  relationship type.
+- Contains: name, type · namespace, documentation/description, list of all direct connections.
+- Each connection item shows: direction arrow, name of connected node, relationship type.
 - Clicking a connection item drills into that node.
 
 ### FR-8: Table Visualization
 
 - Tab toggle: Graph ↔ Table.
 - Table tabs: Elements | Relationships.
-- Elements table: Name | Type | Documentation — sortable, searchable. Filtered
-  by active element types (same as graph).
-- Relationships table: Source | Relationship Type | Target | Name — sortable,
-  searchable. Filtered by active relationship types and active element types
-  (both endpoint types must be visible).
-- Clicking a row in the Elements table switches to Graph view and centers that
-  node.
-- The stats bar (total nodes / edges and visible counts) is always shown at the
-  bottom of the main area regardless of active view.
+- Elements table: Name | Type | Documentation — sortable, searchable. Filtered by active element
+  types (same as graph).
+- Relationships table: Source | Relationship Type | Target | Name — sortable, searchable. Filtered
+  by active relationship types and active element types (both endpoint types must be visible).
+- Clicking a row in the Elements table switches to Graph view and centers that node.
+- The stats bar (total nodes / edges and visible counts) is always shown at the bottom of the main
+  area regardless of active view.
 
 ### FR-9: Containment Display Mode
 
 - Three modes selectable in header (persisted to `localStorage`):
   - **None** — containment hierarchy not visualised.
-  - **Edges ◆** (default) — a filled-diamond composition edge is drawn from each
-    parent node to each contained child. Diamond at the parent (source) end; no
-    arrowhead at child end.
-  - **Compound shapes ⬚** — child nodes are rendered inside their parent using
-    Cytoscape compound nodes; container label is pinned to the top of the shape.
+  - **Edges ◆** (default) — a filled-diamond composition edge is drawn from each parent node to each
+    contained child. Diamond at the parent (source) end; no arrowhead at child end.
+  - **Compound shapes ⬚** — child nodes are rendered inside their parent using Cytoscape compound
+    nodes; container label is pinned to the top of the shape.
 - Changing mode rebuilds the graph and re-runs the layout.
 - Containment edges are not shown in the relationship type filter panel.
-- **Empty compound parents** (all children filtered out): Cytoscape derives a
-  compound node's rendered bounds from its children's bounding boxes — when all
-  children have `display:none` the parent collapses to zero size. To prevent
-  this, `syncCompoundParents(isVisible)` is called before every visibility
-  batch. It uses `node.move({ parent: null })` to structurally detach hidden
-  children from their compound parent and `node.move({ parent: origParent })` to
-  restore them when they become visible again. Each node stores its original
-  parent in `data.modelParent` at build time. A compound node with no structural
-  children is treated as a leaf node by Cytoscape and renders at its natural
-  label-based size.
+- **Empty compound parents** (all children filtered out): Cytoscape derives a compound node's
+  rendered bounds from its children's bounding boxes — when all children have `display:none` the
+  parent collapses to zero size. To prevent this, `syncCompoundParents(isVisible)` is called before
+  every visibility batch. It uses `node.move({ parent: null })` to structurally detach hidden
+  children from their compound parent and `node.move({ parent: origParent })` to restore them when
+  they become visible again. Each node stores its original parent in `data.modelParent` at build
+  time. A compound node with no structural children is treated as a leaf node by Cytoscape and
+  renders at its natural label-based size.
 
 ### FR-12: URL State (Deep Links)
 
-The address bar reflects the full application state so that any view can be
-shared as a link and restored exactly on open.
+The address bar reflects the full application state so that any view can be shared as a link and
+restored exactly on open.
 
 #### URL parameters
 
@@ -378,8 +341,8 @@ shared as a link and restored exactly on open.
 | `relationships` | One or more rel. types are hidden    | Comma-separated list of **visible** rel. type names    |
 | `view`          | Table view is active                 | `table` (parameter absent when graph is active)        |
 
-Commas in list values are written literally (not encoded as `%2C`). Other values
-use standard percent-encoding.
+Commas in list values are written literally (not encoded as `%2C`). Other values use standard
+percent-encoding.
 
 #### Update triggers
 
@@ -395,15 +358,14 @@ use standard percent-encoding.
 #### Restoration on open
 
 1. URL params are read after the model list is fetched.
-2. If `model` is present, the matching model is loaded (by `model.id`). Falls
-   back to `localStorage` if `model` is absent or not found.
-3. After the model loads, URL state is applied in order: a. Filter state
-   (`entities`, `relationships`) — always applied when any URL state is present
-   (`entity`, `view`, `entities`, or `relationships`), overriding localStorage.
-   If `entities` is absent from the URL, all element types are made visible; if
-   `relationships` is absent, all relationship types are made visible. b. View
-   (`view=table`). c. Drill (`entity` + `depth`) — `depth` is set before
-   `onNodeDrill()` is called.
+2. If `model` is present, the matching model is loaded (by `model.id`). Falls back to `localStorage`
+   if `model` is absent or not found.
+3. After the model loads, URL state is applied in order: a. Filter state (`entities`,
+   `relationships`) — always applied when any URL state is present (`entity`, `view`, `entities`, or
+   `relationships`), overriding localStorage. If `entities` is absent from the URL, all element
+   types are made visible; if `relationships` is absent, all relationship types are made visible. b.
+   View (`view=table`). c. Drill (`entity` + `depth`) — `depth` is set before `onNodeDrill()` is
+   called.
 
 ### FR-10: Themes
 
@@ -424,19 +386,17 @@ use standard percent-encoding.
 - Pure HTML + CSS + JS; no build step.
 - All dependencies from CDN.
 - Responsive at any width; optimised for desktop, usable on mobile.
-- Source split into ES modules under `js/`; loaded via
-  `<script type="module" src="js/app.js">`.
+- Source split into ES modules under `js/`; loaded via `<script type="module" src="js/app.js">`.
 
 ## Mobile / Responsive Layout
 
-- `body` uses `height: 100dvh` (dynamic viewport height) to avoid the iOS Safari
-  "extra space at bottom" issue where `100vh` includes hidden browser chrome.
-- `html` has `overflow: hidden` to prevent document-level scroll in all
-  directions.
-- Sidebar width is `clamp(180px, 33.333%, 280px)` — at most one-third of the
-  viewport, never wider than 280 px, never narrower than 180 px.
-- Header uses `flex-wrap: wrap`; at ≤ 600 px the `.ctrl-group` wraps to its own
-  full-width row and select elements are capped in width to fit smaller screens.
+- `body` uses `height: 100dvh` (dynamic viewport height) to avoid the iOS Safari "extra space at
+  bottom" issue where `100vh` includes hidden browser chrome.
+- `html` has `overflow: hidden` to prevent document-level scroll in all directions.
+- Sidebar width is `clamp(180px, 33.333%, 280px)` — at most one-third of the viewport, never wider
+  than 280 px, never narrower than 180 px.
+- Header uses `flex-wrap: wrap`; at ≤ 600 px the `.ctrl-group` wraps to its own full-width row and
+  select elements are capped in width to fit smaller screens.
 - Drill bar wraps depth picker to a second line when the viewport is narrow.
 
 ## Module Structure
@@ -477,8 +437,8 @@ table ← detail
 
 ## localStorage Keys
 
-Keys use the `architeezyLens` prefix, except the theme key which is shared
-across all Architeezy applications.
+Keys use the `architeezyLens` prefix, except the theme key which is shared across all Architeezy
+applications.
 
 | Key                         | Value                                                                                 |
 | --------------------------- | ------------------------------------------------------------------------------------- |
@@ -505,9 +465,8 @@ across all Architeezy applications.
 ## Color System
 
 All element and relationship types use a **deterministic hash-based palette** —
-`hashStr(typeName) % 16` selects the color for elements;
-`(hashStr(typeName) + 7) % 16` for relationships.
+`hashStr(typeName) % 16` selects the color for elements; `(hashStr(typeName) + 7) % 16` for
+relationships.
 
-16-color palette: `#1a5e8a` `#1a6e40` `#7c4a00` `#7a6400` `#52366a` `#6e5200`
-`#3a5a7c` `#8a1a3e` `#1a4a6b` `#4a7a1a` `#7a2a5a` `#2a7a7a` `#5a3a7a` `#7a5a2a`
-`#2a5a4a` `#6a3a2a`
+16-color palette: `#1a5e8a` `#1a6e40` `#7c4a00` `#7a6400` `#52366a` `#6e5200` `#3a5a7c` `#8a1a3e`
+`#1a4a6b` `#4a7a1a` `#7a2a5a` `#2a7a7a` `#5a3a7a` `#7a5a2a` `#2a5a4a` `#6a3a2a`

@@ -2,9 +2,9 @@
 
 ## Overview
 
-**Architeezy Application Gallery** is a static start page that lists all
-Architeezy web applications and links to them. No build step; no dependencies
-(aside from the logo image loaded from the Architeezy docs CDN).
+**Architeezy Application Gallery** is a static start page that lists all Architeezy web applications
+and links to them. No build step; no dependencies (aside from the logo image loaded from the
+Architeezy docs CDN).
 
 ---
 
@@ -29,11 +29,10 @@ Single-page, fully responsive at ≥ 320 px.
 
 ### Header
 
-- Left: logo image (`https://docs.architeezy.com/ru/img/logo.svg`) + wordmark
-  **Architeezy** as a link to `https://architeezy.com`.
-- Centre: nav links — Home (`https://architeezy.com`), About
-  (`https://about.architeezy.com`), Docs (`https://docs.architeezy.com`). Labels
-  are localised.
+- Left: logo image (`https://docs.architeezy.com/ru/img/logo.svg`) + wordmark **Architeezy** as a
+  link to `https://architeezy.com`.
+- Centre: nav links — Home (`https://architeezy.com`), About (`https://about.architeezy.com`), Docs
+  (`https://docs.architeezy.com`). Labels are localised.
 - Right: theme switcher — three icon buttons 🌙 / ☀️ / 🖥.
 
 ### Page title
@@ -42,8 +41,7 @@ Single-page, fully responsive at ≥ 320 px.
 
 ### App grid
 
-CSS Grid, `auto-fill`, min column width 240 px. Cards are equal height via
-`align-items: stretch`.
+CSS Grid, `auto-fill`, min column width 240 px. Cards are equal height via `align-items: stretch`.
 
 ### App card
 
@@ -54,18 +52,17 @@ CSS Grid, `auto-fill`, min column width 240 px. Cards are equal height via
 | Description | One-sentence description, muted colour             |
 | Link        | "Open →" / "Открыть →" button, fills card bottom   |
 
-Entire card is a link (`<a>`); the CTA is a visual affordance only. Clicking
-anywhere on the card navigates to the app.
+Entire card is a link (`<a>`); the CTA is a visual affordance only. Clicking anywhere on the card
+navigates to the app.
 
 ---
 
 ## Localisation
 
-Auto-detected from `navigator.language` — Russian if it starts with `"ru"`,
-English otherwise. No manual switcher on the gallery page.
+Auto-detected from `navigator.language` — Russian if it starts with `"ru"`, English otherwise. No
+manual switcher on the gallery page.
 
-Localised strings: page title, nav link labels, card names, card descriptions,
-and the "Open →" CTA.
+Localised strings: page title, nav link labels, card names, card descriptions, and the "Open →" CTA.
 
 ---
 
@@ -106,9 +103,9 @@ and the "Open →" CTA.
 
 ## App registry
 
-Apps are defined in `app.js`. Adding a new app requires inserting one object
-into the `APPS` array and adding matching localised strings to `STRINGS.en.apps`
-and `STRINGS.ru.apps` — no other changes needed.
+Apps are defined in `app.js`. Adding a new app requires inserting one object into the `APPS` array
+and adding matching localised strings to `STRINGS.en.apps` and `STRINGS.ru.apps` — no other changes
+needed.
 
 ```js
 const APPS = [

@@ -2,5 +2,6 @@
   "jsdoc": {},
   "proseWrap": "always",
   "quoteProps": "consistent",
-  "singleQuote": true
+  "singleQuote": true,
+  "sortImports": {}
 }
