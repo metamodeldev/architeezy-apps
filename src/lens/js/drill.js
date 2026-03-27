@@ -1,63 +1,132 @@
 // ── DRILL-DOWN ─────────────────────────────────────────────────────────────
+//
+// Owns drill-down state (drillNodeId, drillDepth, drillVisibleIds) and all
+// UI logic for entering/exiting drill mode.
+//
+// Visibility.js imports drill state getters from this module (one-way).
+// To trigger visibility updates without a reverse import, this module
+// Dispatches 'lens:applyDrill' / 'lens:applyVisibility' on document;
+// App.js wires the handlers.
 
 import { showDetail } from './detail.js';
-import { applyLayout, fitGraph } from './graph.js';
-import { syncUrl } from './routing.js';
-import { state } from './state.js';
-import { renderTable } from './table.js';
-import { applyDrill, applyVisibility } from './visibility.js';
+import {
+  addDrillRootClass,
+  applyLayout,
+  clearDrillRootNodes,
+  fitGraph,
+  setDrillRootNode,
+} from './graph.js';
+import { getElemMap } from './model.js';
+
+// ── DRILL STATE ──────────────────────────────────────────────────────────────
+
+/** @type {string | undefined} ID of the drill-root node; undefined when not in drill mode */
+let _drillNodeId;
+
+/** @type {number} BFS depth for drill-down (1–5) */
+let _drillDepth = 2;
+
+/** @type {Set<string> | undefined} node IDs visible in drill scope; undefined = full model shown */
+let _drillVisibleIds;
+
+export function getDrillNodeId() {
+  return _drillNodeId;
+}
+
+export function getDrillDepth() {
+  return _drillDepth;
+}
+
+export function getDrillVisibleIds() {
+  return _drillVisibleIds;
+}
+
+/** @param {string | undefined} id ID of the drill-root node, or undefined to exit drill mode */
+export function setDrillNodeId(id) {
+  _drillNodeId = id;
+}
+
+/** @param {number} d BFS depth for drill-down (1–5) */
+export function setDrillDepth(d) {
+  _drillDepth = d;
+}
+
+/** @param {Set<string> | undefined} ids Node IDs visible in drill scope, or undefined for full model */
+export function setDrillVisibleIds(ids) {
+  _drillVisibleIds = ids;
+}
+
+/** Resets drillNodeId and drillVisibleIds to undefined. Call on model load or exitDrill. */
+export function clearDrillState() {
+  _drillNodeId = undefined;
+  _drillVisibleIds = undefined;
+}
+
+// ── DRILL UI ─────────────────────────────────────────────────────────────────
 
 /** Re-applies the .drill-root class after buildCytoscape() recreates the instance. */
 export function restoreDrillRootStyle() {
-  if (state.drillNodeId) {
-    state.cy?.$id(state.drillNodeId).addClass('drill-root');
+  const id = getDrillNodeId();
+  if (id) {
+    addDrillRootClass(id);
   }
 }
 
 /**
  * Rebuilds the depth picker buttons (1–5) inside `#depth-picker`, marking the currently active
- * depth with the "active" class. Each button updates `state.drillDepth`, redrills, reflows the
- * layout, and syncs the URL.
+ * depth with the "active" class. Click handling is delegated — see `initDrillEvents`.
+ *
+ * @param {number} drillDepth - Currently active drill depth.
  */
-export function buildDepthPicker() {
+export function buildDepthPicker(drillDepth) {
   const picker = document.getElementById('depth-picker');
   picker.innerHTML = '';
   for (const d of [1, 2, 3, 4, 5]) {
     const btn = document.createElement('button');
-    btn.className = `depth-btn${d === state.drillDepth ? ' active' : ''}`;
+    btn.className = `depth-btn${d === drillDepth ? ' active' : ''}`;
     btn.textContent = d;
-    btn.addEventListener('click', () => {
-      state.drillDepth = d;
-      buildDepthPicker();
-      applyDrill();
-      applyLayout();
-      syncUrl();
-    });
+    btn.dataset.depth = String(d);
     picker.append(btn);
   }
 }
 
+/** Wires a delegated click listener on `#depth-picker`. Called once at app startup. */
+export function initDrillEvents() {
+  document.getElementById('depth-picker').addEventListener('click', (e) => {
+    const btn = e.target.closest('.depth-btn[data-depth]');
+    if (!btn) {
+      return;
+    }
+    setDrillDepth(Number(btn.dataset.depth));
+    buildDepthPicker(getDrillDepth());
+    document.dispatchEvent(new CustomEvent('lens:applyDrill'));
+    applyLayout();
+    document.dispatchEvent(new CustomEvent('lens:syncUrl'));
+  });
+}
+
 /**
- * Enters drill-down mode centred on `node`. Shows the drill bar, builds the depth picker, applies
- * the BFS visibility, re-runs the layout, and opens the detail panel for the drill root.
+ * Enters drill-down mode centred on the node with `nodeId`. Shows the drill bar, builds the depth
+ * picker, applies the BFS visibility, re-runs the layout, and opens the detail panel for the drill
+ * root.
  *
- * @param {cytoscape.NodeSingular} node - The Cytoscape node to drill into.
+ * @param {string} nodeId - ID of the node to drill into.
  */
-export function onNodeDrill(node) {
-  state.drillNodeId = node.id();
+export function onNodeDrill(nodeId) {
+  setDrillNodeId(nodeId);
 
   document.getElementById('drill-bar').classList.add('visible');
-  document.getElementById('drill-label').textContent = node.data('label');
-  buildDepthPicker();
-  applyDrill();
+  document.getElementById('drill-label').textContent = getElemMap()[nodeId]?.name ?? nodeId;
+  document.getElementById('settings-depth-row').classList.remove('hidden');
+  buildDepthPicker(getDrillDepth());
+  document.dispatchEvent(new CustomEvent('lens:applyDrill'));
 
   // Update class after applyDrill's cy.batch() completes so it isn't overridden.
-  state.cy.nodes().removeClass('drill-root');
-  state.cy.$id(state.drillNodeId).addClass('drill-root');
+  setDrillRootNode(nodeId);
 
   applyLayout();
-  showDetail(state.drillNodeId, (targetNode) => onNodeDrill(targetNode));
-  syncUrl();
+  showDetail(nodeId, (targetId) => onNodeDrill(targetId));
+  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
 }
 
 /**
@@ -65,14 +134,11 @@ export function onNodeDrill(node) {
  * reapplies full visibility, fits the graph, and re-renders the table if it is active.
  */
 export function exitDrill() {
-  state.cy?.nodes().removeClass('drill-root');
-  state.drillNodeId = undefined;
-  state.drillVisibleIds = undefined;
+  clearDrillRootNodes();
+  clearDrillState();
   document.getElementById('drill-bar').classList.remove('visible');
-  applyVisibility();
+  document.getElementById('settings-depth-row').classList.add('hidden');
+  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
   fitGraph();
-  if (state.currentView === 'table') {
-    renderTable();
-  }
-  syncUrl();
+  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
 }

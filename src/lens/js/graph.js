@@ -1,32 +1,76 @@
 // ── CYTOSCAPE LIFECYCLE ─────────────────────────────────────────────────────
 
-import { FIT_PADDING, LAYOUT_ANIM_THRESHOLD, TAP_DELAY_MS } from './constants.js';
 import { buildCyStyles, createLabelMeasurer } from './graph-styles.js';
-import { t } from './i18n.js';
-import { state } from './state.js';
-import { elemColor, relColor } from './utils.js';
+import { elemColor, relColor } from './palette.js';
+
+// Delay (ms) before treating a single tap as a click, allowing double-tap detection
+const TAP_DELAY_MS = 180;
+// Node count below which layout runs with animation; above this, skip animation for speed
+const LAYOUT_ANIM_THRESHOLD = 400;
+// Padding around the graph when fitting to the viewport (px)
+const FIT_PADDING = 40;
+// Zoom level applied when focusing a node from the table view
+const FOCUS_ZOOM = 1.5;
 
 // Re-export cyBg so callers (ui.js, etc.) don't need to know about graph-styles.js
 export { cyBg } from './graph-styles.js';
+
+// Cytoscape instance owned by this module — never exported directly.
+// Callers use the specific operation exports below.
+let _cy;
+
+// Debounce timer for single-tap detection (owned here, not in global state).
+let _tapTimer;
 
 // Tracks the AbortController for the current pointer interaction listeners so
 // That stale listeners are removed before a new set is attached on each rebuild.
 let _pointerController;
 
+// ── CONTAINMENT MODE ─────────────────────────────────────────────────────────
+
+/** @type {'none' | 'edge' | 'compound'} How parent–child relationships are displayed */
+let _containmentMode = globalThis.localStorage?.getItem('architeezyLensContainment') ?? 'edge';
+
+/**
+ * Returns the current containment display mode.
+ *
+ * @returns {'none' | 'edge' | 'compound'} The current containment mode
+ */
+export function getContainmentMode() {
+  return _containmentMode;
+}
+
+/**
+ * Stores the containment mode and persists it to localStorage. Does NOT rebuild the graph — caller
+ * is responsible for that.
+ *
+ * @param {'none' | 'edge' | 'compound'} mode Containment display mode to apply
+ */
+export function setContainmentMode(mode) {
+  _containmentMode = mode;
+  localStorage.setItem('architeezyLensContainment', mode);
+}
+
+/** Cancels any pending single-tap debounce timer. */
+export function cancelTapTimer() {
+  clearTimeout(_tapTimer);
+}
+
 // ── NODE & EDGE DATA BUILDERS ───────────────────────────────────────────────
 
 /**
- * Builds the Cytoscape node data array for all elements in `state.allElements`. Uses a temporary
- * label measurer to compute node dimensions; the measurer is always destroyed in the `finally`
- * block to avoid DOM leaks.
+ * Pure: builds the Cytoscape node data array from the provided elements. Uses a temporary label
+ * measurer to compute node dimensions; the measurer is always destroyed in the `finally` block to
+ * avoid DOM leaks.
  *
+ * @param {Array} elements - Model elements (allElements).
  * @param {Set<string>} elemIds - Set of all element IDs (used to resolve compound parents).
  * @returns {Array} Cytoscape node descriptors.
  */
-function buildNodes(elemIds) {
+function buildNodes(elements, elemIds) {
   const measurer = createLabelMeasurer();
   try {
-    return state.allElements.map((e) => {
+    return elements.map((e) => {
       const { nw, nh } = measurer.labelSize(e.name || e.type);
       const data = {
         id: e.id,
@@ -37,7 +81,7 @@ function buildNodes(elemIds) {
         nw,
         nh,
       };
-      if (state.containmentMode === 'compound' && e.parent && elemIds.has(e.parent)) {
+      if (_containmentMode === 'compound' && e.parent && elemIds.has(e.parent)) {
         data.parent = e.parent;
         // ModelParent preserves the original parent so it can be restored after
         // The node is detached from a compound container for visibility reasons.
@@ -52,15 +96,17 @@ function buildNodes(elemIds) {
 }
 
 /**
- * Builds the Cytoscape edge data array for all relations whose both endpoints exist in `elemIds`.
- * In "edge" containment mode, also adds synthetic containment edges (filled diamond) for
+ * Pure: builds the Cytoscape edge data array for all relations whose both endpoints exist in
+ * `elemIds`. In "edge" containment mode, also adds synthetic containment edges (filled diamond) for
  * parent–child relationships.
  *
+ * @param {Array} elements - Model elements (allElements).
+ * @param {Array} relations - Model relations (allRelations).
  * @param {Set<string>} elemIds - Set of element IDs used to filter dangling edges.
  * @returns {Array} Cytoscape edge descriptors.
  */
-function buildEdges(elemIds) {
-  const edges = state.allRelations
+function buildEdges(elements, relations, elemIds) {
+  const edges = relations
     .filter((r) => elemIds.has(r.source) && elemIds.has(r.target))
     .map((r) => ({
       group: 'edges',
@@ -76,8 +122,8 @@ function buildEdges(elemIds) {
 
   // Edge mode: add synthetic containment edges (parent → child) with a filled diamond.
   // Compound mode uses Cytoscape's native parent/child relationship instead.
-  if (state.containmentMode === 'edge') {
-    for (const e of state.allElements) {
+  if (_containmentMode === 'edge') {
+    for (const e of elements) {
       if (e.parent && elemIds.has(e.parent)) {
         edges.push({
           group: 'edges',
@@ -106,19 +152,19 @@ function buildEdges(elemIds) {
  *
  * @param {cytoscape.Core} cy - The Cytoscape instance.
  * @param {function(string): void} onNodeTap - Called with the node ID on single tap.
- * @param {function(cytoscape.NodeSingular): void} onNodeDblTap - Called with the node on double
- *   tap.
+ * @param {function(string): void} onNodeDblTap - Called with the node ID on double tap.
  * @param {function(): void} onCanvasTap - Called when the canvas background is tapped.
+ * @param {function(): string | undefined} getDrillNodeId - Returns the current drill-root node ID.
  */
-function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
+function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap, getDrillNodeId) {
   // Single-tap is delayed to let double-tap cancel it first.
   cy.on('tap', 'node', (e) => {
-    clearTimeout(state.tapTimer);
-    state.tapTimer = setTimeout(() => onNodeTap(e.target.id()), TAP_DELAY_MS);
+    clearTimeout(_tapTimer);
+    _tapTimer = setTimeout(() => onNodeTap(e.target.id()), TAP_DELAY_MS);
   });
   cy.on('dbltap', 'node', (e) => {
-    clearTimeout(state.tapTimer);
-    onNodeDblTap(e.target);
+    clearTimeout(_tapTimer);
+    onNodeDblTap(e.target.id());
   });
   cy.on('tap', (e) => {
     if (e.target === cy) {
@@ -129,8 +175,9 @@ function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
   // Cytoscape re-evaluates all styles after a node is deselected, which can
   // Silently drop dynamically added classes (like .drill-root). Re-assert it.
   cy.on('unselect', () => {
-    if (state.drillNodeId) {
-      cy.$id(state.drillNodeId).addClass('drill-root');
+    const drillNodeId = getDrillNodeId();
+    if (drillNodeId) {
+      cy.$id(drillNodeId).addClass('drill-root');
     }
   });
 }
@@ -163,10 +210,10 @@ function setupPointerInteractions() {
       }
       e.preventDefault();
       e.stopPropagation();
-      const panStart = { ...state.cy.pan() };
+      const panStart = { ..._cy.pan() };
       const mouseStart = { x: e.clientX, y: e.clientY };
       function onMove(mv) {
-        return state.cy.pan({
+        return _cy.pan({
           x: panStart.x + mv.clientX - mouseStart.x,
           y: panStart.y + mv.clientY - mouseStart.y,
         });
@@ -187,17 +234,14 @@ function setupPointerInteractions() {
   container.addEventListener(
     'wheel',
     (e) => {
-      if (!state.cy) {
+      if (!_cy) {
         return;
       }
       e.preventDefault();
       e.stopImmediatePropagation();
       const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-      const level = Math.max(
-        state.cy.minZoom(),
-        Math.min(state.cy.maxZoom(), state.cy.zoom() * factor),
-      );
-      state.cy.zoom({
+      const level = Math.max(_cy.minZoom(), Math.min(_cy.maxZoom(), _cy.zoom() * factor));
+      _cy.zoom({
         level,
         renderedPosition: { x: e.offsetX, y: e.offsetY },
       });
@@ -209,28 +253,45 @@ function setupPointerInteractions() {
 // ── PUBLIC API ──────────────────────────────────────────────────────────────
 
 /**
- * Destroys any existing Cytoscape instance and creates a new one from current state. Binds
- * node/edge/canvas tap handlers and sets up pointer interactions.
+ * Destroys any existing Cytoscape instance and creates a new one from the provided model data.
+ * Binds node/edge/canvas tap handlers and sets up pointer interactions.
  *
  * @param {{
- *   onNodeTap: function(string): void,
- *   onNodeDblTap: function(cytoscape.NodeSingular): void,
- *   onCanvasTap: function(): void
- * }} handlers
- *   - Tap event callbacks.
+ *   elements: Array;
+ *   relations: Array;
+ *   onNodeTap: function;
+ *   (string): void;
+ *   onNodeDblTap: function;
+ *   (string): void;
+ *   onCanvasTap: function;
+ *   (): void;
+ *   getDrillNodeId: function;
+ *   (): string | undefined;
+ * }} params
+ *   - Model data and event callbacks for the new Cytoscape instance.
  */
-export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
-  if (state.cy) {
-    state.cy.destroy();
-    state.cy = undefined;
+export function buildCytoscape({
+  elements,
+  relations,
+  onNodeTap,
+  onNodeDblTap,
+  onCanvasTap,
+  getDrillNodeId,
+}) {
+  if (_cy) {
+    _cy.destroy();
+    _cy = undefined;
   }
 
-  const elemIds = new Set(state.allElements.map((e) => e.id));
+  const elemIds = new Set(elements.map((e) => e.id));
 
   // oxlint-disable-next-line no-undef
-  state.cy = cytoscape({
+  _cy = cytoscape({
     container: document.getElementById('cy'),
-    elements: { nodes: buildNodes(elemIds), edges: buildEdges(elemIds) },
+    elements: {
+      nodes: buildNodes(elements, elemIds),
+      edges: buildEdges(elements, relations, elemIds),
+    },
     style: buildCyStyles(),
     layout: { name: 'grid' },
     userZoomingEnabled: true,
@@ -238,9 +299,9 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
     maxZoom: 6,
   });
 
-  bindCyEvents(state.cy, onNodeTap, onNodeDblTap, onCanvasTap);
+  bindCyEvents(_cy, onNodeTap, onNodeDblTap, onCanvasTap, getDrillNodeId);
   setupPointerInteractions();
-  updateStats();
+  updateStats(elements, relations);
 }
 
 /**
@@ -249,13 +310,13 @@ export function buildCytoscape({ onNodeTap, onNodeDblTap, onCanvasTap }) {
  * label widths to match their rendered size.
  */
 export function applyLayout() {
-  if (!state.cy) {
+  if (!_cy) {
     return;
   }
   const name = document.getElementById('layout-select').value;
   // Run layout only on visible elements — on large models hidden nodes would
   // Dominate computation and produce wrong positions for the visible subset.
-  const eles = state.cy.elements(':visible');
+  const eles = _cy.elements(':visible');
   // Animate only for smaller graphs; animation is distracting on large ones.
   const anim = eles.nodes().length < LAYOUT_ANIM_THRESHOLD;
 
@@ -342,7 +403,7 @@ export function applyLayout() {
   layoutInst.on('layoutstop', () => {
     // After layout, set text-max-width on compound nodes to match their actual rendered width
     // So long labels wrap correctly rather than overflowing the container box.
-    for (const n of state.cy.nodes(':parent:visible')) {
+    for (const n of _cy.nodes(':parent:visible')) {
       n.style('text-max-width', `${Math.max(n.width() - 24, 40)}px`);
     }
   });
@@ -351,31 +412,234 @@ export function applyLayout() {
 
 /** Fits the graph to the viewport with the standard padding. */
 export function fitGraph() {
-  state.cy?.fit(undefined, FIT_PADDING);
+  _cy?.fit(undefined, FIT_PADDING);
 }
 
 /**
- * Updates the stats bar (#stat-nodes, #stat-edges, #stat-visible) based on the current visible
- * element and relationship counts. In drill mode, shows visible/total for both nodes and edges.
+ * Updates the sidebar count badges based on the current visible element and relationship counts.
+ * Shows "visible / total" when they differ, or just "total" when all are visible.
+ *
+ * @param {Array} allElements - All model elements.
+ * @param {Array} allRelations - All model relations.
  */
-export function updateStats() {
-  if (!state.cy) {
+export function updateStats(allElements, allRelations) {
+  if (!_cy) {
     return;
   }
-  const vis = state.cy.elements(':visible');
+  const vis = _cy.elements(':visible');
   const visN = vis.nodes().length;
   const visE = vis.edges().filter((e) => !e.data('isContainment')).length;
-  const totN = state.allElements.length;
-  const totE = state.allRelations.length;
+  const totN = allElements.length;
+  const totE = allRelations.length;
 
-  if (state.drillNodeId) {
-    // Drill mode: show visible/total for both counts
-    document.getElementById('stat-nodes').textContent = t('statNodes', `${visN} / ${totN}`);
-    document.getElementById('stat-edges').textContent = t('statEdges', `${visE} / ${totE}`);
-    document.getElementById('stat-visible').textContent = '';
-  } else {
-    document.getElementById('stat-nodes').textContent = t('statNodes', totN);
-    document.getElementById('stat-edges').textContent = t('statEdges', totE);
-    document.getElementById('stat-visible').textContent = t('statVisible', visN, visE);
+  const badgeElem = document.getElementById('badge-elem');
+  const badgeRel = document.getElementById('badge-rel');
+  if (badgeElem) {
+    badgeElem.textContent = visN === totN ? totN : `${visN} / ${totN}`;
   }
+  if (badgeRel) {
+    badgeRel.textContent = visE === totE ? totE : `${visE} / ${totE}`;
+  }
+}
+
+// ── ZOOM ────────────────────────────────────────────────────────────────────
+
+/** Zooms the graph in by 1.3× and re-centres. */
+export function zoomIn() {
+  if (!_cy) {
+    return;
+  }
+  _cy.zoom(_cy.zoom() * 1.3);
+  _cy.center();
+}
+
+/** Zooms the graph out by 1/1.3× and re-centres. */
+export function zoomOut() {
+  if (!_cy) {
+    return;
+  }
+  _cy.zoom(_cy.zoom() * 0.77);
+  _cy.center();
+}
+
+// ── COMPOUND PARENT SYNC ───────────────────────────────────────────────────
+
+/**
+ * In compound mode, syncs each node's parent membership against the provided visibility set. A node
+ * is moved back to its model parent when both the node and the parent are visible, and detached
+ * when either is hidden — preventing Cytoscape from collapsing the container to zero size.
+ *
+ * @param {Set<string>} visibleIds - Set of visible node IDs.
+ */
+function syncCompoundParentIds(visibleIds) {
+  if (!_cy || _containmentMode !== 'compound') {
+    return;
+  }
+  for (const n of _cy.nodes()) {
+    const origParent = n.data('modelParent');
+    if (!origParent) {
+      continue;
+    }
+    const nodeOk = visibleIds.has(n.id());
+    const parentOk = _cy.$id(origParent).length > 0 && visibleIds.has(origParent);
+    const currentParId = n.parent().length ? n.parent().id() : undefined;
+    if (nodeOk && parentOk) {
+      if (currentParId !== origParent) {
+        n.move({ parent: origParent });
+      }
+    } else if (currentParId !== undefined) {
+      // eslint-disable-next-line unicorn/no-null
+      n.move({ parent: null });
+    }
+  }
+}
+
+// ── VISIBILITY APPLICATION ──────────────────────────────────────────────────
+
+/**
+ * Returns a plain-data snapshot of all nodes and edges currently in the graph. Used by
+ * visibility.js to feed BFS without accessing _cy directly. Call only after confirming
+ * `isGraphLoaded()` — returns undefined when no graph is loaded.
+ *
+ * @returns {{ nodes: Array; edges: Array } | undefined} Snapshot of graph elements, or undefined
+ *   when no graph is loaded.
+ */
+export function getGraphSnapshot() {
+  if (!_cy) {
+    return;
+  }
+  return {
+    nodes: _cy.nodes().map((n) => ({ id: n.id(), type: n.data('type'), parent: n.parent().id() })),
+    edges: _cy.edges().map((e) => ({
+      id: e.id(),
+      type: e.data('type'),
+      source: e.source().id(),
+      target: e.target().id(),
+      isContainment: Boolean(e.data('isContainment')),
+    })),
+  };
+}
+
+/**
+ * Applies display visibility to all graph elements in a single batched operation. Also syncs
+ * compound parent membership when in compound containment mode.
+ *
+ * @param {{
+ *   visibleNodeIds: Set<string>;
+ *   isEdgeVisible: function;
+ *   (string, string, string, boolean): boolean;
+ *   forceVisibleId?: string;
+ * }} params
+ *   - `visibleNodeIds`: node IDs that should be displayed.
+ *
+ *     - `isEdgeVisible(srcId, tgtId, type, isContainment)`: predicate for each edge.
+ *     - `forceVisibleId`: always show this node regardless of the visible set (drill root).
+ */
+export function applyDisplayState({ visibleNodeIds, isEdgeVisible, forceVisibleId }) {
+  if (!_cy) {
+    return;
+  }
+  syncCompoundParentIds(visibleNodeIds);
+  _cy.batch(() => {
+    for (const n of _cy.nodes()) {
+      const show = visibleNodeIds.has(n.id()) || n.id() === forceVisibleId;
+      n.style('display', show ? 'element' : 'none');
+    }
+    for (const e of _cy.edges()) {
+      const show = isEdgeVisible(
+        e.source().id(),
+        e.target().id(),
+        e.data('type'),
+        Boolean(e.data('isContainment')),
+      );
+      e.style('display', show ? 'element' : 'none');
+    }
+  });
+}
+
+// ── DRILL-ROOT CLASS HELPERS ────────────────────────────────────────────────
+
+/**
+ * Returns true if the graph is loaded (a Cytoscape instance exists).
+ *
+ * @returns {boolean} Whether a model is currently displayed.
+ */
+export function isGraphLoaded() {
+  return Boolean(_cy);
+}
+
+/**
+ * Adds the `.drill-root` class to the node with the given ID. Used to restore the class after a
+ * graph rebuild that creates fresh node objects.
+ *
+ * @param {string} nodeId - The drill-root node ID.
+ */
+export function addDrillRootClass(nodeId) {
+  _cy?.$id(nodeId).addClass('drill-root');
+}
+
+/**
+ * Clears `.drill-root` from all nodes, then marks `nodeId` as the new drill root. Called when
+ * entering or switching the drill-down focus node.
+ *
+ * @param {string} nodeId - The new drill-root node ID.
+ */
+export function setDrillRootNode(nodeId) {
+  _cy.nodes().removeClass('drill-root');
+  _cy.$id(nodeId).addClass('drill-root');
+}
+
+/** Removes the `.drill-root` class from all nodes. Called when exiting drill mode. */
+export function clearDrillRootNodes() {
+  _cy?.nodes().removeClass('drill-root');
+}
+
+// ── NODE FOCUS ──────────────────────────────────────────────────────────────
+
+/**
+ * Returns true when the graph contains a visible node with the given ID.
+ *
+ * @param {string} id - Node ID to check.
+ * @returns {boolean} Whether the node exists in the current graph.
+ */
+export function hasGraphNode(id) {
+  return Boolean(_cy?.$id(id).length);
+}
+
+/**
+ * Resizes the Cytoscape canvas, animates the camera to the node with `id`, and selects it. Returns
+ * true if the node was found and the animation was started, false otherwise.
+ *
+ * @param {string} id - The element ID to focus.
+ * @returns {boolean} Whether the node was found.
+ */
+export function focusCyNode(id) {
+  if (!_cy) {
+    return false;
+  }
+  _cy.resize();
+  const node = _cy.$id(id);
+  if (!node?.length) {
+    return false;
+  }
+  _cy.animate({ center: { eles: node }, zoom: FOCUS_ZOOM }, { duration: 400 });
+  node.select();
+  return true;
+}
+
+// ── THEME ───────────────────────────────────────────────────────────────────
+
+/**
+ * Refreshes the Cytoscape edge label background colour to match the current canvas background.
+ * Called after a theme change so the label knockout matches the new theme.
+ *
+ * @param {function(): string} getBg - Returns the current canvas background colour.
+ */
+export function refreshEdgeLabelBg(getBg) {
+  if (!_cy) {
+    return;
+  }
+  requestAnimationFrame(() =>
+    _cy.style().selector('edge').style('text-background-color', getBg()).update(),
+  );
 }

@@ -1,10 +1,53 @@
 // ── MODEL LIST ─────────────────────────────────────────────────────────────
 
-import { apiFetch } from './auth.js';
-import { MODELS_API } from './constants.js';
+import { apiFetch, BASE } from './auth.js';
 import { t } from './i18n.js';
-import { state } from './state.js';
-import { escHtml, modelContentUrl, modelTypeLabel } from './utils.js';
+import { escHtml } from './ui.js';
+
+const MODELS_API = `${BASE}/api/models?size=100`;
+
+/**
+ * Derives a short human-readable label from a model's `contentType` string.
+ *
+ * @param {string | undefined} contentType - The model's MIME-type-like content type.
+ * @returns {string} Short label, or "?" when no recognisable pattern is found.
+ */
+export function modelTypeLabel(contentType) {
+  if (!contentType) {
+    return '?';
+  }
+  const m = contentType.match(/\/metamodel\/([^/]+)\//);
+  if (m) {
+    return m[1].toUpperCase();
+  }
+  const hash = contentType.split('#')[1];
+  return hash ? hash.replace(/Model$/, '') : '?';
+}
+
+/**
+ * Resolves the content fetch URL for a model object returned by the API. Prefers the
+ * `_links.content` HAL link; falls back to constructing the canonical API path from the model's
+ * slug fields.
+ *
+ * @param {object} model - A model object from the API model list.
+ * @returns {string | undefined} The content URL, or undefined if it cannot be resolved.
+ */
+export function modelContentUrl(model) {
+  const links = model._links?.content;
+  if (Array.isArray(links) && links[0]?.href) {
+    return links[0].href.replaceAll(/\{[^}]*\}/g, '');
+  }
+  if (links?.href) {
+    return links.href.replaceAll(/\{[^}]*\}/g, '');
+  }
+  const { scopeSlug, projectSlug, projectVersion, slug } = model;
+  if (scopeSlug && projectSlug && projectVersion && slug) {
+    return `${BASE}/api/models/${scopeSlug}/${projectSlug}/${projectVersion}/${slug}/content?format=json`;
+  }
+}
+
+// Cached model list — owned here rather than in global state.
+let _models = [];
 
 /**
  * Fetches the full paginated model list from the API. Follows `_links.next` until all pages are
@@ -34,11 +77,29 @@ export async function fetchModelList() {
   return models;
 }
 
+/**
+ * Sets the cached model list. Called once after a successful model-list fetch.
+ *
+ * @param {Array} models - List of model objects from the API.
+ */
+export function setCachedModels(models) {
+  _models = models;
+}
+
+/**
+ * Returns the cached model list.
+ *
+ * @returns {Array} Cached model objects.
+ */
+export function getCachedModels() {
+  return _models;
+}
+
 /** Opens the model-selector modal and focuses the search input. */
 export function openModelSelector() {
   document.getElementById('model-modal').classList.remove('hidden');
   document.getElementById('model-search').value = '';
-  renderModelList(state.cachedModels, '');
+  renderModelList(_models, '');
   document.getElementById('model-search').focus();
 }
 
@@ -96,8 +157,7 @@ export function renderModelList(models, query) {
         );
       });
     } else {
-      item.style.opacity = '0.4';
-      item.style.cursor = 'not-allowed';
+      item.classList.add('disabled');
     }
     container.append(item);
   }
@@ -114,7 +174,7 @@ export function renderModelList(models, query) {
  * @param {string} query - Search string typed by the user.
  */
 export function filterModelList(query) {
-  renderModelList(state.cachedModels, query);
+  renderModelList(_models, query);
 }
 
 /**

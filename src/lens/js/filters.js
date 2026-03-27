@@ -1,15 +1,68 @@
 // ── FILTER PANEL UI ─────────────────────────────────────────────────────────────
 //
-// Builds and manages the sidebar filter checkboxes for element types and
-// Relationship types.  Visibility logic (applyVisibility, applyDrill, etc.)
-// Lives in visibility.js; this module only handles the UI and filter state.
+// Owns filter state (activeElemTypes, activeRelTypes, elemTypeTotals, relTypeTotals)
+// And manages the sidebar filter checkboxes.
+//
+// Visibility.js imports filter state getters from this module (one-way).
+// To trigger visibility updates without a reverse import, this module
+// Dispatches 'lens:applyVisibility' on document; app.js wires the handler.
 
-import { syncUrl } from './routing.js';
-import { state } from './state.js';
-import { elemColor, escHtml, relColor } from './utils.js';
-import { applyVisibility } from './visibility.js';
+import { getAllElements, getAllRelations, getCurrentModelNs } from './model.js';
+import { elemColor, relColor } from './palette.js';
+import { escHtml } from './ui.js';
 
-// ── FILTER LIST BUILD ───────────────────────────────────────────────────────
+// ── FILTER STATE ─────────────────────────────────────────────────────────────
+
+/** @type {Set<string>} element type names currently shown */
+let _activeElemTypes = new Set();
+
+/** @type {Set<string>} relationship type names currently shown */
+let _activeRelTypes = new Set();
+
+/** @type {Object<string, number>} element type → total count */
+let _elemTypeTotals = {};
+
+/** @type {Object<string, number>} relationship type → total count */
+let _relTypeTotals = {};
+
+export function getActiveElemTypes() {
+  return _activeElemTypes;
+}
+
+export function getActiveRelTypes() {
+  return _activeRelTypes;
+}
+
+export function getElemTypeTotals() {
+  return _elemTypeTotals;
+}
+
+export function getRelTypeTotals() {
+  return _relTypeTotals;
+}
+
+/** @param {Set<string>} s Set of element type names to show */
+export function setActiveElemTypes(s) {
+  _activeElemTypes = s;
+}
+
+/** @param {Set<string>} s Set of relationship type names to show */
+export function setActiveRelTypes(s) {
+  _activeRelTypes = s;
+}
+
+/**
+ * Stores the per-type totals computed after each model load.
+ *
+ * @param {Object<string, number>} elemTypeTotals Map of element type name to total count
+ * @param {Object<string, number>} relTypeTotals Map of relationship type name to total count
+ */
+export function setFilterCounts(elemTypeTotals, relTypeTotals) {
+  _elemTypeTotals = elemTypeTotals;
+  _relTypeTotals = relTypeTotals;
+}
+
+// ── FILTER LIST BUILD ────────────────────────────────────────────────────────
 
 /**
  * Pure: counts element and relationship types across a model. Only relations whose both endpoints
@@ -42,13 +95,12 @@ export function computeFilterCounts(allElements, allRelations) {
  */
 export function buildFilters() {
   const { elemTypeTotals: ec, relTypeTotals: rc } = computeFilterCounts(
-    state.allElements,
-    state.allRelations,
+    getAllElements(),
+    getAllRelations(),
   );
-  state.elemTypeTotals = ec;
-  state.relTypeTotals = rc;
-  state.activeElemTypes = new Set(Object.keys(ec));
-  state.activeRelTypes = new Set(Object.keys(rc));
+  setFilterCounts(ec, rc);
+  setActiveElemTypes(new Set(Object.keys(ec)));
+  setActiveRelTypes(new Set(Object.keys(rc)));
   renderFilterList('elem', ec, elemColor);
   renderFilterList('rel', rc, relColor);
 }
@@ -68,7 +120,7 @@ function renderFilterList(kind, counts, colorFn) {
     item.className = 'filter-item';
     item.innerHTML = `
       <input type="checkbox" checked data-kind="${kind}" data-type="${escHtml(type)}">
-      <span class="dot" style="background:${colorFn(type)}"></span>
+      <span class="dot" style="--dot-color:${colorFn(type)}"></span>
       <span class="item-label" title="${escHtml(type)}">${escHtml(type)}</span>
       <span class="count">${count}</span>`;
     item.querySelector('input').addEventListener('change', onFilterChange);
@@ -76,7 +128,7 @@ function renderFilterList(kind, counts, colorFn) {
   }
 }
 
-// ── FILTER STATE CHANGES ────────────────────────────────────────────────────
+// ── FILTER STATE CHANGES ─────────────────────────────────────────────────────
 
 /**
  * Handles a checkbox change event: updates the active-type set, reapplies visibility, persists the
@@ -86,15 +138,15 @@ function renderFilterList(kind, counts, colorFn) {
  */
 function onFilterChange(e) {
   const { kind, type } = e.target.dataset;
-  const set = kind === 'elem' ? state.activeElemTypes : state.activeRelTypes;
+  const set = kind === 'elem' ? _activeElemTypes : _activeRelTypes;
   if (e.target.checked) {
     set.add(type);
   } else {
     set.delete(type);
   }
-  applyVisibility();
+  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
   saveFilterState();
-  syncUrl();
+  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
 }
 
 /**
@@ -104,18 +156,18 @@ function onFilterChange(e) {
  * @param {boolean} val - True to check all, false to uncheck all.
  */
 export function selectAll(kind, val) {
+  const set = kind === 'elem' ? _activeElemTypes : _activeRelTypes;
   for (const el of document.querySelectorAll(`[data-kind="${kind}"]`)) {
     el.checked = val;
-    const set = kind === 'elem' ? state.activeElemTypes : state.activeRelTypes;
     if (val) {
       set.add(el.dataset.type);
     } else {
       set.delete(el.dataset.type);
     }
   }
-  applyVisibility();
+  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
   saveFilterState();
-  syncUrl();
+  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
 }
 
 /**
@@ -131,21 +183,21 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
     const visible = visibleE.has(el.dataset.type);
     el.checked = visible;
     if (visible) {
-      state.activeElemTypes.add(el.dataset.type);
+      _activeElemTypes.add(el.dataset.type);
     } else {
-      state.activeElemTypes.delete(el.dataset.type);
+      _activeElemTypes.delete(el.dataset.type);
     }
   }
   for (const el of document.querySelectorAll('[data-kind="rel"]')) {
     const visible = visibleR.has(el.dataset.type);
     el.checked = visible;
     if (visible) {
-      state.activeRelTypes.add(el.dataset.type);
+      _activeRelTypes.add(el.dataset.type);
     } else {
-      state.activeRelTypes.delete(el.dataset.type);
+      _activeRelTypes.delete(el.dataset.type);
     }
   }
-  applyVisibility();
+  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
 }
 
 /**
@@ -158,13 +210,12 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
 export function filterSearch(kind, query) {
   const q = query.toLowerCase();
   for (const el of document.querySelectorAll(`[data-kind="${kind}"]`)) {
-    el.closest('.filter-item').style.display = el.dataset.type.toLowerCase().includes(q)
-      ? ''
-      : 'none';
+    const visible = el.dataset.type.toLowerCase().includes(q);
+    el.closest('.filter-item').classList.toggle('hidden', !visible);
   }
 }
 
-// ── FILTER STATE PERSISTENCE ────────────────────────────────────────────────
+// ── FILTER STATE PERSISTENCE ─────────────────────────────────────────────────
 
 // Stored as: { [namespaceURI]: { hiddenEntityTypes: string[], hiddenRelationshipTypes: string[] } }
 const LS_KEY = 'architeezyLensFilter';
@@ -174,15 +225,16 @@ const LS_KEY = 'architeezyLensFilter';
  * URI.
  */
 export function saveFilterState() {
-  if (!state.currentModelNs) {
+  const ns = getCurrentModelNs();
+  if (!ns) {
     return;
   }
-  const allETypes = new Set(state.allElements.map((e) => e.type));
-  const allRTypes = new Set(state.allRelations.map((r) => r.type));
-  const hiddenEntityTypes = [...allETypes].filter((t) => !state.activeElemTypes.has(t));
-  const hiddenRelationshipTypes = [...allRTypes].filter((t) => !state.activeRelTypes.has(t));
+  const allETypes = new Set(getAllElements().map((e) => e.type));
+  const allRTypes = new Set(getAllRelations().map((r) => r.type));
+  const hiddenEntityTypes = [...allETypes].filter((t) => !_activeElemTypes.has(t));
+  const hiddenRelationshipTypes = [...allRTypes].filter((t) => !_activeRelTypes.has(t));
   const all = JSON.parse(localStorage.getItem(LS_KEY) ?? '{}');
-  all[state.currentModelNs] = { hiddenEntityTypes, hiddenRelationshipTypes };
+  all[ns] = { hiddenEntityTypes, hiddenRelationshipTypes };
   localStorage.setItem(LS_KEY, JSON.stringify(all));
 }
 
@@ -192,11 +244,12 @@ export function saveFilterState() {
  * no saved state is found.
  */
 export function loadFilterState() {
-  if (!state.currentModelNs) {
+  const ns = getCurrentModelNs();
+  if (!ns) {
     return;
   }
   const all = JSON.parse(localStorage.getItem(LS_KEY) ?? '{}');
-  const saved = all[state.currentModelNs];
+  const saved = all[ns];
   if (!saved) {
     return;
   }
@@ -205,13 +258,13 @@ export function loadFilterState() {
   for (const el of document.querySelectorAll('[data-kind="elem"]')) {
     if (hiddenE.has(el.dataset.type)) {
       el.checked = false;
-      state.activeElemTypes.delete(el.dataset.type);
+      _activeElemTypes.delete(el.dataset.type);
     }
   }
   for (const el of document.querySelectorAll('[data-kind="rel"]')) {
     if (hiddenR.has(el.dataset.type)) {
       el.checked = false;
-      state.activeRelTypes.delete(el.dataset.type);
+      _activeRelTypes.delete(el.dataset.type);
     }
   }
 }

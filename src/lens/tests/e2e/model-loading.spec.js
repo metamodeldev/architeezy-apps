@@ -17,11 +17,11 @@ test.describe('model loading', () => {
     await expect(page.locator('#current-model-name')).toHaveText('Test Architecture');
   });
 
-  test('stats bar shows correct node and edge counts', async ({ page }) => {
+  test('sidebar badges show correct node and edge counts', async ({ page }) => {
     await loadTestModelFromSelector(page);
 
-    await expect(page.locator('#stat-nodes')).toContainText('3');
-    await expect(page.locator('#stat-edges')).toContainText('2');
+    await expect(page.locator('#badge-elem')).toContainText('3');
+    await expect(page.locator('#badge-rel')).toContainText('2');
   });
 
   test('filter panel lists element types from the model', async ({ page }) => {

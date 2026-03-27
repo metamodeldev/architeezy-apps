@@ -1,11 +1,18 @@
 // ── TABLE VIEW ─────────────────────────────────────────────────────────────
 
-import { FOCUS_ZOOM } from './constants.js';
 import { showDetail } from './detail.js';
+import { getDrillVisibleIds } from './drill.js';
+import { getActiveElemTypes, getActiveRelTypes } from './filters.js';
+import { focusCyNode } from './graph.js';
 import { t } from './i18n.js';
-import { state } from './state.js';
-import { switchView } from './ui.js';
-import { elemColor, escHtml, relColor } from './utils.js';
+import { getAllElements, getAllRelations, getElemMap } from './model.js';
+import { escHtml, switchView } from './ui.js';
+import { elemColor, relColor } from './palette.js';
+
+// Table UI state — owned here, not in global state.
+let _currentTTab = 'elements';
+let _sortCol;
+let _sortAsc = true;
 
 /**
  * Switches the active table tab (elements or relationships). Resets the sort state and re-renders
@@ -14,8 +21,8 @@ import { elemColor, escHtml, relColor } from './utils.js';
  * @param {'elements' | 'relationships'} tab - The tab to activate.
  */
 export function switchTableTab(tab) {
-  state.currentTTab = tab;
-  state.tableSortCol = undefined;
+  _currentTTab = tab;
+  _sortCol = undefined;
   document.getElementById('ttab-elements').classList.toggle('active', tab === 'elements');
   document.getElementById('ttab-rels').classList.toggle('active', tab === 'relationships');
   document.getElementById('table-search').value = '';
@@ -30,7 +37,7 @@ export function renderTable() {
   const q = document.getElementById('table-search').value.toLowerCase();
   const head = document.getElementById('table-head');
   const body = document.getElementById('table-body');
-  if (state.currentTTab === 'elements') {
+  if (_currentTTab === 'elements') {
     renderElemsTable(q, head, body);
   } else {
     renderRelsTable(q, head, body);
@@ -40,53 +47,66 @@ export function renderTable() {
 // ── SHARED HELPERS ──────────────────────────────────────────────────────────
 
 /**
- * Returns the HTML string for the table header row with sort icons.
+ * Pure: returns the HTML string for the table header row with sort icons.
  *
  * @param {string[]} cols - Column header labels.
+ * @param {number | undefined} sortCol - Index of the currently sorted column.
+ * @param {boolean} sortAsc - True if sorted ascending.
  * @returns {string} HTML for a `<tr>` containing `<th>` elements.
  */
-function thHtml(cols) {
+function thHtml(cols, sortCol, sortAsc) {
   return `<tr>${cols
     .map((c, i) => {
-      const sorted = state.tableSortCol === i;
+      const sorted = sortCol === i;
       return `<th class="${sorted ? 'sorted' : ''}" data-col="${i}">
-      ${escHtml(c)} <span class="sort-icon">${sorted ? (state.tableSortAsc ? '▲' : '▼') : '⇅'}</span></th>`;
+      ${escHtml(c)} <span class="sort-icon">${sorted ? (sortAsc ? '▲' : '▼') : '⇅'}</span></th>`;
     })
     .join('')}</tr>`;
 }
 
 /**
- * Attaches click handlers to all `<th>` elements in `#table-head` to toggle sort column and
- * direction, then re-renders the table.
+ * Wires delegated click listeners on `#table-head` and `#table-body`. Called once at app startup —
+ * handles all dynamically rendered rows and headers via event delegation.
  */
-function bindSortClicks() {
-  for (const th of document.querySelectorAll('#table-head th')) {
-    th.addEventListener('click', () => {
-      const col = Number(th.dataset.col);
-      state.tableSortAsc = state.tableSortCol === col ? !state.tableSortAsc : true;
-      state.tableSortCol = col;
-      renderTable();
-    });
-  }
+export function initTableEvents() {
+  document.getElementById('table-head').addEventListener('click', (e) => {
+    const th = e.target.closest('th[data-col]');
+    if (!th) {
+      return;
+    }
+    const col = Number(th.dataset.col);
+    _sortAsc = _sortCol === col ? !_sortAsc : true;
+    _sortCol = col;
+    renderTable();
+  });
+
+  document.getElementById('table-body').addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-id]');
+    if (tr) {
+      focusNode(tr.dataset.id);
+    }
+  });
 }
 
 /**
- * Sorts `rows` by column index using `getKey(row) → string`. Returns the original array if no sort
- * column is selected.
+ * Pure: sorts `rows` by column index using `getKey(row) → string`. Returns the original array if no
+ * sort column is selected.
  *
  * @template T
  * @param {T[]} rows - Rows to sort.
  * @param {function(T): string | undefined} getKey - Extracts the sort key for a row.
+ * @param {number | undefined} sortCol - Index of the sorted column.
+ * @param {boolean} sortAsc - True if sorted ascending.
  * @returns {T[]} Sorted copy (or original array when no sort is active).
  */
-function sortRows(rows, getKey) {
-  if (state.tableSortCol === undefined) {
+function sortRows(rows, getKey, sortCol, sortAsc) {
+  if (sortCol === undefined) {
     return rows;
   }
   return [...rows].toSorted((a, b) => {
     const av = getKey(a) ?? '';
     const bv = getKey(b) ?? '';
-    return state.tableSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+    return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
   });
 }
 
@@ -100,17 +120,6 @@ function updateTableCount(visible, total) {
   document.getElementById('table-count').textContent = `${visible} / ${total}`;
 }
 
-/**
- * Attaches a click handler to each data row in `body` that calls `focusNode`.
- *
- * @param {HTMLTableSectionElement} body - The `<tbody>` element containing rows.
- */
-function bindRowClicks(body) {
-  for (const tr of body.querySelectorAll('tr[data-id]')) {
-    tr.addEventListener('click', () => focusNode(tr.dataset.id));
-  }
-}
-
 // ── ELEMENT TABLE ───────────────────────────────────────────────────────────
 
 /**
@@ -122,33 +131,33 @@ function bindRowClicks(body) {
  * @param {HTMLElement} body - The `<tbody>` element.
  */
 function renderElemsTable(q, head, body) {
-  head.innerHTML = thHtml([t('colName'), t('colType'), t('colDoc')]);
-  bindSortClicks();
+  head.innerHTML = thHtml([t('colName'), t('colType'), t('colDoc')], _sortCol, _sortAsc);
 
   const colKeys = ['name', 'type', 'doc'];
 
-  let rows = state.allElements.filter(
+  const activeElemTypes = getActiveElemTypes();
+  const drillVisibleIds = getDrillVisibleIds();
+  const allElements = getAllElements();
+  let rows = allElements.filter(
     (e) =>
-      state.activeElemTypes.has(e.type) &&
-      (!state.drillVisibleIds || state.drillVisibleIds.has(e.id)) &&
+      activeElemTypes.has(e.type) &&
+      (!drillVisibleIds || drillVisibleIds.has(e.id)) &&
       (!q || [e.name, e.type, e.ns, e.doc].some((v) => v?.toLowerCase().includes(q))),
   );
 
-  rows = sortRows(rows, (e) => e[colKeys[state.tableSortCol]] ?? '');
-  updateTableCount(rows.length, state.allElements.length);
+  rows = sortRows(rows, (e) => e[colKeys[_sortCol]] ?? '', _sortCol, _sortAsc);
+  updateTableCount(rows.length, allElements.length);
 
   body.innerHTML = rows
     .map((e) => {
       const c = elemColor(e.type);
       return `<tr data-id="${e.id}">
       <td>${escHtml(e.name)}</td>
-      <td><span class="type-badge" style="background:${c}33;color:${c}">${escHtml(e.type)}</span></td>
+      <td><span class="type-badge" style="--type-bg:${c}33;--type-color:${c}">${escHtml(e.type)}</span></td>
       <td class="wrap">${escHtml(e.doc) || '—'}</td>
     </tr>`;
     })
     .join('');
-
-  bindRowClicks(body);
 }
 
 // ── RELATIONSHIP TABLE ──────────────────────────────────────────────────────
@@ -162,62 +171,70 @@ function renderElemsTable(q, head, body) {
  * @param {HTMLElement} body - The `<tbody>` element.
  */
 function renderRelsTable(q, head, body) {
-  head.innerHTML = thHtml([t('colSource'), t('colRelType'), t('colTarget'), t('colRelName')]);
-  bindSortClicks();
+  head.innerHTML = thHtml(
+    [t('colSource'), t('colRelType'), t('colTarget'), t('colRelName')],
+    _sortCol,
+    _sortAsc,
+  );
 
-  let rows = state.allRelations.filter((r) => {
-    if (!state.activeRelTypes.has(r.type)) {
+  const activeElemTypes = getActiveElemTypes();
+  const activeRelTypes = getActiveRelTypes();
+  const drillVisibleIds = getDrillVisibleIds();
+  const elemMap = getElemMap();
+  const allRelations = getAllRelations();
+  let rows = allRelations.filter((r) => {
+    if (!activeRelTypes.has(r.type)) {
       return false;
     }
-    const srcType = state.elemMap[r.source]?.type;
-    const tgtType = state.elemMap[r.target]?.type;
-    if (srcType && !state.activeElemTypes.has(srcType)) {
+    const srcType = elemMap[r.source]?.type;
+    const tgtType = elemMap[r.target]?.type;
+    if (srcType && !activeElemTypes.has(srcType)) {
       return false;
     }
-    if (tgtType && !state.activeElemTypes.has(tgtType)) {
+    if (tgtType && !activeElemTypes.has(tgtType)) {
       return false;
     }
-    if (
-      state.drillVisibleIds &&
-      (!state.drillVisibleIds.has(r.source) || !state.drillVisibleIds.has(r.target))
-    ) {
+    if (drillVisibleIds && (!drillVisibleIds.has(r.source) || !drillVisibleIds.has(r.target))) {
       return false;
     }
     if (!q) {
       return true;
     }
-    const src = state.elemMap[r.source]?.name ?? '';
-    const tgt = state.elemMap[r.target]?.name ?? '';
+    const src = elemMap[r.source]?.name ?? '';
+    const tgt = elemMap[r.target]?.name ?? '';
     return [src, r.type, tgt, r.name].some((v) => v?.toLowerCase().includes(q));
   });
 
-  rows = sortRows(rows, (r) => {
-    const vals = [
-      state.elemMap[r.source]?.name ?? '',
-      r.type,
-      state.elemMap[r.target]?.name ?? '',
-      r.name ?? '',
-    ];
-    return vals[state.tableSortCol] ?? '';
-  });
+  rows = sortRows(
+    rows,
+    (r) => {
+      const vals = [
+        elemMap[r.source]?.name ?? '',
+        r.type,
+        elemMap[r.target]?.name ?? '',
+        r.name ?? '',
+      ];
+      return vals[_sortCol] ?? '';
+    },
+    _sortCol,
+    _sortAsc,
+  );
 
-  updateTableCount(rows.length, state.allRelations.length);
+  updateTableCount(rows.length, allRelations.length);
 
   body.innerHTML = rows
     .map((r) => {
-      const src = state.elemMap[r.source]?.name ?? r.source;
-      const tgt = state.elemMap[r.target]?.name ?? r.target;
+      const src = elemMap[r.source]?.name ?? r.source;
+      const tgt = elemMap[r.target]?.name ?? r.target;
       const c = relColor(r.type);
       return `<tr data-id="${r.source}">
       <td>${escHtml(src)}</td>
-      <td><span class="type-badge" style="background:${c}33;color:${c}">${escHtml(r.type)}</span></td>
+      <td><span class="type-badge" style="--type-bg:${c}33;--type-color:${c}">${escHtml(r.type)}</span></td>
       <td>${escHtml(tgt)}</td>
       <td>${escHtml(r.name) || '—'}</td>
     </tr>`;
     })
     .join('');
-
-  bindRowClicks(body);
 }
 
 // ── FOCUS NODE ──────────────────────────────────────────────────────────────
@@ -231,15 +248,8 @@ function renderRelsTable(q, head, body) {
 export function focusNode(id) {
   switchView('graph');
   requestAnimationFrame(() => {
-    state.cy?.resize();
-    const node = state.cy?.$id(id);
-    if (!node?.length) {
-      return;
+    if (focusCyNode(id)) {
+      showDetail(id);
     }
-    // Always zoom to FOCUS_ZOOM so the node is comfortably visible regardless
-    // Of the current zoom level (whether it was very far in or out).
-    state.cy.animate({ center: { eles: node }, zoom: FOCUS_ZOOM }, { duration: 400 });
-    node.select();
-    showDetail(id);
   });
 }

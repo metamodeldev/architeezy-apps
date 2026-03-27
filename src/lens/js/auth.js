@@ -1,7 +1,9 @@
 // ── AUTH ───────────────────────────────────────────────────────────────────
 
-import { AUTH_URL, BASE } from './constants.js';
 import { t } from './i18n.js';
+
+export const BASE = 'https://architeezy.com';
+const AUTH_URL = `${BASE}/-/auth`;
 
 let authToken; // Bearer token; kept in memory only
 let cookieAuthed = false; // True when /api/users/current succeeds without a token (same-domain cookie session)
@@ -41,10 +43,10 @@ export async function probeAuth() {
 /** Syncs the auth-related header elements to the current session state. */
 export function updateAuthUI() {
   const authed = cookieAuthed || Boolean(authToken);
-  document.getElementById('auth-btn').style.display = authed ? 'none' : '';
-  document.getElementById('user-info').style.display = authed ? '' : 'none';
+  document.getElementById('auth-btn').classList.toggle('hidden', authed);
+  document.getElementById('user-info').classList.toggle('visible', authed);
   // Sign-out button only shown for token auth; cookie sessions are managed server-side
-  document.getElementById('signout-btn').style.display = !cookieAuthed && authToken ? '' : 'none';
+  document.getElementById('signout-btn').classList.toggle('hidden', cookieAuthed || !authToken);
 }
 
 /**

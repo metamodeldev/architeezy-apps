@@ -1,4 +1,109 @@
-// ── UNIVERSAL PARSER ───────────────────────────────────────────────────────
+// ── MODEL DATA ───────────────────────────────────────────────────────────────
+//
+// Stores parsed model data and exposes read-only access to all modules.
+// Written once per model load via loadModelData(); everything else is read-only.
+//
+// Also owns model identity (_currentModelId / _currentModelNs) and the
+// Universal JSON parser (formerly parser.js).
+
+// ── ECORE / UUID ─────────────────────────────────────────────────────────────
+
+/** Full URI of the ecore namespace used in EMF models. */
+export const ECORE_NS = 'http://www.eclipse.org/emf/2002/Ecore';
+
+export const UUID_RE = /^[0-9a-f]{8,}(-[0-9a-f]+)*$/i;
+
+/**
+ * Returns true if `v` is a string that looks like a UUID or UUID-like identifier.
+ *
+ * @param {unknown} v - The value to test.
+ * @returns {boolean} True if the value is a UUID-like string.
+ */
+export function isUUID(v) {
+  return typeof v === 'string' && UUID_RE.test(v);
+}
+
+// ── MODEL IDENTITY ────────────────────────────────────────────────────────────
+
+/** @type {string | undefined} UUID of the currently loaded model */
+let _currentModelId;
+
+/** @type {string} Full namespace URI of the model; used as filter-state localStorage key. */
+let _currentModelNs = '';
+
+export function getCurrentModelId() {
+  return _currentModelId;
+}
+
+export function getCurrentModelNs() {
+  return _currentModelNs;
+}
+
+/**
+ * Records the identity of the loaded model. Called by app.js after a successful load.
+ *
+ * @param {string | undefined} id UUID of the model, or undefined to clear
+ * @param {string} ns Full namespace URI of the model
+ */
+export function setCurrentModel(id, ns) {
+  _currentModelId = id;
+  _currentModelNs = ns;
+}
+
+// ── MODEL DATA ────────────────────────────────────────────────────────────────
+
+/**
+ * @type {{
+ *   id: string;
+ *   type: string;
+ *   ns: string;
+ *   name: string;
+ *   doc: string;
+ *   parent: string | null;
+ * }[]}
+ */
+let _allElements = [];
+
+/** @type {{ id: string; type: string; source: string; target: string; name: string }[]} */
+let _allRelations = [];
+
+/**
+ * @type {Object<
+ *   string,
+ *   { id: string; type: string; ns: string; name: string; doc: string; parent: string | null }
+ * >}
+ *   id → element lookup
+ */
+let _elemMap = {};
+
+export function getAllElements() {
+  return _allElements;
+}
+
+export function getAllRelations() {
+  return _allRelations;
+}
+
+export function getElemMap() {
+  return _elemMap;
+}
+
+/**
+ * Parses a raw model JSON response, stores the resulting elements, relations, and element map, and
+ * returns the model namespace URI (for setCurrentModel).
+ *
+ * @param {object} raw - Raw JSON body of a model content API response.
+ * @returns {string} currentModelNs — full namespace URI of the loaded model.
+ */
+export function loadModelData(raw) {
+  const { allElements, allRelations, elemMap, currentModelNs } = parseModel(raw);
+  _allElements = allElements;
+  _allRelations = allRelations;
+  _elemMap = elemMap;
+  return currentModelNs;
+}
+
+// ── PARSER ────────────────────────────────────────────────────────────────────
 //
 // Fully structural — no hardcoded type names or property keys.
 //
@@ -12,9 +117,6 @@
 //   • UUID string items        → edge from currentId to that UUID
 //
 // Content[0] is always the model root — only its data is walked (root itself skipped).
-
-import { ECORE_NS } from './constants.js';
-import { isUUID } from './utils.js';
 
 function parseEClass(eClassStr, nsMap) {
   const sep = eClassStr.lastIndexOf(':');
@@ -33,8 +135,7 @@ function parseEClass(eClassStr, nsMap) {
  *   elemMap: object;
  *   currentModelNs: string;
  *   modelNsMap: object;
- * }}
- *   The parsed graph elements and relations.
+ * }} The parsed graph elements and relations.
  */
 export function parseModel(raw) {
   const allElements = [];

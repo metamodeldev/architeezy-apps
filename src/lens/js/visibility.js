@@ -2,12 +2,27 @@
 //
 // All logic that decides which Cytoscape elements are shown or hidden lives
 // Here, separated from the filter-panel UI (filters.js) and the drill-down
-// Entry/exit flow (drill.js).  Both modules import from this one; this module
-// Does not import from either of them.
+// Entry/exit flow (drill.js). This module reads state from those modules
+// (one-way). drill.js and filters.js trigger updates via CustomEvents wired
+// In app.js — no reverse import.
 
-import { updateStats } from './graph.js';
-import { state } from './state.js';
+import { getDrillDepth, getDrillNodeId, getDrillVisibleIds, setDrillVisibleIds } from './drill.js';
+import {
+  getActiveElemTypes,
+  getActiveRelTypes,
+  getElemTypeTotals,
+  getRelTypeTotals,
+} from './filters.js';
+import {
+  applyDisplayState,
+  getContainmentMode,
+  getGraphSnapshot,
+  isGraphLoaded,
+  updateStats,
+} from './graph.js';
+import { getAllElements, getAllRelations, getElemMap } from './model.js';
 import { renderTable } from './table.js';
+import { getCurrentView } from './ui.js';
 
 // ── PURE HELPERS (exported for unit tests) ──────────────────────────────────
 
@@ -99,7 +114,6 @@ function buildChildrenIndex(nodes) {
  * @returns {{ visibleIds: Set<string>; nodeDepth: Map<string, number> }} The BFS result with
  *   visible node IDs and depths.
  */
-
 export function computeDrillBfs({
   rootId,
   drillDepth,
@@ -161,16 +175,16 @@ export function computeDrillBfs({
 }
 
 /**
- * Counts elements in the current drill scope per type. Uses drillVisibleIds so the count reflects
- * the BFS result (including type filter).
+ * Pure: counts elements in the drill scope per type.
  *
- * @returns {Object<string, number>} Element counts per type within the drill
- * scope.
+ * @param {Array} allElements - All model elements.
+ * @param {Set<string> | undefined} drillVisibleIds - Visible node IDs in drill scope.
+ * @returns {Object<string, number>} Element counts per type within the drill scope.
  */
-function computeDrillElemCounts() {
+function computeDrillElemCounts(allElements, drillVisibleIds) {
   const counts = {};
-  for (const e of state.allElements) {
-    if (state.drillVisibleIds?.has(e.id)) {
+  for (const e of allElements) {
+    if (drillVisibleIds?.has(e.id)) {
       counts[e.type] = (counts[e.type] ?? 0) + 1;
     }
   }
@@ -185,10 +199,12 @@ function computeDrillElemCounts() {
  * dimmed — it is available, just filtered.
  */
 export function updateElemFilterDim() {
-  const drillCounts = state.drillNodeId ? computeDrillElemCounts() : undefined;
+  const drillCounts = getDrillNodeId()
+    ? computeDrillElemCounts(getAllElements(), getDrillVisibleIds())
+    : undefined;
   for (const el of document.querySelectorAll('[data-kind="elem"]')) {
     const type = el.dataset.type;
-    const total = state.elemTypeTotals[type] ?? 0;
+    const total = getElemTypeTotals()[type] ?? 0;
     const available = drillCounts ? (drillCounts[type] ?? 0) : total;
     const item = el.closest('.filter-item');
     const countEl = item?.querySelector('.count');
@@ -203,14 +219,14 @@ export function updateElemFilterDim() {
 /** Refreshes count badges (N / M) and dim state for relationship-type filter rows. */
 export function updateRelFilterCounts() {
   const visCounts = computeVisRelCounts({
-    allRelations: state.allRelations,
-    elemMap: state.elemMap,
-    activeElemTypes: state.activeElemTypes,
-    drillVisibleIds: state.drillVisibleIds,
+    allRelations: getAllRelations(),
+    elemMap: getElemMap(),
+    activeElemTypes: getActiveElemTypes(),
+    drillVisibleIds: getDrillVisibleIds(),
   });
   for (const el of document.querySelectorAll('[data-kind="rel"]')) {
     const type = el.dataset.type;
-    const total = state.relTypeTotals[type] ?? 0;
+    const total = getRelTypeTotals()[type] ?? 0;
     const vis = visCounts[type] ?? 0;
     const item = el.closest('.filter-item');
     const countEl = item?.querySelector('.count');
@@ -224,68 +240,42 @@ export function updateRelFilterCounts() {
 // ── PUBLIC: VISIBILITY LOGIC ────────────────────────────────────────────────
 
 /**
- * In compound mode, when a child node is hidden its parent membership must be removed (node.move({
- * parent: null })) so Cytoscape does not collapse the compound container to zero size. When the
- * child becomes visible again it is restored to its original parent (modelParent data field).
- *
- * @param {function(cytoscape.NodeSingular): boolean} isVisible - Predicate returning true when the
- *   node should be visible.
- */
-export function syncCompoundParents(isVisible) {
-  if (state.containmentMode !== 'compound') {
-    return;
-  }
-  for (const n of state.cy.nodes()) {
-    const origParent = n.data('modelParent');
-    if (!origParent) {
-      continue;
-    }
-    const parentNode = state.cy.$id(origParent);
-    const parentOk = parentNode.length && isVisible(parentNode);
-    const currentParId = n.parent().length ? n.parent().id() : undefined;
-    if (isVisible(n) && parentOk) {
-      if (currentParId !== origParent) {
-        n.move({ parent: origParent });
-      }
-    } else if (currentParId !== undefined) {
-      // eslint-disable-next-line unicorn/no-null
-      n.move({ parent: null });
-    }
-  }
-}
-
-/**
  * Applies full-model visibility: hides nodes/edges whose type is not active, then refreshes filter
  * UI and (if in table view) the table.
  */
 export function applyVisibility() {
-  if (!state.cy) {
+  if (!isGraphLoaded()) {
     return;
   }
-  if (state.drillNodeId) {
+  if (getDrillNodeId()) {
     applyDrill();
     return;
   }
 
-  syncCompoundParents((n) => state.activeElemTypes.has(n.data('type')));
-  state.cy.batch(() => {
-    for (const n of state.cy.nodes()) {
-      n.style('display', state.activeElemTypes.has(n.data('type')) ? 'element' : 'none');
-    }
-    for (const e of state.cy.edges()) {
-      const srcOk = state.activeElemTypes.has(e.source().data('type'));
-      const tgtOk = state.activeElemTypes.has(e.target().data('type'));
-      const show = e.data('isContainment')
-        ? srcOk && tgtOk
-        : srcOk && tgtOk && state.activeRelTypes.has(e.data('type'));
-      e.style('display', show ? 'element' : 'none');
-    }
+  const activeElemTypes = getActiveElemTypes();
+  const activeRelTypes = getActiveRelTypes();
+  const elemMap = getElemMap();
+  const visibleNodeIds = new Set(
+    getAllElements()
+      .filter((e) => activeElemTypes.has(e.type))
+      .map((e) => e.id),
+  );
+
+  applyDisplayState({
+    visibleNodeIds,
+    isEdgeVisible: (srcId, tgtId, type, isContainment) => {
+      const srcType = elemMap[srcId]?.type;
+      const tgtType = elemMap[tgtId]?.type;
+      const srcOk = srcType !== undefined && activeElemTypes.has(srcType);
+      const tgtOk = tgtType !== undefined && activeElemTypes.has(tgtType);
+      return isContainment ? srcOk && tgtOk : srcOk && tgtOk && activeRelTypes.has(type);
+    },
   });
 
-  updateStats();
+  updateStats(getAllElements(), getAllRelations());
   updateElemFilterDim();
   updateRelFilterCounts();
-  if (state.currentView === 'table') {
+  if (getCurrentView() === 'table') {
     renderTable();
   }
 }
@@ -307,65 +297,46 @@ export function applyVisibility() {
  *   otherwise clutter the diagram.
  */
 export function applyDrill() {
-  if (!state.cy || !state.drillNodeId) {
+  const drillNodeId = getDrillNodeId();
+  const drillDepth = getDrillDepth();
+  if (!isGraphLoaded() || !drillNodeId) {
     return;
   }
 
-  const cyNodes = state.cy.nodes().map((n) => ({
-    id: n.id(),
-    type: n.data('type'),
-    parent: n.parent().id(),
-  }));
-  const cyEdges = state.cy.edges().map((e) => ({
-    id: e.id(),
-    type: e.data('type'),
-    source: e.source().id(),
-    target: e.target().id(),
-    isContainment: Boolean(e.data('isContainment')),
-  }));
-
+  const { nodes, edges } = getGraphSnapshot();
+  const activeRelTypes = getActiveRelTypes();
   const { visibleIds: visible, nodeDepth } = computeDrillBfs({
-    rootId: state.drillNodeId,
-    drillDepth: state.drillDepth,
-    nodes: cyNodes,
-    edges: cyEdges,
-    activeElemTypes: state.activeElemTypes,
-    activeRelTypes: state.activeRelTypes,
-    containmentMode: state.containmentMode,
+    rootId: drillNodeId,
+    drillDepth,
+    nodes,
+    edges,
+    activeElemTypes: getActiveElemTypes(),
+    activeRelTypes,
+    containmentMode: getContainmentMode(),
   });
 
-  state.drillVisibleIds = visible;
+  setDrillVisibleIds(visible);
 
-  syncCompoundParents((n) => visible.has(n.id()));
-  state.cy.batch(() => {
-    for (const n of state.cy.nodes()) {
-      n.style('display', visible.has(n.id()) ? 'element' : 'none');
-    }
-    for (const e of state.cy.edges()) {
-      const srcId = e.source().id();
-      const tgtId = e.target().id();
-      let show = false;
-      if (visible.has(srcId) && visible.has(tgtId)) {
-        const isRel = state.activeRelTypes.has(e.data('type'));
-        const isContainment = e.data('isContainment');
-        if (isRel || isContainment) {
-          const dSrc = nodeDepth.get(srcId) ?? state.drillDepth;
-          const dTgt = nodeDepth.get(tgtId) ?? state.drillDepth;
-          show = Math.min(dSrc, dTgt) < state.drillDepth;
-        }
+  applyDisplayState({
+    visibleNodeIds: visible,
+    isEdgeVisible: (srcId, tgtId, type, isContainment) => {
+      if (!visible.has(srcId) || !visible.has(tgtId)) {
+        return false;
       }
-      e.style('display', show ? 'element' : 'none');
-    }
+      if (!activeRelTypes.has(type) && !isContainment) {
+        return false;
+      }
+      const dSrc = nodeDepth.get(srcId) ?? drillDepth;
+      const dTgt = nodeDepth.get(tgtId) ?? drillDepth;
+      return Math.min(dSrc, dTgt) < drillDepth;
+    },
+    forceVisibleId: drillNodeId,
   });
 
-  // Bypass style has highest priority — guarantee drill-root is visible even
-  // If its type was filtered out and the batch above would hide it.
-  state.cy.$id(state.drillNodeId).style('display', 'element');
-
-  updateStats();
+  updateStats(getAllElements(), getAllRelations());
   updateElemFilterDim();
   updateRelFilterCounts();
-  if (state.currentView === 'table') {
+  if (getCurrentView() === 'table') {
     renderTable();
   }
 }

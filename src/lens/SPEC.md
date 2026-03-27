@@ -192,7 +192,8 @@ Resolution algorithm:
 - Edges: color-coded by relationship type. Edge label background colour is read from the `--cy-bg`
   CSS variable at graph-build time and updated on theme change.
 - Default layout: **fCoSE** (prevents overlap, good edge lengths).
-- Available layouts: fCoSE, Dagre, CoSE, Breadthfirst, Grid, Circle.
+- Available layouts: fCoSE, Dagre, CoSE, Breadthfirst, Grid, Circle. Layout selector and apply
+  button are in the sidebar **Settings** section.
 - Layout always runs on **visible elements only** (`eles.layout()`), so it remains fast in
   drill-down mode on large models.
 - Zoom: handled by a custom capturing wheel-event listener (factor 1.3 per notch, centred on cursor
@@ -214,8 +215,8 @@ Resolution algorithm:
 
 ### FR-5: Type Filtering
 
-- Sidebar panels named **Entities** (element types) and **Relationships** (relationship types) with
-  checkboxes for all types present in the loaded model.
+- Sidebar panels named **Entities** (element types), **Relationships** (relationship types),
+  **Details** (selected node), and **Settings** (graph options) — all collapsible.
 - Toggling a type hides/shows matching nodes or edges instantly.
 - Clicking anywhere on a filter row (checkbox, dot, label, count) toggles the type.
 - Each panel header contains **✓ / ✗ icon buttons** (select-all / select-none) inline with the
@@ -267,9 +268,10 @@ Resolution algorithm:
 - **Layout runs on the visible subset only** (`eles.layout()` instead of `cy.layout()`). On drill
   entry and depth change the layout is re-run automatically; on filter toggles within drill the
   positions are kept (only visibility changes).
-- Drill bar (visible when active): focal node name + depth selector 1–5 with visible active
-  highlight.
-- Depth change updates the layout immediately.
+- Drill bar (visible when active): focal node name. "← Full model" button exits drill-down.
+- **Link depth** row (1–5 depth selector) appears in the sidebar **Settings** section only while
+  drill-down is active; hidden when viewing the full model. Depth change updates the layout
+  immediately.
 - "← Full model" button exits drill-down.
 - Detail panel shows connections to/from the focal node; clicking a connection item enters
   drill-down on that node.
@@ -308,7 +310,7 @@ Resolution algorithm:
 
 ### FR-9: Containment Display Mode
 
-- Three modes selectable in header (persisted to `localStorage`):
+- Three modes selectable in the sidebar **Settings** section (persisted to `localStorage`):
   - **None** — containment hierarchy not visualised.
   - **Edges ◆** (default) — a filled-diamond composition edge is drawn from each parent node to each
     contained child. Diamond at the parent (source) end; no arrowhead at child end.
@@ -324,6 +326,20 @@ Resolution algorithm:
   they become visible again. Each node stores its original parent in `data.modelParent` at build
   time. A compound node with no structural children is treated as a leaf node by Cytoscape and
   renders at its natural label-based size.
+
+### FR-13: Sidebar Settings Panel
+
+A collapsible **Settings** section at the bottom of the sidebar scroll area contains graph display
+options as labelled rows (label width 100 px, control fills remaining space):
+
+| Row        | Control                                                       | Visible              |
+| ---------- | ------------------------------------------------------------- | -------------------- |
+| Layout     | Layout `<select>` (fCoSE / Dagre / CoSE / …) + ⟳ apply button | Always               |
+| Nesting    | Containment mode `<select>` (none / edges ◆ / shapes ⬚)       | Always               |
+| Link depth | Depth picker buttons 1–5                                      | Drill-down mode only |
+
+The **Link depth** row is hidden (`display: none`) when viewing the full model and shown when
+drill-down is active. It replaces the depth selector that was previously in the drill bar.
 
 ### FR-12: URL State (Deep Links)
 
@@ -397,7 +413,8 @@ percent-encoding.
   than 280 px, never narrower than 180 px.
 - Header uses `flex-wrap: wrap`; at ≤ 600 px the `.ctrl-group` wraps to its own full-width row and
   select elements are capped in width to fit smaller screens.
-- Drill bar wraps depth picker to a second line when the viewport is narrow.
+- Drill bar shows only the focal node name and "← Full model" button (depth picker is in the sidebar
+  Settings section).
 
 ## Module Structure
 
@@ -464,9 +481,31 @@ applications.
 
 ## Color System
 
-All element and relationship types use a **deterministic hash-based palette** —
-`hashStr(typeName) % 16` selects the color for elements; `(hashStr(typeName) + 7) % 16` for
-relationships.
+Element types and relationship types each receive colors from the same 16-color palette, but are
+assigned **independently** of each other so that within each group the colors are maximally spread.
 
-16-color palette: `#1a5e8a` `#1a6e40` `#7c4a00` `#7a6400` `#52366a` `#6e5200` `#3a5a7c` `#8a1a3e`
-`#1a4a6b` `#4a7a1a` `#7a2a5a` `#2a7a7a` `#5a3a7a` `#7a5a2a` `#2a5a4a` `#6a3a2a`
+After each model load, `initColorMaps` collects the unique element types and unique relationship
+types separately. Each group is sorted alphabetically and assigned palette colors **consecutively**
+(`i % palette.length`).
+
+The palette itself is ordered in **bit-reversal hue sequence**: each successive entry is as far as
+possible in hue from all preceding entries. Consecutive assignment into this ordered palette means
+that the first N types always receive the N most-perceptually-distinct colors available:
+
+| N types | Colors used (hue)                                     |
+| ------- | ----------------------------------------------------- |
+| 2       | Red (0°), Teal (180°) — opposite hues                 |
+| 4       | Red, Teal, Lime (90°), Violet (270°) — four quadrants |
+| 6       | + Gold (60°), Blue (240°)                             |
+| 8       | + Sea-green (150°), Rose (330°)                       |
+| 12      | all palette entries                                   |
+
+Because the two groups are colored independently, an element type and a relationship type may happen
+to share the same palette color — this is acceptable since nodes and edges are visually distinct on
+the diagram.
+
+`elemColor(type)` and `relColor(type)` look up the pre-computed maps; unknown types (e.g. before
+`initColorMaps` is called) fall back to the old hash-based formula.
+
+12-color palette (bit-reversal hue order): `#aa2020` `#20aaaa` `#64aa20` `#6420aa` `#aaaa20`
+`#2020aa` `#20aa64` `#aa2064` `#aa6420` `#2064aa` `#20aa20` `#aa20aa`

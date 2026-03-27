@@ -11,7 +11,17 @@ import {
   updateAuthUI,
 } from './auth.js';
 import { clearDetail, showDetail } from './detail.js';
-import { exitDrill, onNodeDrill, restoreDrillRootStyle } from './drill.js';
+import {
+  buildDepthPicker,
+  exitDrill,
+  initDrillEvents,
+  onNodeDrill,
+  restoreDrillRootStyle,
+  clearDrillState,
+  getDrillDepth,
+  getDrillNodeId,
+  setDrillDepth,
+} from './drill.js';
 import {
   applyUrlFilters,
   buildFilters,
@@ -19,19 +29,37 @@ import {
   loadFilterState,
   selectAll,
 } from './filters.js';
-import { applyLayout, buildCytoscape, fitGraph } from './graph.js';
+import {
+  applyLayout,
+  buildCytoscape,
+  fitGraph,
+  getContainmentMode,
+  hasGraphNode,
+  isGraphLoaded,
+  setContainmentMode,
+  zoomIn,
+  zoomOut,
+} from './graph.js';
 import { applyLocale, t } from './i18n.js';
+import {
+  getAllElements,
+  getAllRelations,
+  loadModelData,
+  setCurrentModel,
+} from './model.js';
 import {
   closeModelSelector,
   fetchModelList,
   filterModelList,
+  getCachedModels,
+  modelContentUrl,
   openModelSelector,
+  setCachedModels,
   setCurrentModelName,
 } from './models.js';
-import { parseModel } from './parser.js';
+import { initColorMaps } from './palette.js';
 import { readUrlParams, syncUrl } from './routing.js';
-import { state } from './state.js';
-import { renderTable, switchTableTab } from './table.js';
+import { initTableEvents, renderTable, switchTableTab } from './table.js';
 import {
   hideLoading,
   hideToast,
@@ -41,54 +69,134 @@ import {
   showToast,
   switchView,
   toggleSection,
+  toggleSidebar,
 } from './ui.js';
-import { modelContentUrl } from './utils.js';
 import { applyDrill, applyVisibility } from './visibility.js';
 
 // ── INIT THEME (immediately, before anything else renders) ──────────────────
 setTheme(localStorage.getItem('architeezyTheme') ?? 'system');
 
-// ── WINDOW GLOBALS (for HTML onclick= handlers) ────────────────────────────
-globalThis.startAuth = startAuth;
-globalThis.signOut = () => {
+function onSignOut() {
   signOut();
   init();
-};
-globalThis.openModelSelector = openModelSelector;
-globalThis.closeModelSelector = closeModelSelector;
-globalThis.hideToast = hideToast;
-globalThis.switchView = (view) => {
-  switchView(view, renderTable);
-  syncUrl();
-};
-globalThis.applyLayout = applyLayout;
-globalThis.fitGraph = fitGraph;
-globalThis.filterModelList = filterModelList;
-globalThis.filterSearch = filterSearch;
-globalThis.selectAll = selectAll;
-globalThis.toggleSection = toggleSection;
-globalThis.setTheme = setTheme;
-globalThis.setContainmentMode = setContainmentMode;
-globalThis.switchTableTab = switchTableTab;
-globalThis.renderTable = renderTable;
-globalThis.exitDrill = exitDrill;
-globalThis.init = init;
+}
 
-// Zoom controls (buttons in HTML use these)
-globalThis.zoomIn = () => {
-  if (!state.cy) {
-    return;
-  }
-  state.cy.zoom(state.cy.zoom() * 1.3);
-  state.cy.center();
-};
-globalThis.zoomOut = () => {
-  if (!state.cy) {
-    return;
-  }
-  state.cy.zoom(state.cy.zoom() * 0.77);
-  state.cy.center();
-};
+// ── CYTOSCAPE BUILDER HELPER ────────────────────────────────────────────────
+
+/** Builds a new Cytoscape instance from current model state, wiring standard handlers. */
+function rebuildCytoscape() {
+  buildCytoscape({
+    elements: getAllElements(),
+    relations: getAllRelations(),
+    onNodeTap: (id) => showDetail(id, onNodeDrill),
+    onNodeDblTap: onNodeDrill,
+    onCanvasTap: () => clearDetail(),
+    getDrillNodeId,
+  });
+}
+
+// ── EVENT WIRING ────────────────────────────────────────────────────────────
+
+function wireEvents() {
+  // Error / toast
+  document.getElementById('retry-btn').addEventListener('click', init);
+  document.getElementById('toast-close').addEventListener('click', hideToast);
+
+  // Auth
+  document.getElementById('auth-btn').addEventListener('click', startAuth);
+  document.getElementById('signout-btn').addEventListener('click', onSignOut);
+
+  // Model selector
+  document.getElementById('modal-close-btn').addEventListener('click', closeModelSelector);
+  document
+    .getElementById('model-search')
+    .addEventListener('input', (e) => filterModelList(e.target.value));
+  document.getElementById('current-model-btn').addEventListener('click', openModelSelector);
+
+  // View tabs — delegation on .tab-group
+  document.querySelector('.tab-group').addEventListener('click', (e) => {
+    const btn = e.target.closest('.tab-btn[data-view]');
+    if (!btn) {
+      return;
+    }
+    switchView(btn.dataset.view, renderTable);
+    syncUrl();
+  });
+
+  // Layout / graph controls
+  document.getElementById('layout-select').addEventListener('change', applyLayout);
+  document.getElementById('apply-layout-btn').addEventListener('click', applyLayout);
+  document
+    .getElementById('containment-select')
+    .addEventListener('change', (e) => onContainmentChange(e.target.value));
+
+  // Theme — delegation on .theme-switcher
+  document.querySelector('.theme-switcher').addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-btn[data-theme]');
+    if (btn) {
+      setTheme(btn.dataset.theme);
+    }
+  });
+
+  // Drill bar
+  document.getElementById('drill-exit-btn').addEventListener('click', exitDrill);
+  initDrillEvents();
+  buildDepthPicker(getDrillDepth());
+
+  // Sidebar collapse
+  document.getElementById('sidebar-collapse-btn').addEventListener('click', toggleSidebar);
+
+  // Sidebar: section toggles + select-all/none — single delegated listener on aside
+  document.querySelector('aside').addEventListener('click', (e) => {
+    const toggleBtn = e.target.closest('.sidebar-toggle-btn[data-section]');
+    if (toggleBtn) {
+      toggleSection(toggleBtn.dataset.section);
+      return;
+    }
+    const actionBtn = e.target.closest('[data-action]');
+    if (!actionBtn) {
+      return;
+    }
+    if (actionBtn.dataset.action === 'select-all') {
+      selectAll(actionBtn.dataset.kind, true);
+    }
+    if (actionBtn.dataset.action === 'select-none') {
+      selectAll(actionBtn.dataset.kind, false);
+    }
+  });
+
+  // Filter searches
+  document
+    .getElementById('elem-filter-search')
+    .addEventListener('input', (e) => filterSearch('elem', e.target.value));
+  document
+    .getElementById('rel-filter-search')
+    .addEventListener('input', (e) => filterSearch('rel', e.target.value));
+
+  // Table tabs — delegation on .table-tabs
+  document.querySelector('.table-tabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('.table-tab-btn[data-tab]');
+    if (btn) {
+      switchTableTab(btn.dataset.tab);
+    }
+  });
+
+  // Table search
+  document.getElementById('table-search').addEventListener('input', renderTable);
+
+  // Table sort / row clicks
+  initTableEvents();
+
+  // Cy controls
+  document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+  document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+  document.getElementById('fit-cy-btn').addEventListener('click', fitGraph);
+
+  // Visibility triggers from drill.js / filters.js (avoids circular imports)
+  document.addEventListener('lens:applyDrill', applyDrill);
+  document.addEventListener('lens:applyVisibility', applyVisibility);
+  document.addEventListener('lens:syncUrl', syncUrl);
+}
 
 // ── AUTH_SUCCESS from popup ─────────────────────────────────────────────────
 window.addEventListener('message', (e) => {
@@ -111,20 +219,15 @@ document.addEventListener('loadModel', (e) => loadModel(e.detail.url, e.detail.m
  *
  * @param {'none' | 'edge' | 'compound'} mode - New containment mode.
  */
-function setContainmentMode(mode) {
-  state.containmentMode = mode;
-  localStorage.setItem('architeezyLensContainment', mode);
+function onContainmentChange(mode) {
+  setContainmentMode(mode);
   document.getElementById('containment-select').value = mode;
-  if (!state.allElements.length) {
+  if (!getAllElements().length) {
     return;
   }
-  buildCytoscape({
-    onNodeTap: (id) => showDetail(id, (node) => onNodeDrill(node)),
-    onNodeDblTap: (node) => onNodeDrill(node),
-    onCanvasTap: () => clearDetail(),
-  });
+  rebuildCytoscape();
   restoreDrillRootStyle();
-  if (state.drillNodeId) {
+  if (getDrillNodeId()) {
     applyDrill();
   } else {
     applyVisibility();
@@ -136,8 +239,8 @@ function setContainmentMode(mode) {
 
 /**
  * Fetches and loads a model from `url`, then builds the graph, filters, and table. On failure,
- * shows a toast if a model is already visible, otherwise lets the caller detect `state.cy === null`
- * and open the model selector.
+ * shows a toast if a model is already visible, otherwise lets the caller detect via
+ * `isGraphLoaded()` and open the model selector.
  *
  * @param {string} url - Content URL of the model to load.
  * @param {string | undefined} [modelId] - Optional model ID for URL routing.
@@ -152,39 +255,37 @@ async function loadModel(url, modelId, afterLoad) {
     }
     const data = await r.json();
 
-    Object.assign(state, parseModel(data));
-    if (!state.allElements.length) {
+    const currentModelNs = loadModelData(data);
+    if (!getAllElements().length) {
       throw new Error(t('noElements'));
     }
 
+    initColorMaps(getAllElements(), getAllRelations());
+
     localStorage.setItem('architeezyLensModelUrl', url);
-    Object.assign(state, { drillNodeId: undefined, drillVisibleIds: undefined });
+    clearDrillState();
     document.getElementById('drill-bar').classList.remove('visible');
 
-    state.currentModelId =
-      modelId ?? state.cachedModels.find((m) => modelContentUrl(m) === url)?.id ?? undefined;
+    const currentModelId =
+      modelId ?? getCachedModels().find((m) => modelContentUrl(m) === url)?.id ?? undefined;
+    setCurrentModel(currentModelId, currentModelNs);
 
-    buildCytoscape({
-      onNodeTap: (id) => showDetail(id, (node) => onNodeDrill(node)),
-      onNodeDblTap: (node) => onNodeDrill(node),
-      onCanvasTap: () => clearDetail(),
-    });
+    rebuildCytoscape();
     buildFilters();
     loadFilterState();
     applyVisibility();
     applyLayout();
     hideLoading();
-    document.getElementById('stats-bar').style.display = 'flex';
     renderTable();
     afterLoad?.();
     syncUrl();
   } catch (error) {
     hideLoading();
-    if (state.cy) {
+    if (isGraphLoaded()) {
       // A model is already displayed — keep it, show a dismissible toast
       showToast(error.message);
     }
-    // If no model is loaded, caller (init) detects state.cy===null and opens the selector
+    // If no model is loaded, caller (init) detects isGraphLoaded()===false and opens the selector
   }
 }
 
@@ -197,7 +298,7 @@ async function loadModel(url, modelId, afterLoad) {
  */
 async function init() {
   applyLocale();
-  document.getElementById('containment-select').value = state.containmentMode;
+  document.getElementById('containment-select').value = getContainmentMode();
   if (isAuthed()) {
     updateAuthUI();
   } else {
@@ -205,7 +306,7 @@ async function init() {
   }
   showLoading(t('loadingModels'));
   try {
-    state.cachedModels = await fetchModelList();
+    setCachedModels(await fetchModelList());
   } catch (error) {
     showError(error.message);
     return;
@@ -222,7 +323,7 @@ async function init() {
     view: urlView,
   } = readUrlParams();
 
-  const urlModel = urlModelId ? state.cachedModels.find((m) => m.id === urlModelId) : undefined;
+  const urlModel = urlModelId ? getCachedModels().find((m) => m.id === urlModelId) : undefined;
   const targetUrl = urlModel
     ? modelContentUrl(urlModel)
     : localStorage.getItem('architeezyLensModelUrl');
@@ -235,8 +336,8 @@ async function init() {
     ? () => {
         // Filter state always comes from URL when restoring from a shared link.
         // Absent entities/relationships means all types visible — override localStorage.
-        const allETypes = [...new Set(state.allElements.map((e) => e.type))];
-        const allRTypes = [...new Set(state.allRelations.map((r) => r.type))];
+        const allETypes = [...new Set(getAllElements().map((e) => e.type))];
+        const allRTypes = [...new Set(getAllRelations().map((r) => r.type))];
         applyUrlFilters(
           urlEntities === undefined ? allETypes : urlEntities.split(',').filter(Boolean),
           urlRelationships === undefined ? allRTypes : urlRelationships.split(',').filter(Boolean),
@@ -248,11 +349,10 @@ async function init() {
         // Drill
         if (urlEntityId) {
           if (urlDepth !== undefined) {
-            state.drillDepth = urlDepth;
+            setDrillDepth(urlDepth);
           }
-          const node = state.cy?.getElementById(urlEntityId);
-          if (node?.length) {
-            onNodeDrill(node);
+          if (hasGraphNode(urlEntityId)) {
+            onNodeDrill(urlEntityId);
           }
         }
       }
@@ -261,8 +361,8 @@ async function init() {
   if (targetUrl) {
     await loadModel(targetUrl, targetModelId, afterLoad);
 
-    if (state.cy) {
-      const saved = state.cachedModels.find((m) => modelContentUrl(m) === targetUrl);
+    if (isGraphLoaded()) {
+      const saved = getCachedModels().find((m) => modelContentUrl(m) === targetUrl);
       if (saved) {
         setCurrentModelName(saved.name);
       }
@@ -277,4 +377,5 @@ async function init() {
 
 // ── BOOT ───────────────────────────────────────────────────────────────────
 
+wireEvents();
 init();

@@ -1,9 +1,9 @@
 // ── URL ROUTING ─────────────────────────────────────────────────────────────
-//
-// Single source of truth: syncUrl() reads current state and updates the address
-// Bar via history.replaceState. Call it whenever any URL-reflected state changes.
 
-import { state } from './state.js';
+import { getDrillDepth, getDrillNodeId } from './drill.js';
+import { getActiveElemTypes, getActiveRelTypes } from './filters.js';
+import { getAllElements, getAllRelations, getCurrentModelId } from './model.js';
+import { getCurrentView } from './ui.js';
 
 /**
  * Pure function: builds the URL query string from a state snapshot.
@@ -72,16 +72,6 @@ export function buildStateQuery({
 }
 
 /**
- * Serialises the current application state into the URL query string and pushes it with
- * `history.replaceState` (no new history entry).
- */
-export function syncUrl() {
-  const q = buildStateQuery(state);
-  // eslint-disable-next-line unicorn/no-null
-  history.replaceState(null, '', location.pathname + (q ? '?' + q : ''));
-}
-
-/**
  * Reads and returns the recognised URL query parameters.
  *
  * @returns {{
@@ -104,4 +94,23 @@ export function readUrlParams() {
     relationships: sp.get('relationships') ?? undefined,
     view: sp.get('view'),
   };
+}
+
+/**
+ * Serialises the current application state into the URL query string and updates the address bar
+ * via `history.replaceState`. Called whenever any URL-reflected state changes.
+ */
+export function syncUrl() {
+  const q = buildStateQuery({
+    currentModelId: getCurrentModelId(),
+    drillNodeId: getDrillNodeId(),
+    drillDepth: getDrillDepth(),
+    allElements: getAllElements(),
+    allRelations: getAllRelations(),
+    activeElemTypes: getActiveElemTypes(),
+    activeRelTypes: getActiveRelTypes(),
+    currentView: getCurrentView(),
+  });
+  // eslint-disable-next-line unicorn/no-null
+  history.replaceState(null, '', location.pathname + (q ? '?' + q : ''));
 }

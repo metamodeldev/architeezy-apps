@@ -16,7 +16,8 @@
 
 ### Asset Loading and Data Handling
 
-- **Script Execution:** Use `defer` or `type="module"` for all external scripts.
+- **Script Execution:** Use `defer` or `type="module"` for all external scripts to ensure
+  non-blocking HTML parsing and DOM availability.
 - **Resource Prioritization:** Apply `loading="lazy"` to images and iframes outside the initial
   viewport. Provide explicit `width` and `height` to prevent Layout Shift (CLS).
 - **Data Decoupling:** Use `data-*` attributes strictly for passing configuration or state from HTML
@@ -29,6 +30,14 @@
 - **Inline Event Handlers:** Do not use `onclick`, `onchange`, etc., in HTML markup.
 
 ## CSS
+
+### Architectural Principles
+
+- **CSS-First Approach:** Use CSS instead of JavaScript wherever possible. Prefer CSS for
+  interactive states (`:hover`, `:focus`, `:active`, `:checked`), simple UI toggles, and layout
+  adjustments.
+- **CSS Animations:** Implement all animations and transitions strictly via CSS. Avoid
+  JavaScript-driven animations.
 
 ### Units and Typography
 
@@ -43,7 +52,6 @@
 
 - **Box Model:** Set `box-sizing: border-box` globally.
 - **Layout Engines:** Use CSS Grid for macro-layouts and Flexbox for micro-components.
-- **Animation Optimization:** Limit transitions and animations to `transform` and `opacity`.
 - **Z-Index Management:** Use CSS Variables for `z-index` to prevent "magic number" conflicts and
   manage stacking contexts.
 
@@ -65,23 +73,38 @@
 
 ## JavaScript
 
+### Bottom-Up Architecture
+
+- **Domain Decomposition:** Divide the application into small, isolated domains.
+- **Domain Primitives:** Implement a minimal set of functions for each domain to serve as a
+  Domain-Specific Language (DSL).
+- **Layered Composition:** Build complex features by composing these primitives upward. Ensure every
+  block is small, reusable, and focused on a single responsibility.
+- **Encapsulated Constants:** Avoid centralized global constant files (e.g., `constants.js`) that
+  create tight coupling. Encapsulate constants within the specific modules or domains where they are
+  used.
+
 ### Functional Programming and Logic
 
 - **Pure Functions:** Isolate business logic into pure functions (input -> output). They must not
   modify external state or touch the DOM.
 - **Immutability:** Treat arguments as read-only. Do not mutate objects or arrays; return new copies
   using the spread operator (`...`) or non-mutating methods (`map`, `filter`, `reduce`).
-- **State Management:** Do not store application state or raw data inside DOM nodes. Use dedicated
+- **Encapsulated State:** Avoid global state. Maintain state locally within modules and prohibit its
+  direct export. Expose only specific functions (APIs) to interact with the internal state to ensure
+  controlled mutations.
+- **State Storage:** Do not store application state or raw data inside DOM nodes. Use dedicated
   JavaScript objects, `Map`, or `WeakMap`.
 - **Defensive Coding:** Implement "Early Returns" to reduce nesting and handle error states first.
 
 ### DOM Interaction and Events
 
+- **CSS Delegation:** Offload visual and structural states to CSS classes via `classList`. Do not
+  use JavaScript to manipulate styles that can be handled by CSS.
 - **Event Delegation:** Attach a single listener to a parent element for dynamic child nodes.
 - **Execution Scheduling:** Use `requestAnimationFrame` for visual updates and `requestIdleCallback`
   for non-critical background tasks.
-- **Layout Thrashing:** Group DOM reads (e.g., `offsetWidth`) and DOM writes (e.g., `style.left`)
-  separately. Never interleave them in a loop.
+- **Layout Thrashing:** Group DOM reads and DOM writes separately. Never interleave them in a loop.
 - **Passive Listeners:** Use `{ passive: true }` for `scroll`, `wheel`, and `touch` events to
   improve scrolling performance.
 - **Batching Updates:** Perform heavy DOM manipulations off-screen using `DocumentFragment` or
@@ -96,19 +119,18 @@
 
 ### Testing and Reliability
 
-- **Unit Testing:** All pure utility functions and business logic must have unit tests (e.g., using
-  Vitest or Jest). Aim for high coverage of edge cases.
-- **Integration Testing:** Test critical user flows by verifying the interaction between JavaScript
-  and the DOM.
+- **Unit Testing:** All pure utility functions and business logic must have unit tests. Aim for high
+  coverage of edge cases.
+- **Integration Testing:** Test critical user flows and verify JavaScript-DOM interactions. Maintain
+  high code coverage to ensure no unused, unreachable, or dead code exists in the application.
 - **Cleanup Operations:** Manually clear `setInterval` and `removeEventListener` when an element or
   component is removed from the DOM to prevent memory leaks.
 
 ### Forbidden JavaScript Practices
 
-- **Direct Style Injection:** Do not modify `el.style` directly for static changes; toggle CSS
-  classes via `classList`.
+- **Direct Style Injection:** Do not modify `el.style` directly for static changes.
 - **Synchronous Blockers:** Never use synchronous XHR or long-running loops that block the main
   thread.
-- **Magic Strings:** Do not use hardcoded strings/numbers in logic. Move them to a `const CONFIG` or
-  `const TYPES` object.
+- **Magic Strings:** Do not use hardcoded strings/numbers in logic. Use encapsulated module
+  constants instead.
 - **Loop Listeners:** Never attach event listeners inside loops. Use delegation instead.

@@ -5,7 +5,7 @@
     "lint": "oxlint && stylelint '**/*.css'",
     "lint:fix": "oxlint --fix; stylelint '**/*.css' --fix",
     "test": "bun test && playwright test",
-    "test:coverage": "bun test --coverage && playwright test",
+    "test:coverage": "bun test --only-failures --coverage && playwright test",
     "test:unit": "bun test",
     "test:e2e": "playwright test"
   },

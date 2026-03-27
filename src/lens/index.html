@@ -6,12 +6,24 @@
     <title>Architeezy Lens</title>
     <link rel="stylesheet" href="app.css" />
 
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@dagrejs/dagre@2.0.0/dist/dagre.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/@dagrejs/dagre@2.0.0/dist/dagre.min.js"
+    ></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"
+    ></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"
+    ></script>
   </head>
   <body>
     <!-- ── LOADING ──────────────────────────────────────────────── -->
@@ -24,13 +36,13 @@
     <div id="error-msg">
       <h2 data-i18n="errorTitle">Error</h2>
       <p id="error-detail"></p>
-      <button onclick="init()" data-i18n="retryBtn">Retry</button>
+      <button id="retry-btn" data-i18n="retryBtn">Retry</button>
     </div>
 
     <!-- ── TOAST (non-fatal, dismissible) ───────────────────────── -->
     <div id="toast">
       <span id="toast-msg"></span>
-      <button id="toast-close" onclick="hideToast()">✕</button>
+      <button id="toast-close">✕</button>
     </div>
 
     <!-- ── MODEL SELECTOR MODAL ─────────────────────────────────── -->
@@ -38,7 +50,7 @@
       <div class="modal">
         <div class="modal-header">
           <span class="modal-title" data-i18n="modalTitle">Select Model</span>
-          <button class="modal-close" onclick="closeModelSelector()">✕</button>
+          <button id="modal-close-btn" class="modal-close">✕</button>
         </div>
         <div class="modal-search-wrap">
           <input
@@ -46,8 +58,9 @@
             class="modal-search"
             type="text"
             data-i18n-ph="modalSearchPh"
+            data-i18n-label="modalSearchLabel"
+            aria-label="Search models"
             placeholder="Search by name or type…"
-            oninput="filterModelList(this.value)"
           />
         </div>
         <div class="modal-body" id="model-list">
@@ -62,57 +75,31 @@
       <h1>Architeezy <span>Lens</span></h1>
 
       <div class="tab-group">
-        <button
-          class="tab-btn active"
-          id="tab-graph"
-          onclick="switchView('graph')"
-          data-i18n="tabGraph"
-        >
+        <button class="tab-btn active" id="tab-graph" data-view="graph" data-i18n="tabGraph">
           Graph
         </button>
-        <button class="tab-btn" id="tab-table" onclick="switchView('table')" data-i18n="tabTable">
-          Table
-        </button>
+        <button class="tab-btn" id="tab-table" data-view="table" data-i18n="tabTable">Table</button>
       </div>
 
-      <button class="ctrl model-btn" id="current-model-btn" onclick="openModelSelector()">
+      <button class="ctrl model-btn" id="current-model-btn">
         ⊞
         <span id="current-model-name" data-i18n="selectModel">Select model…</span>
       </button>
 
       <div id="auth-area">
-        <button class="ctrl" id="auth-btn" onclick="startAuth()" data-i18n="signIn">Sign in</button>
-        <div id="user-info" style="display: none">
+        <button class="ctrl" id="auth-btn" data-i18n="signIn">Sign in</button>
+        <div id="user-info">
           <span id="user-name"></span>
-          <button class="ctrl" id="signout-btn" onclick="signOut()" data-i18n="signOut">
-            Sign out
-          </button>
+          <button class="ctrl" id="signout-btn" data-i18n="signOut">Sign out</button>
         </div>
       </div>
 
       <div class="ctrl-group">
-        <select class="ctrl" id="layout-select" onchange="applyLayout()">
-          <option value="fcose" selected>fCoSE</option>
-          <option value="dagre">Dagre</option>
-          <option value="cose">CoSE</option>
-          <option value="breadthfirst">Breadthfirst</option>
-          <option value="grid">Grid</option>
-          <option value="circle">Circle</option>
-        </select>
-        <button class="ctrl" onclick="applyLayout()">⟳</button>
-        <button class="ctrl" onclick="fitGraph()">⤢</button>
-
-        <select class="ctrl" id="containment-select" onchange="setContainmentMode(this.value)">
-          <option value="none" data-i18n="cnNone">Nesting: none</option>
-          <option value="edge" data-i18n="cnEdge">Nesting: edges ◆</option>
-          <option value="compound" data-i18n="cnCompound">Nesting: shapes ⬚</option>
-        </select>
-
         <div class="theme-switcher">
           <button
             class="theme-btn"
             id="theme-btn-dark"
-            onclick="setTheme('dark')"
+            data-theme="dark"
             data-i18n-tt="themeDark"
             title="Dark"
           >
@@ -121,7 +108,7 @@
           <button
             class="theme-btn"
             id="theme-btn-light"
-            onclick="setTheme('light')"
+            data-theme="light"
             data-i18n-tt="themeLight"
             title="Light"
           >
@@ -130,7 +117,7 @@
           <button
             class="theme-btn"
             id="theme-btn-system"
-            onclick="setTheme('system')"
+            data-theme="system"
             data-i18n-tt="themeSystem"
             title="System"
           >
@@ -142,87 +129,152 @@
 
     <!-- ── DRILL BAR ────────────────────────────────────────────── -->
     <div id="drill-bar">
-      <button onclick="exitDrill()" data-i18n="drillBack">← Full model</button>
+      <button id="drill-exit-btn" data-i18n="drillBack">← Full model</button>
       <span id="drill-label"></span>
-      <span class="drill-depth-label" data-i18n="drillDepth">Depth:</span>
-      <div class="depth-picker" id="depth-picker"></div>
     </div>
 
     <!-- ── BODY ─────────────────────────────────────────────────── -->
     <div class="body">
-      <aside>
-        <div class="sidebar-section">
-          <div class="sidebar-header" onclick="toggleSection('sec-elem')">
-            <span class="sidebar-header-title" data-i18n="sectionElements">Entities</span>
-            <div class="sidebar-header-actions" onclick="event.stopPropagation()">
-              <button
-                class="filter-icon-btn"
-                onclick="selectAll('elem', true)"
-                data-i18n-tt="filterAll"
-                title="Select all"
-              >
-                ✓
+      <aside id="lens-sidebar">
+        <button id="sidebar-collapse-btn" class="sidebar-toggle" title="Hide sidebar">‹</button>
+
+        <div class="sidebar-scroll">
+          <div class="sidebar-section">
+            <div class="sidebar-header">
+              <button class="sidebar-toggle-btn" data-section="sec-elem">
+                <span class="sidebar-header-title" data-i18n="sectionElements">Entities</span>
+                <span class="sidebar-count-badge" id="badge-elem"></span>
+                <span class="toggle-icon" id="icon-sec-elem">▼</span>
               </button>
-              <button
-                class="filter-icon-btn"
-                onclick="selectAll('elem', false)"
-                data-i18n-tt="filterNone"
-                title="Select none"
-              >
-                ✗
+              <div class="sidebar-header-actions">
+                <button
+                  class="filter-icon-btn"
+                  data-action="select-all"
+                  data-kind="elem"
+                  data-i18n-tt="filterAll"
+                  title="Select all"
+                >
+                  ✓
+                </button>
+                <button
+                  class="filter-icon-btn"
+                  data-action="select-none"
+                  data-kind="elem"
+                  data-i18n-tt="filterNone"
+                  title="Select none"
+                >
+                  ✗
+                </button>
+              </div>
+            </div>
+            <div class="sidebar-content" id="sec-elem">
+              <input
+                id="elem-filter-search"
+                class="filter-search"
+                type="text"
+                data-i18n-ph="filterSearchPh"
+                data-i18n-label="elemSearchLabel"
+                aria-label="Search entities"
+                placeholder="Search…"
+              />
+              <div class="filter-list" id="elem-filter-list"></div>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-header">
+              <button class="sidebar-toggle-btn" data-section="sec-rel">
+                <span class="sidebar-header-title" data-i18n="sectionRelations">Relationships</span>
+                <span class="sidebar-count-badge" id="badge-rel"></span>
+                <span class="toggle-icon" id="icon-sec-rel">▼</span>
+              </button>
+              <div class="sidebar-header-actions">
+                <button
+                  class="filter-icon-btn"
+                  data-action="select-all"
+                  data-kind="rel"
+                  data-i18n-tt="filterAll"
+                  title="Select all"
+                >
+                  ✓
+                </button>
+                <button
+                  class="filter-icon-btn"
+                  data-action="select-none"
+                  data-kind="rel"
+                  data-i18n-tt="filterNone"
+                  title="Select none"
+                >
+                  ✗
+                </button>
+              </div>
+            </div>
+            <div class="sidebar-content" id="sec-rel">
+              <input
+                id="rel-filter-search"
+                class="filter-search"
+                type="text"
+                data-i18n-ph="filterSearchPh"
+                data-i18n-label="relSearchLabel"
+                aria-label="Search relationships"
+                placeholder="Search…"
+              />
+              <div class="filter-list" id="rel-filter-list"></div>
+            </div>
+          </div>
+
+          <div class="sidebar-section">
+            <div class="sidebar-header">
+              <button class="sidebar-toggle-btn" data-section="sec-detail">
+                <span class="sidebar-header-title" data-i18n="sectionDetail">Details</span>
+                <span class="toggle-icon" id="icon-sec-detail">▼</span>
               </button>
             </div>
-            <span class="toggle-icon" id="icon-sec-elem">▼</span>
+            <div class="sidebar-content sidebar-detail-content" id="sec-detail">
+              <div id="detail-panel">
+                <div class="detail-empty" data-i18n="detailEmpty">Click a node to view details</div>
+              </div>
+            </div>
           </div>
-          <div class="sidebar-content" id="sec-elem">
-            <input
-              class="filter-search"
-              type="text"
-              data-i18n-ph="filterSearchPh"
-              placeholder="Search…"
-              oninput="filterSearch('elem', this.value)"
-            />
-            <div class="filter-list" id="elem-filter-list"></div>
-          </div>
-        </div>
 
-        <div class="sidebar-section">
-          <div class="sidebar-header" onclick="toggleSection('sec-rel')">
-            <span class="sidebar-header-title" data-i18n="sectionRelations">Relationships</span>
-            <div class="sidebar-header-actions" onclick="event.stopPropagation()">
-              <button
-                class="filter-icon-btn"
-                onclick="selectAll('rel', true)"
-                data-i18n-tt="filterAll"
-                title="Select all"
-              >
-                ✓
-              </button>
-              <button
-                class="filter-icon-btn"
-                onclick="selectAll('rel', false)"
-                data-i18n-tt="filterNone"
-                title="Select none"
-              >
-                ✗
+          <div class="sidebar-section">
+            <div class="sidebar-header">
+              <button class="sidebar-toggle-btn" data-section="sec-settings">
+                <span class="sidebar-header-title" data-i18n="sectionSettings">Settings</span>
+                <span class="toggle-icon" id="icon-sec-settings">▼</span>
               </button>
             </div>
-            <span class="toggle-icon" id="icon-sec-rel">▼</span>
+            <div class="sidebar-content" id="sec-settings">
+              <div class="settings-row">
+                <span class="settings-label" data-i18n="settingsLayout">Layout</span>
+                <div class="settings-row-controls">
+                  <select class="ctrl sidebar-ctrl" id="layout-select">
+                    <option value="fcose" selected>fCoSE</option>
+                    <option value="dagre">Dagre</option>
+                    <option value="cose">CoSE</option>
+                    <option value="breadthfirst">Breadthfirst</option>
+                    <option value="grid">Grid</option>
+                    <option value="circle">Circle</option>
+                  </select>
+                  <button class="ctrl sidebar-ctrl" id="apply-layout-btn">⟳</button>
+                </div>
+              </div>
+              <div class="settings-row">
+                <span class="settings-label" data-i18n="settingsNesting">Nesting</span>
+                <div class="settings-row-controls">
+                  <select class="ctrl sidebar-ctrl" id="containment-select">
+                    <option value="none" data-i18n="cnNone">none</option>
+                    <option value="edge" data-i18n="cnEdge">edges ◆</option>
+                    <option value="compound" data-i18n="cnCompound">shapes ⬚</option>
+                  </select>
+                </div>
+              </div>
+              <div class="settings-row hidden" id="settings-depth-row">
+                <span class="settings-label" data-i18n="settingsDepth">Link depth</span>
+                <div class="depth-picker" id="depth-picker"></div>
+              </div>
+            </div>
           </div>
-          <div class="sidebar-content" id="sec-rel">
-            <input
-              class="filter-search"
-              type="text"
-              data-i18n-ph="filterSearchPh"
-              placeholder="Search…"
-              oninput="filterSearch('rel', this.value)"
-            />
-            <div class="filter-list" id="rel-filter-list"></div>
-          </div>
-        </div>
-
-        <div id="detail-panel">
-          <div class="detail-empty" data-i18n="detailEmpty">Click a node to view details</div>
         </div>
       </aside>
 
@@ -234,7 +286,7 @@
             <button
               class="table-tab-btn active"
               id="ttab-elements"
-              onclick="switchTableTab('elements')"
+              data-tab="elements"
               data-i18n="ttabElements"
             >
               Elements
@@ -242,7 +294,7 @@
             <button
               class="table-tab-btn"
               id="ttab-rels"
-              onclick="switchTableTab('relationships')"
+              data-tab="relationships"
               data-i18n="ttabRelations"
             >
               Relationships
@@ -254,8 +306,9 @@
               type="text"
               id="table-search"
               data-i18n-ph="tableSearchPh"
+              data-i18n-label="tableSearchLabel"
+              aria-label="Search table"
               placeholder="Search table…"
-              oninput="renderTable()"
             />
             <span class="table-count" id="table-count"></span>
           </div>
@@ -268,15 +321,9 @@
         </div>
 
         <div id="cy-controls" class="cy-controls">
-          <button data-i18n-tt="zoomIn" title="Zoom in" onclick="zoomIn()">+</button>
-          <button data-i18n-tt="zoomOut" title="Zoom out" onclick="zoomOut()">−</button>
-          <button data-i18n-tt="zoomFit" title="Fit" onclick="fitGraph()">⤢</button>
-        </div>
-
-        <div id="stats-bar">
-          <span id="stat-nodes">—</span>
-          <span id="stat-edges">—</span>
-          <span id="stat-visible">—</span>
+          <button id="zoom-in-btn" data-i18n-tt="zoomIn" title="Zoom in">+</button>
+          <button id="zoom-out-btn" data-i18n-tt="zoomOut" title="Zoom out">−</button>
+          <button id="fit-cy-btn" data-i18n-tt="zoomFit" title="Fit">⤢</button>
         </div>
       </main>
     </div>

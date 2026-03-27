@@ -1,8 +1,9 @@
 // ── DETAIL PANEL ───────────────────────────────────────────────────────────
 
+import { cancelTapTimer, hasGraphNode } from './graph.js';
 import { t } from './i18n.js';
-import { state } from './state.js';
-import { escHtml } from './utils.js';
+import { getAllRelations, getElemMap } from './model.js';
+import { escHtml } from './ui.js';
 
 /**
  * Renders the detail panel for the element with the given `id`. Lists the element's name, type,
@@ -10,21 +11,22 @@ import { escHtml } from './utils.js';
  * clicked if provided.
  *
  * @param {string} id - ID of the element to display.
- * @param {Function | null} drillCallback - Called with the target Cytoscape node when a connection
- *   item is clicked, or null to disable drill navigation from the panel.
+ * @param {function(string): void | null} drillCallback - Called with the target node ID when a
+ *   connection item is clicked, or null to disable drill navigation from the panel.
  */
 export function showDetail(id, drillCallback) {
-  const elem = state.elemMap[id];
+  const elemMap = getElemMap();
+  const elem = elemMap[id];
   if (!elem) {
     return;
   }
 
-  const conns = state.allRelations.filter((r) => r.source === id || r.target === id);
+  const conns = getAllRelations().filter((r) => r.source === id || r.target === id);
   const connItems = conns
     .map((r) => {
       const otherId = r.source === id ? r.target : r.source;
       const dir = r.source === id ? '→' : '←';
-      const peerName = state.elemMap[otherId]?.name ?? otherId;
+      const peerName = elemMap[otherId]?.name ?? otherId;
       const relLabel = r.name ? `${escHtml(r.type)}: ${escHtml(r.name)}` : escHtml(r.type);
       return `<div class="detail-conn-item" data-target="${escHtml(otherId)}">
       <span class="conn-name">${dir} ${escHtml(peerName)}</span>
@@ -39,18 +41,18 @@ export function showDetail(id, drillCallback) {
     <div class="detail-type">${nsLabel}${escHtml(elem.type)}</div>
     ${elem.doc ? `<div class="detail-doc">${escHtml(elem.doc)}</div>` : ''}
     <div class="detail-section-title">${t('detailRelations', conns.length)}</div>
-    <div class="detail-conn">${connItems || `<span style="color:var(--text-muted)">${t('detailNoRelations')}</span>`}</div>`;
+    <div class="detail-conn">${connItems || `<span class="detail-no-relations">${t('detailNoRelations')}</span>`}</div>`;
 
   if (drillCallback) {
-    for (const el of document.querySelectorAll('.detail-conn-item[data-target]')) {
-      el.addEventListener('click', () => {
-        const n = state.cy?.$id(el.dataset.target);
-        if (n?.length) {
-          clearTimeout(state.tapTimer);
-          drillCallback(n);
-        }
-      });
-    }
+    document.querySelector('#detail-panel .detail-conn').addEventListener('click', (e) => {
+      const item = e.target.closest('.detail-conn-item[data-target]');
+      if (!item) { return; }
+      const targetId = item.dataset.target;
+      if (hasGraphNode(targetId)) {
+        cancelTapTimer();
+        drillCallback(targetId);
+      }
+    });
   }
 }
 

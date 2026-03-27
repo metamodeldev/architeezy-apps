@@ -3,7 +3,10 @@
 // Separated from graph.js so the Cytoscape style array and the label-size
 // Helper can be read and tested independently of the graph lifecycle code.
 
-import { LABEL_OUTLINE, LABEL_WRAP_W } from './constants.js';
+// Max text-wrap width for node labels (px); must stay in sync with text-max-width in buildCyStyles
+const LABEL_WRAP_W = 120;
+// Text outline width for node labels (px); used in node size calculation to pad the bounding box
+const LABEL_OUTLINE = 2;
 
 const NODE_FONT_FAMILY = 'system-ui, -apple-system, sans-serif';
 const LINE_H = 13; // 10 px font + 3 px leading

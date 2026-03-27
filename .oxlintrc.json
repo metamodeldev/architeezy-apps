@@ -75,6 +75,7 @@
       "rules": {
         "eslint/max-lines-per-function": "off",
         "jest/valid-title": "off",
+        "unicorn/no-null": "off",
         "vitest/prefer-to-be-falsy": "off",
         "vitest/prefer-to-be-truthy": "off"
       },
