@@ -1166,6 +1166,49 @@ tr:hover td {
   cursor: pointer;
 }
 
+/* ── NODE TOOLTIP ────────────────────────────────────────── */
+.node-tooltip {
+  position: fixed;
+  z-index: var(--z-top);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
+  pointer-events: none;
+  max-width: 240px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
+  display: none;
+}
+
+.node-tooltip.visible {
+  display: block;
+}
+
+.tooltip-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.tooltip-type {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.tooltip-doc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* ── MOBILE ──────────────────────────────────────────────── */
 @media (width <= 600px) {
   header {

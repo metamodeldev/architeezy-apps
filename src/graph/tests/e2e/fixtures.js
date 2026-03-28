@@ -133,7 +133,34 @@ export const test = playwrightTest.extend({
   autoTestFixture: [
     async ({ page }, use) => {
       await page.coverage.startJSCoverage({ resetOnNavigation: false });
+
+      // Collect console errors, filtering out expected network errors
+      const consoleErrors = [];
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+          const text = msg.text();
+          // Ignore expected network errors (401, 500 responses from API mocking)
+          // These are not JavaScript errors but expected test scenarios
+          if (
+            text.includes('Failed to load resource') &&
+            (text.includes('401') ||
+              text.includes('500') ||
+              text.includes('the server responded with a status'))
+          ) {
+            return;
+          }
+          consoleErrors.push(text);
+        }
+      });
+
       await use('autoTestFixture');
+
+      // Check for console errors after test completes
+      if (consoleErrors.length > 0) {
+        const errorMessage = `Test failed due to ${consoleErrors.length} console error(s):\n${consoleErrors.join('\n')}`;
+        throw new Error(errorMessage);
+      }
+
       const coverage = await page.coverage.stopJSCoverage();
       try {
         const { addCoverageReport } = await import('monocart-reporter');

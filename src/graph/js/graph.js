@@ -2,6 +2,7 @@
 
 import { buildCyStyles, createLabelMeasurer } from './graph-styles.js';
 import { elemColor, relColor } from './palette.js';
+import { bindTooltipEvents } from './tooltip.js';
 
 // Delay (ms) before treating a single tap as a click, allowing double-tap detection
 const TAP_DELAY_MS = 180;
@@ -301,6 +302,7 @@ export function buildCytoscape({
 
   bindCyEvents(_cy, onNodeTap, onNodeDblTap, onCanvasTap, getDrillNodeId);
   setupPointerInteractions();
+  bindTooltipEvents(_cy);
   updateStats(elements, relations);
 }
 

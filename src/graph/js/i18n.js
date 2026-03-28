@@ -60,6 +60,7 @@ const STRINGS = {
     signIn: 'Sign in',
     signOut: 'Sign out',
     authRequired: 'Please sign in to continue',
+    settingsTooltips: 'Tooltips',
   },
   ru: {
     loadingModels: 'Загрузка списка моделей…',
@@ -117,6 +118,7 @@ const STRINGS = {
     signIn: 'Войти',
     signOut: 'Выйти',
     authRequired: 'Войдите, чтобы продолжить',
+    settingsTooltips: 'Подсказки',
   },
 };
 

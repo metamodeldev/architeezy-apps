@@ -117,7 +117,8 @@ function sortRows(rows, getKey, sortCol, sortAsc) {
  * @param {number} total - Total row count before filtering.
  */
 function updateTableCount(visible, total) {
-  document.getElementById('table-count').textContent = `${visible} / ${total}`;
+  document.getElementById('table-count').textContent =
+    visible === total ? `${visible}` : `${visible} / ${total}`;
 }
 
 // ── ELEMENT TABLE ───────────────────────────────────────────────────────────

@@ -55,6 +55,7 @@ import {
 import { initColorMaps } from './palette.js';
 import { readUrlParams, syncUrl } from './routing.js';
 import { initTableEvents, renderTable, switchTableTab } from './table.js';
+import { isTooltipsEnabled, setTooltipsEnabled } from './tooltip.js';
 import {
   hideLoading,
   hideToast,
@@ -461,4 +462,8 @@ function tryLoadFromLocalStorage() {
 // ── BOOT ───────────────────────────────────────────────────────────────────
 
 wireEvents();
+document.getElementById('tooltips-toggle').checked = isTooltipsEnabled();
+document.getElementById('tooltips-toggle').addEventListener('change', (e) => {
+  setTooltipsEnabled(e.target.checked);
+});
 init();

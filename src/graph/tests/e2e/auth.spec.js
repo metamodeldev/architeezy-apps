@@ -10,8 +10,7 @@ import { MODEL_CONTENT, MODEL_CONTENT_URL, MODEL_LIST, test, waitForLoading } fr
  *   name: 'Alice' }.
  */
 async function mockCookieAuth(page, user) {
-  const defaultUser = { name: 'Alice' };
-  const userData = user ? { ...defaultUser, ...user } : defaultUser;
+  const userData = user ?? { name: 'Alice' };
   await page.route('https://architeezy.com/api/users/current', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(userData) }),
   );
