@@ -3,6 +3,7 @@ import { defineConfig } from '@playwright/test';
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   testMatch: '**/tests/e2e/**/*.spec.js',
+  timeout: 10_000,
   use: {
     baseURL: 'http://localhost:4200',
   },
@@ -15,7 +16,7 @@ export default defineConfig({
         outputFile: './coverage/e2e/index.html',
         coverage: {
           entryFilter: (entry) =>
-            entry.url.includes('/lens/js/') || entry.url.includes('/pivot/js/'),
+            entry.url.includes('/graph/js/') || entry.url.includes('/table/js/'),
           reports: ['v8', 'console-details'],
         },
       },

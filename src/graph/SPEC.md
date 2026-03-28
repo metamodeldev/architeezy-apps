@@ -1,9 +1,9 @@
-# Architeezy Lens — Specification
+# Architeezy Graph — Specification
 
 ## Overview
 
-**Architeezy Lens** is a single-page web application for visualising any graph-based model served by
-the Architeezy API. No build step required; all dependencies loaded from CDN.
+**Architeezy Graph** is a single-page web application for visualising any graph-based model served
+by the Architeezy API. No build step required; all dependencies loaded from CDN.
 
 ---
 
@@ -164,11 +164,21 @@ Resolution algorithm:
 
 ### FR-1: Model Selection
 
-- On startup, fetch model list and display a selection modal.
+- The model list is fetched **lazily when the selector dialog is opened**, not at application
+  startup. A "Loading list…" placeholder is shown inside the modal while the fetch is in progress.
+  If the fetch fails, the error message is displayed inside the modal body. The list is cached after
+  the first successful fetch; subsequent opens render instantly. The cache is cleared on sign-in and
+  sign-out so the list is re-fetched with the correct auth context.
 - Modal shows: model name, type badge (from `contentType`), description.
 - Search / filter within modal by name or type.
-- Selected model URL is persisted to `localStorage`; next visit auto-loads it.
+- The modal is closed by: clicking the ✕ button, pressing **Escape**, or clicking the backdrop
+  (anywhere outside the modal dialog).
+- Selected model URL is persisted to `localStorage`; next visit auto-loads it without opening the
+  selector. The model name is also persisted so the header can display it immediately on restore
+  without fetching the model list.
 - Header shows current model name and "⊞" button to reopen the selector.
+- **Deep-link exception**: when `?model=UUID` is present in the URL on startup, the model list is
+  fetched at init time to resolve the UUID to a content URL before loading the model.
 
 ### FR-2: Data Loading
 
@@ -233,8 +243,8 @@ Resolution algorithm:
   by its own checkbox is **not** dimmed — it is available, just filtered out.
 - **Relationship type rows are dimmed** when their visible count (both endpoint element types
   currently shown) drops to 0 in the current context.
-- **Filter state is persisted per model namespace** in the `architeezyLensFilter` localStorage entry
-  — a JSON object keyed by `currentModelNs` (the full namespace URI, e.g.
+- **Filter state is persisted per model namespace** in the `architeezyGraphFilter` localStorage
+  entry — a JSON object keyed by `currentModelNs` (the full namespace URI, e.g.
   `http://www.archimatetool.com/archimate`, derived from child elements). Each entry has fields
   `hiddenEntityTypes` and `hiddenRelationshipTypes`. Hidden types are restored automatically when a
   model of the same namespace is loaded.
@@ -454,15 +464,16 @@ table ← detail
 
 ## localStorage Keys
 
-Keys use the `architeezyLens` prefix, except the theme key which is shared across all Architeezy
+Keys use the `architeezyGraph` prefix, except the theme key which is shared across all Architeezy
 applications.
 
-| Key                         | Value                                                                                 |
-| --------------------------- | ------------------------------------------------------------------------------------- |
-| `architeezyTheme`           | `dark` / `light` / `system` — shared with the gallery and all other apps              |
-| `architeezyLensContainment` | `none` / `edge` / `compound`                                                          |
-| `architeezyLensModelUrl`    | Last loaded model content URL                                                         |
-| `architeezyLensFilter`      | JSON object: `{ [namespaceURI]: { hiddenEntityTypes[], hiddenRelationshipTypes[] } }` |
+| Key                          | Value                                                                                  |
+| ---------------------------- | -------------------------------------------------------------------------------------- |
+| `architeezyTheme`            | `dark` / `light` / `system` — shared with the gallery and all other apps               |
+| `architeezyGraphContainment` | `none` / `edge` / `compound`                                                           |
+| `architeezyGraphModelUrl`    | Last loaded model content URL                                                          |
+| `architeezyGraphModelName`   | Display name of the last loaded model (restored to header without fetching model list) |
+| `architeezyGraphFilter`      | JSON object: `{ [namespaceURI]: { hiddenEntityTypes[], hiddenRelationshipTypes[] } }`  |
 
 ---
 

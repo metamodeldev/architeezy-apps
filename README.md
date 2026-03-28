@@ -8,9 +8,9 @@ Architeezy.
 
 ## Apps
 
-| App                 | Description                                                 |
-| ------------------- | ----------------------------------------------------------- |
-| [Lens](./src/lens/) | Interactive graph and table viewer for any Architeezy model |
+| App                   | Description                                                 |
+| --------------------- | ----------------------------------------------------------- |
+| [Graph](./src/graph/) | Interactive graph and table viewer for any Architeezy model |
 
 ---
 
@@ -44,10 +44,13 @@ additional models.
 
 1. Open a popup to `https://architeezy.com/-/auth`.
 2. After a successful login, the auth page posts a message back to your window:
+
    ```js
    window.opener.postMessage({ type: 'AUTH_SUCCESS', token: user.access_token }, '*');
    ```
+
 3. Receive it in your app:
+
    ```js
    window.addEventListener('message', (e) => {
      if (e.data?.type === 'AUTH_SUCCESS') {
@@ -55,7 +58,9 @@ additional models.
      }
    });
    ```
+
 4. Pass the token as a Bearer header on every API request:
+
    ```js
    fetch(url, { headers: { Authorization: `Bearer ${authToken}` } });
    ```
@@ -115,7 +120,7 @@ Model objects follow a simple structural convention:
 - An object with `data.target` only → **reference edge** from its parent to the target
 - Everything else → **element** (node), possibly containing nested children
 
-See [`lens/js/parser.js`](./lens/js/parser.js) for a complete universal parser implementation.
+See [`graph/js/parser.js`](./graph/js/parser.js) for a complete universal parser implementation.
 
 ### 6. No Build Step Required
 

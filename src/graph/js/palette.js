@@ -89,7 +89,8 @@ export function elemColor(typ) {
 }
 
 /**
- * Maps a relationship type name to a palette color. Requires `initColorMaps` to have been called first.
+ * Maps a relationship type name to a palette color. Requires `initColorMaps` to have been called
+ * first.
  *
  * @param {string} typ - Relationship type name.
  * @returns {string} CSS color string.

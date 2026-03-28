@@ -110,9 +110,9 @@ needed.
 ```js
 const APPS = [
   {
-    id: 'lens',
-    href: './lens/',
-    icon: 'icon-lens', // matches a <symbol id="icon-lens"> in the SVG sprite
+    id: 'graph',
+    href: './graph/',
+    icon: 'icon-graph', // matches a <symbol id="icon-graph"> in the SVG sprite
   },
 ];
 ```
@@ -121,8 +121,8 @@ Localised app metadata lives in `STRINGS[lang].apps[id]`:
 
 ```js
 apps: {
-  lens: {
-    name: "Architeezy Lens",
+  graph: {
+    name: "Architeezy Graph",
     description: "Graph visualiser for any Architeezy model",
   },
 },
@@ -138,7 +138,7 @@ apps: {
   app.css         ← gallery styles
   app.js          ← gallery logic, i18n, app registry
   SPEC.md         ← this document
-  lens/           ← Architeezy Lens application
+  graph/           ← Architeezy Graph application
     index.html
     app.css
     js/

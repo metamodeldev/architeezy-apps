@@ -79,7 +79,7 @@ export function toggleSection(id) {
 
 /** Toggles the collapsed state of the entire left sidebar. */
 export function toggleSidebar() {
-  const sidebar = document.getElementById('lens-sidebar');
+  const sidebar = document.getElementById('graph-sidebar');
   const btn = document.getElementById('sidebar-collapse-btn');
   const collapsed = sidebar.classList.toggle('collapsed');
   btn.textContent = collapsed ? '›' : '‹';

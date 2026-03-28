@@ -1,0 +1,10 @@
+{
+  "line-length": {
+    "line_length": 100,
+    "code_block_line_length": 120,
+    "tables": false
+  },
+  "no-inline-html": {
+    "allowed_elements": ["kbd"]
+  }
+}

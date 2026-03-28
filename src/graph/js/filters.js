@@ -5,7 +5,7 @@
 //
 // Visibility.js imports filter state getters from this module (one-way).
 // To trigger visibility updates without a reverse import, this module
-// Dispatches 'lens:applyVisibility' on document; app.js wires the handler.
+// Dispatches 'graph:applyVisibility' on document; app.js wires the handler.
 
 import { getAllElements, getAllRelations, getCurrentModelNs } from './model.js';
 import { elemColor, relColor } from './palette.js';
@@ -144,9 +144,9 @@ function onFilterChange(e) {
   } else {
     set.delete(type);
   }
-  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
+  document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
   saveFilterState();
-  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
+  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
 }
 
 /**
@@ -165,9 +165,9 @@ export function selectAll(kind, val) {
       set.delete(el.dataset.type);
     }
   }
-  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
+  document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
   saveFilterState();
-  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
+  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
 }
 
 /**
@@ -197,7 +197,7 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
       _activeRelTypes.delete(el.dataset.type);
     }
   }
-  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
+  document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
 }
 
 /**
@@ -209,7 +209,7 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
  */
 export function filterSearch(kind, query) {
   const q = query.toLowerCase();
-  for (const el of document.querySelectorAll(`[data-kind="${kind}"]`)) {
+  for (const el of document.querySelectorAll(`[data-kind="${kind}"][data-type]`)) {
     const visible = el.dataset.type.toLowerCase().includes(q);
     el.closest('.filter-item').classList.toggle('hidden', !visible);
   }
@@ -218,7 +218,7 @@ export function filterSearch(kind, query) {
 // ── FILTER STATE PERSISTENCE ─────────────────────────────────────────────────
 
 // Stored as: { [namespaceURI]: { hiddenEntityTypes: string[], hiddenRelationshipTypes: string[] } }
-const LS_KEY = 'architeezyLensFilter';
+const LS_KEY = 'architeezyGraphFilter';
 
 /**
  * Persists the current filter state (hidden types) to localStorage, keyed by the model's namespace

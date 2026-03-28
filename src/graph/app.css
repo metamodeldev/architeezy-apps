@@ -297,39 +297,91 @@ body {
   white-space: nowrap;
 }
 
-/* ── BACK LINK ──────────────────────────────────────────── */
-.back-link {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  transition: color 0.12s;
-}
-
-.back-link:hover {
-  color: var(--text);
-}
-
 /* ── HEADER ─────────────────────────────────────────────── */
 header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 14px;
+  height: 44px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  flex-wrap: wrap;
 }
 
-header h1 {
-  font-size: 1rem;
-  font-weight: 700;
+/* ── BREADCRUMB ──────────────────────────────────────────── */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.crumb-link,
+.crumb-btn,
+.crumb-entity {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 4px 8px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-radius: 5px;
+  flex-shrink: 0;
 }
 
-header h1 span {
-  color: var(--accent);
+.crumb-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.crumb-link:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.crumb-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition:
+    background 0.12s,
+    color 0.12s;
+  max-width: 240px;
+}
+
+.crumb-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.crumb-entity {
+  color: var(--text);
+  font-weight: 600;
+  max-width: 200px;
+}
+
+.crumb-sep {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  opacity: 0.4;
+  padding: 0 2px;
+}
+
+/* ── HEADER RIGHT ────────────────────────────────────────── */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .tab-group {
@@ -362,14 +414,6 @@ header h1 span {
   color: var(--text);
 }
 
-.ctrl-group {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-left: auto;
-}
-
 select.ctrl,
 button.ctrl {
   background: var(--surface2);
@@ -385,18 +429,6 @@ button.ctrl {
 button.ctrl:hover {
   background: var(--accent2);
   color: #fff;
-}
-
-.model-btn {
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-.model-btn span {
-  font-weight: 400;
 }
 
 #auth-area {
@@ -448,45 +480,6 @@ button.ctrl:hover {
 
 .theme-btn.active {
   background: var(--accent2);
-}
-
-/* ── DRILL BAR ───────────────────────────────────────────── */
-#drill-bar {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 14px;
-  background: var(--accent2);
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  color: #fff;
-}
-
-#drill-bar.visible {
-  display: flex;
-}
-
-#drill-bar > button {
-  background: rgb(255 255 255 / 18%);
-  border: 1px solid rgb(255 255 255 / 28%);
-  color: #fff;
-  padding: 4px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  white-space: nowrap;
-}
-
-#drill-bar > button:hover {
-  background: rgb(255 255 255 / 32%);
-}
-
-#drill-label {
-  font-weight: 600;
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .depth-picker {
@@ -636,7 +629,6 @@ select.sidebar-ctrl {
   display: flex;
   align-items: center;
   background: var(--surface2);
-  border-bottom: 1px solid var(--border);
 }
 
 .sidebar-toggle-btn {
@@ -720,7 +712,7 @@ select.sidebar-ctrl {
 }
 
 .sidebar-content {
-  padding: 6px 10px 10px;
+  padding: 6px 6px 18px;
   overflow: hidden;
   max-height: 2400px;
   opacity: 1;
@@ -1177,22 +1169,22 @@ tr:hover td {
 /* ── MOBILE ──────────────────────────────────────────────── */
 @media (width <= 600px) {
   header {
-    padding: 6px 10px;
-    gap: 6px;
+    padding: 0 10px;
+    gap: 8px;
   }
 
-  /* Compress model button to leave room for other controls */
-  .model-btn {
-    max-width: 140px;
+  .crumb-link,
+  .crumb-link + .crumb-sep {
+    display: none;
+  }
+
+  .crumb-btn,
+  .crumb-entity {
+    max-width: 120px;
   }
 
   /* Hide user name text on small screens (keep sign-in/out button) */
   #user-name {
     display: none;
-  }
-
-  /* Drill bar wraps depth picker to second line if needed */
-  #drill-bar {
-    flex-wrap: wrap;
   }
 }

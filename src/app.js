@@ -11,8 +11,8 @@ const STRINGS = {
     themeLight: 'Light',
     themeSystem: 'System',
     apps: {
-      lens: {
-        name: 'Architeezy Lens',
+      graph: {
+        name: 'Architeezy Graph',
         description:
           'Displays the model as a graph or table, and allows you to filter objects and relationships, as well as search for related objects',
       },
@@ -27,8 +27,8 @@ const STRINGS = {
     themeLight: 'Светлая',
     themeSystem: 'Системная',
     apps: {
-      lens: {
-        name: 'Architeezy Lens',
+      graph: {
+        name: 'Architeezy Graph',
         description:
           'Показывает модель в виде графа или таблицы, позволяет фильтровать объекты и связи, искать связанные объекты',
       },
@@ -51,9 +51,9 @@ function t(key) {
 // ── App registry ─────────────────────────────────────────────────────
 const APPS = [
   {
-    id: 'lens',
-    href: './lens/',
-    img: 'lens/logo.svg',
+    id: 'graph',
+    href: './graph/',
+    img: 'graph/logo.svg',
   },
 ];
 

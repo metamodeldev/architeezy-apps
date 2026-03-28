@@ -6,7 +6,7 @@ test.describe('URL params', () => {
   test('?model= auto-loads the matching model without opening the selector', async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/?model=model-test');
+    await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
 
     await expect(page.locator('#model-modal')).toBeHidden();
@@ -16,7 +16,7 @@ test.describe('URL params', () => {
   test('?view=table opens the app directly in table view', async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/?model=model-test&view=table');
+    await page.goto('/graph/?model=model-test&view=table');
     await waitForLoading(page);
 
     await expect(page.locator('#tab-table')).toHaveClass(/active/);
@@ -26,7 +26,7 @@ test.describe('URL params', () => {
   test('?entities= unchecks excluded element types in the filter panel', async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/?model=model-test&entities=ApplicationComponent');
+    await page.goto('/graph/?model=model-test&entities=ApplicationComponent');
     await waitForLoading(page);
 
     // Data-kind and data-type are attributes on the input element itself
@@ -39,7 +39,7 @@ test.describe('URL params', () => {
   }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/?model=model-test&relationships=AssociationRelationship');
+    await page.goto('/graph/?model=model-test&relationships=AssociationRelationship');
     await waitForLoading(page);
 
     const servingCheckbox = page.locator('input[data-kind="rel"][data-type="ServingRelationship"]');

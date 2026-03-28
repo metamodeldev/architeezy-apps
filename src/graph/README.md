@@ -1,4 +1,4 @@
-# Architeezy Lens
+# Architeezy Graph
 
 An interactive viewer for architecture models stored in [Architeezy](https://architeezy.com).
 Displays any model as a force-directed graph or a searchable table, with filtering, drill-down, and
@@ -31,7 +31,7 @@ server.
 ```sh
 # from the repo root:
 bun dev
-# then open http://localhost:3000/lens/
+# then open http://localhost:3000/graph/
 ```
 
 ---
@@ -92,7 +92,7 @@ All state is reflected in the address bar. Parameters are set with `history.repl
 
 ## Authentication
 
-Lens uses an OAuth popup flow. The token is stored **in memory only** — never persisted to
+Graph uses an OAuth popup flow. The token is stored **in memory only** — never persisted to
 localStorage or cookies. See [`js/auth.js`](js/auth.js) and the
 [root README](../README.md#authentication) for details.
 

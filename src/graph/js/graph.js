@@ -29,7 +29,7 @@ let _pointerController;
 // ── CONTAINMENT MODE ─────────────────────────────────────────────────────────
 
 /** @type {'none' | 'edge' | 'compound'} How parent–child relationships are displayed */
-let _containmentMode = globalThis.localStorage?.getItem('architeezyLensContainment') ?? 'edge';
+let _containmentMode = globalThis.localStorage?.getItem('architeezyGraphContainment') ?? 'edge';
 
 /**
  * Returns the current containment display mode.
@@ -48,7 +48,7 @@ export function getContainmentMode() {
  */
 export function setContainmentMode(mode) {
   _containmentMode = mode;
-  localStorage.setItem('architeezyLensContainment', mode);
+  localStorage.setItem('architeezyGraphContainment', mode);
 }
 
 /** Cancels any pending single-tap debounce timer. */

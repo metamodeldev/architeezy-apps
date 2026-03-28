@@ -6,8 +6,8 @@ import { getActiveElemTypes, getActiveRelTypes } from './filters.js';
 import { focusCyNode } from './graph.js';
 import { t } from './i18n.js';
 import { getAllElements, getAllRelations, getElemMap } from './model.js';
-import { escHtml, switchView } from './ui.js';
 import { elemColor, relColor } from './palette.js';
+import { escHtml, switchView } from './ui.js';
 
 // Table UI state — owned here, not in global state.
 let _currentTTab = 'elements';

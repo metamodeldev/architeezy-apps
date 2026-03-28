@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Architeezy Lens</title>
+    <title>Architeezy Graph</title>
     <link rel="stylesheet" href="app.css" />
 
     <script
@@ -71,30 +71,28 @@
 
     <!-- ── HEADER ───────────────────────────────────────────────── -->
     <header>
-      <a class="back-link" href="../" data-i18n="backToGallery">← Gallery</a>
-      <h1>Architeezy <span>Lens</span></h1>
-
-      <div class="tab-group">
-        <button class="tab-btn active" id="tab-graph" data-view="graph" data-i18n="tabGraph">
-          Graph
+      <nav class="breadcrumb">
+        <a class="crumb-link" href="../">Architeezy Apps</a>
+        <span class="crumb-sep">›</span>
+        <button class="crumb-btn" id="current-model-btn">Graph</button>
+        <span class="crumb-sep">›</span>
+        <button class="crumb-btn" id="drill-exit-btn">
+          <span id="current-model-name" data-i18n="selectModel">Select model…</span>
         </button>
-        <button class="tab-btn" id="tab-table" data-view="table" data-i18n="tabTable">Table</button>
-      </div>
+        <span class="crumb-sep hidden" id="crumb-entity-sep">›</span>
+        <span class="crumb-entity hidden" id="drill-label"></span>
+      </nav>
 
-      <button class="ctrl model-btn" id="current-model-btn">
-        ⊞
-        <span id="current-model-name" data-i18n="selectModel">Select model…</span>
-      </button>
-
-      <div id="auth-area">
-        <button class="ctrl" id="auth-btn" data-i18n="signIn">Sign in</button>
-        <div id="user-info">
-          <span id="user-name"></span>
-          <button class="ctrl" id="signout-btn" data-i18n="signOut">Sign out</button>
+      <div class="header-right">
+        <div class="tab-group">
+          <button class="tab-btn active" id="tab-graph" data-view="graph" data-i18n="tabGraph">
+            Graph
+          </button>
+          <button class="tab-btn" id="tab-table" data-view="table" data-i18n="tabTable">
+            Table
+          </button>
         </div>
-      </div>
 
-      <div class="ctrl-group">
         <div class="theme-switcher">
           <button
             class="theme-btn"
@@ -124,18 +122,20 @@
             🖥
           </button>
         </div>
+
+        <div id="auth-area">
+          <button class="ctrl" id="auth-btn" data-i18n="signIn">Sign in</button>
+          <div id="user-info">
+            <span id="user-name"></span>
+            <button class="ctrl" id="signout-btn" data-i18n="signOut">Sign out</button>
+          </div>
+        </div>
       </div>
     </header>
 
-    <!-- ── DRILL BAR ────────────────────────────────────────────── -->
-    <div id="drill-bar">
-      <button id="drill-exit-btn" data-i18n="drillBack">← Full model</button>
-      <span id="drill-label"></span>
-    </div>
-
     <!-- ── BODY ─────────────────────────────────────────────────── -->
     <div class="body">
-      <aside id="lens-sidebar">
+      <aside id="graph-sidebar">
         <button id="sidebar-collapse-btn" class="sidebar-toggle" title="Hide sidebar">‹</button>
 
         <div class="sidebar-scroll">

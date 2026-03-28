@@ -41,12 +41,7 @@ import {
   zoomOut,
 } from './graph.js';
 import { applyLocale, t } from './i18n.js';
-import {
-  getAllElements,
-  getAllRelations,
-  loadModelData,
-  setCurrentModel,
-} from './model.js';
+import { getAllElements, getAllRelations, loadModelData, setCurrentModel } from './model.js';
 import {
   closeModelSelector,
   fetchModelList,
@@ -78,6 +73,7 @@ setTheme(localStorage.getItem('architeezyTheme') ?? 'system');
 
 function onSignOut() {
   signOut();
+  setCachedModels([]);
   init();
 }
 
@@ -112,6 +108,16 @@ function wireEvents() {
     .getElementById('model-search')
     .addEventListener('input', (e) => filterModelList(e.target.value));
   document.getElementById('current-model-btn').addEventListener('click', openModelSelector);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModelSelector();
+    }
+  });
+  document.getElementById('model-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      closeModelSelector();
+    }
+  });
 
   // View tabs — delegation on .tab-group
   document.querySelector('.tab-group').addEventListener('click', (e) => {
@@ -193,9 +199,9 @@ function wireEvents() {
   document.getElementById('fit-cy-btn').addEventListener('click', fitGraph);
 
   // Visibility triggers from drill.js / filters.js (avoids circular imports)
-  document.addEventListener('lens:applyDrill', applyDrill);
-  document.addEventListener('lens:applyVisibility', applyVisibility);
-  document.addEventListener('lens:syncUrl', syncUrl);
+  document.addEventListener('graph:applyDrill', applyDrill);
+  document.addEventListener('graph:applyVisibility', applyVisibility);
+  document.addEventListener('graph:syncUrl', syncUrl);
 }
 
 // ── AUTH_SUCCESS from popup ─────────────────────────────────────────────────
@@ -205,6 +211,7 @@ window.addEventListener('message', (e) => {
   }
   handleAuthSuccess(e.data.token);
   fetchCurrentUser();
+  setCachedModels([]);
   init();
 });
 
@@ -247,6 +254,8 @@ function onContainmentChange(mode) {
  * @param {Function | undefined} [afterLoad] - Optional callback invoked after a successful load.
  */
 async function loadModel(url, modelId, afterLoad) {
+  // Defer showing loading to avoid blocking the click that triggered this
+  await Promise.resolve();
   showLoading(t('loadingModel'));
   try {
     const r = await apiFetch(url);
@@ -262,9 +271,10 @@ async function loadModel(url, modelId, afterLoad) {
 
     initColorMaps(getAllElements(), getAllRelations());
 
-    localStorage.setItem('architeezyLensModelUrl', url);
+    localStorage.setItem('architeezyGraphModelUrl', url);
     clearDrillState();
-    document.getElementById('drill-bar').classList.remove('visible');
+    document.getElementById('crumb-entity-sep').classList.add('hidden');
+    document.getElementById('drill-label').classList.add('hidden');
 
     const currentModelId =
       modelId ?? getCachedModels().find((m) => modelContentUrl(m) === url)?.id ?? undefined;
@@ -292,11 +302,60 @@ async function loadModel(url, modelId, afterLoad) {
 // ── INIT ───────────────────────────────────────────────────────────────────
 
 /**
+ * Creates the afterLoad callback based on URL state parameters.
+ *
+ * @param {boolean} hasUrlState - Whether any URL state parameters are present.
+ * @param {string | undefined} urlEntities - Comma-separated entity types from URL.
+ * @param {string | undefined} urlRelationships - Comma-separated relationship types from URL.
+ * @param {string | undefined} urlView - Desired view from URL ('table' or 'graph').
+ * @param {string | undefined} urlEntityId - Entity ID for drill mode from URL.
+ * @param {number | undefined} urlDepth - Drill depth from URL.
+ * @returns {Function | undefined} Callback to run after model load, or undefined if no URL state.
+ */
+function buildAfterLoadHandler(
+  hasUrlState,
+  urlEntities,
+  urlRelationships,
+  urlView,
+  urlEntityId,
+  urlDepth,
+) {
+  if (!hasUrlState) {
+    return;
+  }
+
+  return () => {
+    // Filter state always comes from URL when restoring from a shared link.
+    const allETypes = [...new Set(getAllElements().map((e) => e.type))];
+    const allRTypes = [...new Set(getAllRelations().map((r) => r.type))];
+    applyUrlFilters(
+      urlEntities === undefined ? allETypes : urlEntities.split(',').filter(Boolean),
+      urlRelationships === undefined ? allRTypes : urlRelationships.split(',').filter(Boolean),
+    );
+    // View
+    if (urlView === 'table') {
+      switchView('table', renderTable);
+    }
+    // Drill
+    if (urlEntityId) {
+      if (urlDepth !== undefined) {
+        setDrillDepth(urlDepth);
+      }
+      if (hasGraphNode(urlEntityId)) {
+        onNodeDrill(urlEntityId);
+      }
+    }
+  };
+}
+
+/**
  * Application entry point: applies locale, checks auth, fetches the model list, then loads the
  * model from the URL or localStorage. If no model URL is available, opens the model selector
  * modal.
  */
 async function init() {
+  // Hide initial loading overlay ASAP
+  hideLoading();
   applyLocale();
   document.getElementById('containment-select').value = getContainmentMode();
   if (isAuthed()) {
@@ -304,14 +363,6 @@ async function init() {
   } else {
     await probeAuth();
   }
-  showLoading(t('loadingModels'));
-  try {
-    setCachedModels(await fetchModelList());
-  } catch (error) {
-    showError(error.message);
-    return;
-  }
-  hideLoading();
 
   // URL params take priority over localStorage
   const {
@@ -323,56 +374,88 @@ async function init() {
     view: urlView,
   } = readUrlParams();
 
-  const urlModel = urlModelId ? getCachedModels().find((m) => m.id === urlModelId) : undefined;
-  const targetUrl = urlModel
-    ? modelContentUrl(urlModel)
-    : localStorage.getItem('architeezyLensModelUrl');
-  const targetModelId = urlModel ? urlModelId : undefined;
+  let targetUrl;
+  let targetModelId;
+
+  if (urlModelId) {
+    targetUrl = await tryLoadFromUrlParam(urlModelId);
+    if (targetUrl) {
+      targetModelId = urlModelId;
+    }
+  }
+
+  if (!targetUrl) {
+    targetUrl = tryLoadFromLocalStorage();
+  }
 
   const hasUrlState =
     urlEntities !== undefined || urlRelationships !== undefined || urlEntityId || urlView;
-
-  const afterLoad = hasUrlState
-    ? () => {
-        // Filter state always comes from URL when restoring from a shared link.
-        // Absent entities/relationships means all types visible — override localStorage.
-        const allETypes = [...new Set(getAllElements().map((e) => e.type))];
-        const allRTypes = [...new Set(getAllRelations().map((r) => r.type))];
-        applyUrlFilters(
-          urlEntities === undefined ? allETypes : urlEntities.split(',').filter(Boolean),
-          urlRelationships === undefined ? allRTypes : urlRelationships.split(',').filter(Boolean),
-        );
-        // View
-        if (urlView === 'table') {
-          switchView('table', renderTable);
-        }
-        // Drill
-        if (urlEntityId) {
-          if (urlDepth !== undefined) {
-            setDrillDepth(urlDepth);
-          }
-          if (hasGraphNode(urlEntityId)) {
-            onNodeDrill(urlEntityId);
-          }
-        }
-      }
-    : undefined;
+  const afterLoad = buildAfterLoadHandler(
+    hasUrlState,
+    urlEntities,
+    urlRelationships,
+    urlView,
+    urlEntityId,
+    urlDepth,
+  );
 
   if (targetUrl) {
     await loadModel(targetUrl, targetModelId, afterLoad);
 
     if (isGraphLoaded()) {
+      // If model list was fetched (URL param case), update name from the list
       const saved = getCachedModels().find((m) => modelContentUrl(m) === targetUrl);
       if (saved) {
         setCurrentModelName(saved.name);
       }
     } else {
-      localStorage.removeItem('architeezyLensModelUrl');
+      localStorage.removeItem('architeezyGraphModelUrl');
+      localStorage.removeItem('architeezyGraphModelName');
       openModelSelector();
     }
   } else {
+    hideLoading();
     openModelSelector();
   }
+}
+
+/**
+ * Tries to load model from URL modelId parameter. Returns the content URL if successful, undefined
+ * otherwise.
+ *
+ * @param {string} urlModelId - Model ID from URL query parameter.
+ * @returns {Promise<string | undefined>} Content URL on success, undefined on failure.
+ */
+async function tryLoadFromUrlParam(urlModelId) {
+  // Model list is needed to resolve the UUID to a content URL
+  showLoading(t('loadingModels'));
+  try {
+    setCachedModels(await fetchModelList());
+  } catch (error) {
+    showError(error.message);
+    return;
+  }
+  hideLoading();
+  const urlModel = getCachedModels().find((m) => m.id === urlModelId);
+  if (urlModel) {
+    return modelContentUrl(urlModel);
+  }
+}
+
+/**
+ * Tries to get model URL from localStorage. Returns the URL if found, undefined otherwise.
+ *
+ * @returns {string | undefined} - Model content URL if present in storage, undefined otherwise.
+ */
+function tryLoadFromLocalStorage() {
+  const url = localStorage.getItem('architeezyGraphModelUrl');
+  if (url) {
+    const savedName = localStorage.getItem('architeezyGraphModelName');
+    if (savedName) {
+      setCurrentModelName(savedName);
+    }
+  }
+  return url ?? undefined;
 }
 
 // ── BOOT ───────────────────────────────────────────────────────────────────

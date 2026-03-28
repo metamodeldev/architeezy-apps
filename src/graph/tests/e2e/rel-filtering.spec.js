@@ -6,7 +6,7 @@ test.describe('relationship type filtering', () => {
   test.beforeEach(async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/');
+    await page.goto('/graph/');
     await expect(page.locator('#model-modal')).toBeVisible({ timeout: 10_000 });
     await loadTestModelFromSelector(page);
     await page.locator('#tab-table').click();
@@ -41,7 +41,7 @@ test.describe('filter select-all / select-none controls', () => {
   test.beforeEach(async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/');
+    await page.goto('/graph/');
     await expect(page.locator('#model-modal')).toBeVisible({ timeout: 10_000 });
     await loadTestModelFromSelector(page);
     await page.locator('#tab-table').click();

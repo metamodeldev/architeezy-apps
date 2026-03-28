@@ -1,2 +1,3 @@
-**/tests/
 **/*.md
+**/docs/
+**/tests/

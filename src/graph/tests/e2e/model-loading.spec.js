@@ -6,7 +6,7 @@ test.describe('model loading', () => {
   test.beforeEach(async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/lens/');
+    await page.goto('/graph/');
     await expect(page.locator('#model-modal')).toBeVisible({ timeout: 10_000 });
   });
 

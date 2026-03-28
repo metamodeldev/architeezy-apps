@@ -95,12 +95,28 @@ export function getCachedModels() {
   return _models;
 }
 
-/** Opens the model-selector modal and focuses the search input. */
-export function openModelSelector() {
+/**
+ * Opens the model-selector modal and focuses the search input. Fetches the model list on first open
+ * (or after the cache is cleared); shows a loading placeholder until the list is ready.
+ */
+export async function openModelSelector() {
   document.getElementById('model-modal').classList.remove('hidden');
   document.getElementById('model-search').value = '';
-  renderModelList(_models, '');
   document.getElementById('model-search').focus();
+
+  if (!_models.length) {
+    document.getElementById('model-list').innerHTML =
+      `<div class="model-list-loading">${t('modalLoading')}</div>`;
+    try {
+      _models = await fetchModelList();
+    } catch (error) {
+      document.getElementById('model-list').innerHTML =
+        `<div class="model-list-loading">${escHtml(error.message)}</div>`;
+      return;
+    }
+  }
+
+  renderModelList(_models, '');
 }
 
 /** Closes the model-selector modal. */
@@ -118,7 +134,7 @@ export function closeModelSelector() {
 export function renderModelList(models, query) {
   const q = query.toLowerCase();
   const container = document.getElementById('model-list');
-  const currentUrl = localStorage.getItem('architeezyLensModelUrl');
+  const currentUrl = localStorage.getItem('architeezyGraphModelUrl');
   container.innerHTML = '';
 
   for (const model of models) {
@@ -184,5 +200,6 @@ export function filterModelList(query) {
  */
 export function setCurrentModelName(name) {
   document.getElementById('current-model-name').textContent = name;
-  document.title = `${name} — Architeezy Lens`;
+  document.title = `${name} — Architeezy Graph`;
+  localStorage.setItem('architeezyGraphModelName', name);
 }

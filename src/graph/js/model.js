@@ -93,7 +93,7 @@ export function getElemMap() {
  * returns the model namespace URI (for setCurrentModel).
  *
  * @param {object} raw - Raw JSON body of a model content API response.
- * @returns {string} currentModelNs — full namespace URI of the loaded model.
+ * @returns {string} CurrentModelNs — full namespace URI of the loaded model.
  */
 export function loadModelData(raw) {
   const { allElements, allRelations, elemMap, currentModelNs } = parseModel(raw);
@@ -135,7 +135,8 @@ function parseEClass(eClassStr, nsMap) {
  *   elemMap: object;
  *   currentModelNs: string;
  *   modelNsMap: object;
- * }} The parsed graph elements and relations.
+ * }}
+ *   The parsed graph elements and relations.
  */
 export function parseModel(raw) {
   const allElements = [];

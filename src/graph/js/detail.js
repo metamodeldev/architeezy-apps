@@ -46,7 +46,9 @@ export function showDetail(id, drillCallback) {
   if (drillCallback) {
     document.querySelector('#detail-panel .detail-conn').addEventListener('click', (e) => {
       const item = e.target.closest('.detail-conn-item[data-target]');
-      if (!item) { return; }
+      if (!item) {
+        return;
+      }
       const targetId = item.dataset.target;
       if (hasGraphNode(targetId)) {
         cancelTapTimer();

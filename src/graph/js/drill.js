@@ -5,7 +5,7 @@
 //
 // Visibility.js imports drill state getters from this module (one-way).
 // To trigger visibility updates without a reverse import, this module
-// Dispatches 'lens:applyDrill' / 'lens:applyVisibility' on document;
+// Dispatches 'graph:applyDrill' / 'graph:applyVisibility' on document;
 // App.js wires the handlers.
 
 import { showDetail } from './detail.js';
@@ -99,9 +99,9 @@ export function initDrillEvents() {
     }
     setDrillDepth(Number(btn.dataset.depth));
     buildDepthPicker(getDrillDepth());
-    document.dispatchEvent(new CustomEvent('lens:applyDrill'));
+    document.dispatchEvent(new CustomEvent('graph:applyDrill'));
     applyLayout();
-    document.dispatchEvent(new CustomEvent('lens:syncUrl'));
+    document.dispatchEvent(new CustomEvent('graph:syncUrl'));
   });
 }
 
@@ -115,18 +115,19 @@ export function initDrillEvents() {
 export function onNodeDrill(nodeId) {
   setDrillNodeId(nodeId);
 
-  document.getElementById('drill-bar').classList.add('visible');
+  document.getElementById('crumb-entity-sep').classList.remove('hidden');
+  document.getElementById('drill-label').classList.remove('hidden');
   document.getElementById('drill-label').textContent = getElemMap()[nodeId]?.name ?? nodeId;
   document.getElementById('settings-depth-row').classList.remove('hidden');
   buildDepthPicker(getDrillDepth());
-  document.dispatchEvent(new CustomEvent('lens:applyDrill'));
+  document.dispatchEvent(new CustomEvent('graph:applyDrill'));
 
   // Update class after applyDrill's cy.batch() completes so it isn't overridden.
   setDrillRootNode(nodeId);
 
   applyLayout();
   showDetail(nodeId, (targetId) => onNodeDrill(targetId));
-  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
+  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
 }
 
 /**
@@ -136,9 +137,10 @@ export function onNodeDrill(nodeId) {
 export function exitDrill() {
   clearDrillRootNodes();
   clearDrillState();
-  document.getElementById('drill-bar').classList.remove('visible');
+  document.getElementById('crumb-entity-sep').classList.add('hidden');
+  document.getElementById('drill-label').classList.add('hidden');
   document.getElementById('settings-depth-row').classList.add('hidden');
-  document.dispatchEvent(new CustomEvent('lens:applyVisibility'));
+  document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
   fitGraph();
-  document.dispatchEvent(new CustomEvent('lens:syncUrl'));
+  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
 }
