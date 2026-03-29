@@ -285,7 +285,7 @@
       </aside>
 
       <main>
-        <div id="cy"></div>
+        <div id="cy" class="hidden"></div>
 
         <div id="table-view">
           <div class="table-tabs">
@@ -316,6 +316,8 @@
               aria-label="Search table"
               placeholder="Search table…"
             />
+            <button id="export-csv-btn" class="ctrl" disabled>Export CSV</button>
+            <span id="export-loading" class="hidden">Exporting…</span>
             <span class="table-count" id="table-count"></span>
           </div>
           <div class="table-container">
@@ -330,6 +332,20 @@
           <button id="zoom-in-btn" data-i18n-tt="zoomIn" title="Zoom in">+</button>
           <button id="zoom-out-btn" data-i18n-tt="zoomOut" title="Zoom out">−</button>
           <button id="fit-cy-btn" data-i18n-tt="zoomFit" title="Fit">⤢</button>
+
+          <!-- Export Image Controls -->
+          <div id="export-controls" class="export-controls">
+            <button id="export-image-btn" class="ctrl" title="Export graph image">📤</button>
+            <div id="export-dropdown" class="dropdown hidden">
+              <button id="export-png-btn" class="dropdown-item">Export as PNG</button>
+              <button id="export-svg-btn" class="dropdown-item">Export as SVG</button>
+            </div>
+            <label class="export-legend-label">
+              <input type="checkbox" id="export-legend-toggle" />
+              <span>Include legend</span>
+            </label>
+            <span id="export-loading" class="hidden">Exporting…</span>
+          </div>
         </div>
       </main>
     </div>

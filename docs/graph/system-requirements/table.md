@@ -11,14 +11,13 @@ and drill state.
 
 ## Acceptance Criteria
 
-- SR-5.1: Tab buttons switch between Graph and Table views
+- SR-5.1: View switching controls allow toggling between Graph and Table views
 - SR-5.2: Table has separate tabs for Elements and Relationships
 - SR-5.3: Table includes search functionality and row count statistics
-- SR-5.4: Columns are sortable (ascending/descending)
+- SR-5.4: Columns are sortable
 - SR-5.5: Row clicks select corresponding nodes in the graph
-- SR-5.6: Switching views preserves state (filters, drill, selections)
-- SR-5.7: Active view and table tab are clearly indicated
-- SR-5.8: Table respects active filters and drill mode scope
+- SR-5.6: Switching views preserves graph state (zoom, pan, and selection) and table scroll position
+- SR-5.7: Table respects active filters and drill mode scope
 
 ## Scenario
 

@@ -10,12 +10,12 @@ in detail, controlling the depth of the drill and being able to return to the fu
 
 ## Acceptance Criteria
 
-- SR-4.1: Double-click activates drill mode from any node
+- SR-4.1: Drill mode can be activated from any node
 - SR-4.2: Drill bar shows selected node and exit option
 - SR-4.3: Selected node remains visible even if its type is filtered
 - SR-4.4: Graph shows nodes within configurable depth from selected node
 - SR-4.5: Only edges connecting visible nodes are shown
-- SR-4.6: Depth adjustable (typically 1-5 levels)
+- SR-4.6: Depth is adjustable within a defined range
 - SR-4.7: Exiting drill returns to full model view with current filters
 - SR-4.8: Drill mode respects active element and relationship type filters
 - SR-4.9: Count badges update to show visible/total considering drill scope and filters
@@ -123,8 +123,6 @@ in detail, controlling the depth of the drill and being able to return to the fu
 
 ## Business Rules
 
-- Drill mode is activated by double-click; single-click has a delay to distinguish from
-  double-click.
 - The drill scope is computed via graph traversal from the selected node.
 - Depth has a defined range (typically 1-5) with a default of 1.
 - The selected node is always included in the visible set regardless of element type filter.
@@ -138,22 +136,32 @@ in detail, controlling the depth of the drill and being able to return to the fu
 
 ## UI/UX
 
+### Responsiveness and Smoothness
+
+- Drill mode activates quickly.
+- Depth adjustment responds immediately.
+- Filter changes propagate correctly through the drill scope calculation.
+- Exiting drill is instantaneous.
+- All transitions are smooth without jarring movements.
+
+### Visual Design
+
 - A drill bar appears below the header, containing a "Full model" or "Exit drill" button and the
   selected node label.
-- Selected node is visually distinguished (e.g., with a distinctive border color).
+- The drill root node is distinctly highlighted with a border color or glow effect, optionally with
+  a shadow, to differentiate it from regular selection; this styling persists throughout drill mode.
 - Graph zoom and pan position are preserved when entering and exiting drill mode.
 - Depth picker buttons appear in settings when drill mode is active; the current level is
   highlighted.
-- Transitions are smooth; no confirmation dialogs are required.
+- No confirmation dialogs are required for drill mode actions.
 
 ## Technical Notes
 
 ### Scope Calculation
 
-- A breadth-first traversal algorithm starting from the selected node determines which nodes are
-  within drill scope.
+Scope rules are defined in Business Rules. Implementation uses a breadth-first traversal:
+
 - Traversal tracks the depth (distance) of each node from the root.
-- The traversal respects active relationship type filters and always includes containment edges.
 - Node visibility condition: node is the root OR (node type is active AND depth ≤ current drill
   depth).
 - Edge visibility condition: both endpoints are visible AND at least one endpoint has depth less
@@ -167,15 +175,6 @@ in detail, controlling the depth of the drill and being able to return to the fu
 - After drill mode exit, the previous layout algorithm is restored.
 - Layout animation may be used if node count is within the performance threshold (< 400 visible
   nodes).
-
-### Drill Root Styling
-
-- The selected drill root node receives distinct visual styling to emphasize its importance:
-  - Different border color or glow effect
-  - May have special shadow or highlight
-  - Remains distinctly styled throughout drill mode
-- This styling should be consistent with the overall selection highlight but sufficiently
-  distinguishable.
 
 ### State Management
 

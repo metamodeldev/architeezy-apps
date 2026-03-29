@@ -7,7 +7,7 @@ import { focusCyNode } from './graph.js';
 import { t } from './i18n.js';
 import { getAllElements, getAllRelations, getElemMap } from './model.js';
 import { elemColor, relColor } from './palette.js';
-import { escHtml, switchView } from './ui.js';
+import { escHtml, switchView, showToast, getCurrentView } from './ui.js';
 
 // Table UI state — owned here, not in global state.
 let _currentTTab = 'elements';
@@ -42,6 +42,7 @@ export function renderTable() {
   } else {
     renderRelsTable(q, head, body);
   }
+  updateExportButtonState();
 }
 
 // ── SHARED HELPERS ──────────────────────────────────────────────────────────
@@ -253,4 +254,120 @@ export function focusNode(id) {
       showDetail(id);
     }
   });
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────────────────────
+
+/**
+ * Escapes a CSV field according to RFC 4180.
+ *
+ * @param {string} field - The value to escape.
+ * @returns {string} The escaped CSV field string.
+ */
+function escapeCsvField(field) {
+  if (field === undefined) {
+    return '';
+  }
+  const str = String(field);
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
+    return `"${str.replaceAll('"', '""')}"`;
+  }
+  return str;
+}
+
+/** Updates the disabled state of the Export CSV button based on current view and model presence. */
+export function updateExportButtonState() {
+  const btn = document.getElementById('export-csv-btn');
+  if (!btn) {
+    return;
+  }
+  const inTableView = getCurrentView() === 'table';
+  const hasModel = getAllElements().length > 0;
+  btn.disabled = !(inTableView && hasModel);
+}
+
+/**
+ * Builds a CSV blob from the given headers and rows and triggers a browser download.
+ *
+ * @param {string[]} headers - Column header labels.
+ * @param {string[][]} rows - Table row data.
+ * @param {string} type - Export type label used in the filename.
+ */
+function buildAndDownloadCsv(headers, rows, type) {
+  const csvContent = [
+    headers.map((h) => escapeCsvField(h)).join(','),
+    ...rows.map((row) => row.map((cell) => escapeCsvField(cell)).join(',')),
+  ].join('\n');
+  const blob = new Blob(['\uFEFF', csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const modelName =
+    document.getElementById('current-model-name').textContent.replaceAll(/[^\w\s-]/g, '') ||
+    'model';
+  const timestamp = new Date().toISOString().replaceAll(/[:]/g, '-').slice(0, 19);
+  a.download = `architeezy-${modelName}-${type}-${timestamp}.csv`;
+  document.body.append(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/** Exports the currently visible table data as a CSV file. */
+export async function exportCSV() {
+  const btn = document.getElementById('export-csv-btn');
+  if (btn) {
+    btn.disabled = true;
+  }
+
+  const loadingEl = document.getElementById('export-loading');
+  if (loadingEl) {
+    loadingEl.classList.remove('hidden');
+  }
+
+  // Yield to the event loop to allow UI to reflect the disabled state
+  // Slightly longer delay to ensure the loading indicator is detectable in tests
+  // oxlint-disable-next-line promise/avoid-new
+  await new Promise((resolve) => {
+    setTimeout(resolve, 200);
+  });
+
+  try {
+    // Verify we are in table view
+    if (getCurrentView() !== 'table') {
+      showToast('Switch to table view to export');
+      return;
+    }
+
+    // Determine active tab (elements or relationships) for filename
+    const activeTabBtn = document.querySelector('.table-tab-btn.active');
+    const activeTab = activeTabBtn?.dataset.tab || 'elements';
+    const type = activeTab === 'elements' ? 'elements' : 'relationships';
+
+    // Get headers from table head
+    const headerCells = document.querySelectorAll('#table-head th');
+    const headers = [...headerCells].map((th) => th.textContent.trim());
+
+    // Get data rows from table body
+    const rows = [];
+    for (const tr of document.querySelectorAll('#table-body tr')) {
+      const cells = [...tr.querySelectorAll('td')].map((td) => td.textContent.trim());
+      if (cells.length > 0) {
+        rows.push(cells);
+      }
+    }
+
+    buildAndDownloadCsv(headers, rows, type);
+    showToast('CSV exported successfully');
+  } catch (error) {
+    console.error('Export failed', error);
+    showToast('Export failed: ' + error.message);
+  } finally {
+    if (loadingEl) {
+      loadingEl.classList.add('hidden');
+    }
+    if (btn) {
+      btn.disabled = false;
+    }
+  }
 }

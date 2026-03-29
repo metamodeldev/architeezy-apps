@@ -12,8 +12,6 @@ Architeezy.
 | --------------------- | ----------------------------------------------------------- |
 | [Graph](./src/graph/) | Interactive graph and table viewer for any Architeezy model |
 
----
-
 ## Building Your Own Architeezy App
 
 Architeezy exposes a REST API that any web app can use to read models, navigate relationships, and
@@ -126,8 +124,6 @@ See [`graph/js/parser.js`](./graph/js/parser.js) for a complete universal parser
 
 All example apps are plain ES modules loaded directly in the browser — no bundler, no transpiler, no
 `package.json`. Dependencies (Cytoscape.js etc.) are loaded from CDN via `<script>` tags.
-
----
 
 ## Running Locally
 

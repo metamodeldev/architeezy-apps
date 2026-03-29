@@ -59,7 +59,9 @@ const STRINGS = {
     zoomFit: 'Fit',
     signIn: 'Sign in',
     signOut: 'Sign out',
+    signedOut: 'Signed out successfully',
     authRequired: 'Please sign in to continue',
+    popupBlocked: 'Pop-up blocked. Please allow pop-ups to sign in.',
     settingsTooltips: 'Tooltips',
   },
   ru: {
@@ -117,7 +119,9 @@ const STRINGS = {
     zoomFit: 'Вписать',
     signIn: 'Войти',
     signOut: 'Выйти',
+    signedOut: 'Вы вышли из системы',
     authRequired: 'Войдите, чтобы продолжить',
+    popupBlocked: 'Всплывающее окно заблокировано. Разрешите всплывающие окна для входа.',
     settingsTooltips: 'Подсказки',
   },
 };

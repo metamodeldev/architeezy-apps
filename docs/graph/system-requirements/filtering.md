@@ -10,13 +10,13 @@ my filter choices remembered across sessions, and share views with specific filt
 
 ## Acceptance Criteria
 
-- SR-3.1: Sidebar displays element and relationship types with counts and checkboxes
-- SR-3.2: Search inputs filter the type lists in real-time
-- SR-3.3: "Select all" and "Select none" buttons for bulk operations
-- SR-3.4: Filter changes apply immediately to graph and table views
+- SR-3.1: Element and relationship types are displayed with counts and selection controls
+- SR-3.2: Search inputs can filter the type lists
+- SR-3.3: Bulk selection controls for "select all" and "select none" are available
+- SR-3.4: Changing filter settings updates the graph and table views accordingly
 - SR-3.5: Count badges show visible/total counts
 - SR-3.6: Filter state persists to browser storage per model
-- SR-3.7: URL parameters encode active filter types and override stored settings on load
+- SR-3.7: URL parameters can encode active filter types for sharing
 
 ## Scenario
 
@@ -129,7 +129,6 @@ my filter choices remembered across sessions, and share views with specific filt
 ### Element Type Filter
 
 - Filter state is keyed by model identifier to isolate per-model preferences.
-- Counts in filter UI show visible over total format.
 - In drill mode, the drill root node remains visible regardless of element type filter.
 - The set of active element type names determines visibility.
 - Elements are visible if their type is in the active set or if they are the drill root.
@@ -141,7 +140,6 @@ my filter choices remembered across sessions, and share views with specific filt
 
 - Relationship type filter operates on edges that have both endpoints visible after element
   filtering.
-- Count badge shows count of visible edges.
 - Edges are visible only when both endpoints are visible and the relationship type is active, or
   when the edge is a containment edge.
 - Containment edges bypass relationship type filters and are always shown if endpoints are visible.
@@ -174,6 +172,14 @@ my filter choices remembered across sessions, and share views with specific filt
 - Filter changes persist to both URL and browser storage independently.
 
 ## UI/UX
+
+### Responsiveness
+
+- Filtering is instantaneous.
+- Search is real-time with debounced input (200ms delay after typing stops).
+- Graph, table (if visible), and count badges all update in sync with no visual flicker.
+
+### Visual Design
 
 - Each type displays with a color indicator (matching the graph), name, and count.
 - Checkboxes enable selection.
@@ -208,27 +214,21 @@ my filter choices remembered across sessions, and share views with specific filt
 - The URL parameter system enables sharing of filtered views.
 - On initial load, URL parameters override stored preferences.
 - As users interact with filters, the URL updates to reflect the current state.
-- Navigation using browser back/forward buttons restores the corresponding filter state.
+- Filter changes use `replaceState` and do not add entries to the browser history; pressing Back
+  navigates away from the application rather than to a previous filter state.
 
 ### Edge Visibility Logic
 
-Edges are rendered based on both relationship type filters and the visibility of their endpoint
-nodes:
+Edge visibility rules are defined in Business Rules (Relationship Type Filter section).
+Implementation notes:
 
-- An edge is visible only when:
-  - Its relationship type is active (not filtered out), AND
-  - Both its source and target nodes are visible (have not been filtered out by element type)
-- **Containment edge exception**: Containment edges (representing parent-child relationships) remain
-  visible even when the parent node is filtered out, to maintain structural context and show
-  orphaned children. These bypass relationship type filters but still respect endpoint visibility
-  (target child must be visible or also be a drill root).
-- Edge visibility calculation happens after element type filtering and relationship type filtering
-  are applied, combining both conditions.
+- Visibility is evaluated after element type filtering, combining both conditions in a single pass.
+- Visibility changes are applied without rebuilding the graph structure.
 
 ### Cross-Cutting Concerns
 
-- Filter interaction with drill mode: the drill root is always visible regardless of element type
-  filter.
+- Filter interaction with drill mode: drill root visibility exception is defined in Business Rules
+  (Element Type Filter section).
 - Filter integration with table view: table respects the same active types as the graph.
 - Accessibility: search inputs have proper labels; checkboxes have associated labels; keyboard
   navigation is supported.

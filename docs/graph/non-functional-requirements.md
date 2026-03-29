@@ -53,7 +53,7 @@ describe how the system should perform, secure, and behave from a user and busin
 - **Requirement**: The element table should handle large datasets smoothly.
 - **Expected Performance**:
   - Tables with 10,000 rows should render within 0.5 seconds
-  - Tables with 50,000+ rows should use efficient display methods (pagination or virtual scrolling)
+  - Tables with 50,000+ rows must use virtual scrolling (no pagination alternative)
 - **User Experience**: Scrolling and searching in large tables should remain smooth and responsive.
 
 ## Security
@@ -78,6 +78,7 @@ describe how the system should perform, secure, and behave from a user and busin
   transmitted securely.
 - **Expected Behavior**:
   - Authentication data should be stored in a way that protects it from unauthorized access
+  - Tokens must be stored in-memory only; no persistence in LocalStorage or Cookies
   - Authentication tokens should be transmitted using secure methods
   - Session data should be cleared when the user closes the browser
 
@@ -109,6 +110,26 @@ describe how the system should perform, secure, and behave from a user and busin
   - Corrupted or malformed data should be handled with appropriate error messages
   - The application should warn users about extremely large models and offer alternative viewing
     modes
+
+## Feedback
+
+### NFR-F1: Loading Indicators
+
+- **Requirement**: Clear visual feedback during operations.
+- **Expected Behavior**:
+  - Indicators appear promptly for operations >0.2 seconds
+  - Indicators remain visible until operation completes
+  - Users can cancel lengthy operations where applicable
+  - Loading states differentiate between different operation types (data load, layout, export)
+
+### NFR-F2: Toast Notifications
+
+- **Requirement**: Unobtrusive feedback for actions and events.
+- **Expected Behavior**:
+  - Notifications appear for significant user actions and system events
+  - Notifications are dismissible and auto-hide after appropriate duration
+  - Multiple notifications stack or queue without blocking the interface
+  - Toast positioning and styling consistent across all features
 
 ## Maintainability
 
@@ -182,6 +203,7 @@ describe how the system should perform, secure, and behave from a user and busin
 - **Expected Behavior**:
   - Layout adjusts gracefully at all screen sizes
   - Touch interactions work on mobile (tap targets ≥ 44px)
+  - Complex graph interactions (drag-and-drop, zoom) must remain functional via touch gestures
   - No horizontal scrolling unless absolutely necessary
   - Sidebar and controls remain accessible on narrow viewports
   - Graph canvas uses available space efficiently without distortion

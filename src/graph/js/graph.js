@@ -20,6 +20,9 @@ export { cyBg } from './graph-styles.js';
 // Callers use the specific operation exports below.
 let _cy;
 
+// Tracks whether a layout is currently running
+let _isLayoutRunning = false;
+
 // Debounce timer for single-tap detection (owned here, not in global state).
 let _tapTimer;
 
@@ -50,6 +53,15 @@ export function getContainmentMode() {
 export function setContainmentMode(mode) {
   _containmentMode = mode;
   localStorage.setItem('architeezyGraphContainment', mode);
+}
+
+/**
+ * Returns whether a layout is currently running.
+ *
+ * @returns {boolean} True while a layout animation is in progress.
+ */
+export function isLayoutRunning() {
+  return _isLayoutRunning;
 }
 
 /** Cancels any pending single-tap debounce timer. */
@@ -284,6 +296,8 @@ export function buildCytoscape({
     _cy = undefined;
   }
 
+  document.getElementById('cy').classList.remove('hidden');
+
   const elemIds = new Set(elements.map((e) => e.id));
 
   // oxlint-disable-next-line no-undef
@@ -304,6 +318,7 @@ export function buildCytoscape({
   setupPointerInteractions();
   bindTooltipEvents(_cy);
   updateStats(elements, relations);
+  globalThis.updateExportButtonState?.();
 }
 
 /**
@@ -401,8 +416,13 @@ export function applyLayout() {
     },
   };
 
+  _isLayoutRunning = true;
+  globalThis.updateExportButtonState?.();
+
   const layoutInst = eles.layout(cfgMap[name] ?? { name, fit: true, padding: 30 });
   layoutInst.on('layoutstop', () => {
+    _isLayoutRunning = false;
+    globalThis.updateExportButtonState?.();
     // After layout, set text-max-width on compound nodes to match their actual rendered width
     // So long labels wrap correctly rather than overflowing the container box.
     for (const n of _cy.nodes(':parent:visible')) {
@@ -415,6 +435,12 @@ export function applyLayout() {
 /** Fits the graph to the viewport with the standard padding. */
 export function fitGraph() {
   _cy?.fit(undefined, FIT_PADDING);
+}
+
+/** Notifies Cytoscape that the container size may have changed; call after un-hiding #cy. */
+export function resizeCy() {
+  // Defer so the browser reflows #cy before Cytoscape queries its bounding rect.
+  setTimeout(() => _cy?.resize(), 0);
 }
 
 /**
@@ -568,6 +594,58 @@ export function applyDisplayState({ visibleNodeIds, isEdgeVisible, forceVisibleI
  */
 export function isGraphLoaded() {
   return Boolean(_cy);
+}
+
+/**
+ * Returns the Cytoscape instance, or undefined if not loaded. Use with caution - avoid calling
+ * during graph rebuild.
+ *
+ * @returns {cytoscape.Core | undefined} The Cytoscape instance, or undefined if not initialised.
+ */
+export function getCy() {
+  return _cy;
+}
+
+/**
+ * Returns a snapshot of currently visible elements (nodes and edges). Respects Cytoscape's :visible
+ * selector (filters, containment).
+ *
+ * @returns {{
+ *   nodes: { id: string; type: string; label: string }[];
+ *   edges: { id: string; type: string; source: string; target: string; label: string }[];
+ * }}
+ *   Snapshot of visible nodes and edges.
+ */
+export function getVisibleElements() {
+  if (!_cy) {
+    return { nodes: [], edges: [] };
+  }
+  const visibleNodes = _cy.nodes(':visible').map((n) => ({
+    id: n.id(),
+    type: n.data('type'),
+    label: n.data('label') || n.data('name') || '',
+  }));
+  const visibleEdges = _cy.edges(':visible').map((e) => ({
+    id: e.id(),
+    type: e.data('type'),
+    source: e.source().id(),
+    target: e.target().id(),
+    label: e.data('label') || '',
+  }));
+  return { nodes: visibleNodes, edges: visibleEdges };
+}
+
+/**
+ * Returns the viewport dimensions (container width and height in pixels).
+ *
+ * @returns {{ width: number; height: number }} Container dimensions in pixels.
+ */
+export function getViewportBounds() {
+  if (!_cy) {
+    return { width: 0, height: 0 };
+  }
+  const rect = _cy.container().getBoundingClientRect();
+  return { width: rect.width, height: rect.height };
 }
 
 /**

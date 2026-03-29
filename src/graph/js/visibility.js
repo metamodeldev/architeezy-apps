@@ -261,6 +261,14 @@ export function applyVisibility() {
       .map((e) => e.id),
   );
 
+  if (getContainmentMode() === 'compound') {
+    for (const e of getAllElements()) {
+      if (e.parent && !visibleNodeIds.has(e.id) && !visibleNodeIds.has(e.parent)) {
+        visibleNodeIds.add(e.id);
+      }
+    }
+  }
+
   applyDisplayState({
     visibleNodeIds,
     isEdgeVisible: (srcId, tgtId, type, isContainment) => {
@@ -278,6 +286,7 @@ export function applyVisibility() {
   if (getCurrentView() === 'table') {
     renderTable();
   }
+  globalThis.updateExportButtonState?.();
 }
 
 /**
@@ -339,4 +348,5 @@ export function applyDrill() {
   if (getCurrentView() === 'table') {
     renderTable();
   }
+  globalThis.updateExportButtonState?.();
 }

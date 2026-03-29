@@ -6,8 +6,6 @@
 and links to them. No build step; no dependencies (aside from the logo image loaded from the
 Architeezy docs CDN).
 
----
-
 ## Layout
 
 Single-page, fully responsive at ≥ 320 px.
@@ -55,16 +53,12 @@ CSS Grid, `auto-fill`, min column width 240 px. Cards are equal height via `alig
 Entire card is a link (`<a>`); the CTA is a visual affordance only. Clicking anywhere on the card
 navigates to the app.
 
----
-
 ## Localisation
 
 Auto-detected from `navigator.language` — Russian if it starts with `"ru"`, English otherwise. No
 manual switcher on the gallery page.
 
 Localised strings: page title, nav link labels, card names, card descriptions, and the "Open →" CTA.
-
----
 
 ## Theme
 
@@ -99,8 +93,6 @@ Localised strings: page title, nav link labels, card names, card descriptions, a
 --accent-hov: #0550ae;
 ```
 
----
-
 ## App registry
 
 Apps are defined in `app.js`. Adding a new app requires inserting one object into the `APPS` array
@@ -128,8 +120,6 @@ apps: {
 },
 ```
 
----
-
 ## File structure
 
 ```text
@@ -144,8 +134,6 @@ apps: {
     js/
     SPEC.md
 ```
-
----
 
 ## Non-functional requirements
 

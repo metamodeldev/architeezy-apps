@@ -36,11 +36,13 @@ import {
   getContainmentMode,
   hasGraphNode,
   isGraphLoaded,
+  resizeCy,
   setContainmentMode,
   zoomIn,
   zoomOut,
 } from './graph.js';
 import { applyLocale, t } from './i18n.js';
+import { exportGraphImage, getExportingState as getImageExportingState } from './image-export.js';
 import { getAllElements, getAllRelations, loadModelData, setCurrentModel } from './model.js';
 import {
   closeModelSelector,
@@ -54,11 +56,12 @@ import {
 } from './models.js';
 import { initColorMaps } from './palette.js';
 import { readUrlParams, syncUrl } from './routing.js';
-import { initTableEvents, renderTable, switchTableTab } from './table.js';
+import { initTableEvents, renderTable, switchTableTab, exportCSV } from './table.js';
 import { isTooltipsEnabled, setTooltipsEnabled } from './tooltip.js';
 import {
   hideLoading,
   hideToast,
+  restoreSidebarAndPanelState,
   setTheme,
   showError,
   showLoading,
@@ -66,15 +69,23 @@ import {
   switchView,
   toggleSection,
   toggleSidebar,
+  getCurrentView,
 } from './ui.js';
 import { applyDrill, applyVisibility } from './visibility.js';
 
 // ── INIT THEME (immediately, before anything else renders) ──────────────────
-setTheme(localStorage.getItem('architeezyTheme') ?? 'system');
+let storedTheme;
+try {
+  storedTheme = localStorage.getItem('architeezyTheme');
+} catch {
+  // Leave as undefined
+}
+setTheme(storedTheme ?? 'system');
 
 function onSignOut() {
   signOut();
   setCachedModels([]);
+  showToast(t('signedOut'));
   init();
 }
 
@@ -91,6 +102,25 @@ function rebuildCytoscape() {
     getDrillNodeId,
   });
 }
+
+// ── EXPORT IMAGE BUTTON STATE ──────────────────────────────────────────────────
+
+/** Updates the disabled state of the export image button based on current app state. */
+function updateExportButtonState() {
+  const btn = document.getElementById('export-image-btn');
+  if (!btn) {
+    return;
+  }
+
+  const hasModel = isGraphLoaded();
+  const inGraphView = getCurrentView() === 'graph';
+  const isExporting = getImageExportingState();
+
+  btn.disabled = !(hasModel && inGraphView && !isExporting);
+}
+
+// Expose globally so graph.js/visibility.js can trigger updates
+globalThis.updateExportButtonState = updateExportButtonState;
 
 // ── EVENT WIRING ────────────────────────────────────────────────────────────
 
@@ -127,6 +157,10 @@ function wireEvents() {
       return;
     }
     switchView(btn.dataset.view, renderTable);
+    if (btn.dataset.view === 'graph') {
+      resizeCy();
+    }
+    updateExportButtonState(); // Refresh export button visibility/state
     syncUrl();
   });
 
@@ -180,29 +214,66 @@ function wireEvents() {
     .getElementById('rel-filter-search')
     .addEventListener('input', (e) => filterSearch('rel', e.target.value));
 
-  // Table tabs — delegation on .table-tabs
+  // Table tabs, search, sort / row clicks
+  wireTableEvents();
+
+  // CSV and image export
+  wireExportEvents();
+
+  // Cy controls and visibility triggers
+  document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+  document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+  document.getElementById('fit-cy-btn').addEventListener('click', fitGraph);
+  document.addEventListener('graph:applyDrill', applyDrill);
+  document.addEventListener('graph:applyVisibility', applyVisibility);
+  document.addEventListener('graph:syncUrl', syncUrl);
+  updateExportButtonState();
+}
+
+function wireTableEvents() {
   document.querySelector('.table-tabs').addEventListener('click', (e) => {
     const btn = e.target.closest('.table-tab-btn[data-tab]');
     if (btn) {
       switchTableTab(btn.dataset.tab);
     }
   });
-
-  // Table search
   document.getElementById('table-search').addEventListener('input', renderTable);
-
-  // Table sort / row clicks
   initTableEvents();
+}
 
-  // Cy controls
-  document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
-  document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
-  document.getElementById('fit-cy-btn').addEventListener('click', fitGraph);
+function wireExportEvents() {
+  const exportCsvBtn = document.getElementById('export-csv-btn');
+  if (exportCsvBtn) {
+    exportCsvBtn.addEventListener('click', exportCSV);
+  }
 
-  // Visibility triggers from drill.js / filters.js (avoids circular imports)
-  document.addEventListener('graph:applyDrill', applyDrill);
-  document.addEventListener('graph:applyVisibility', applyVisibility);
-  document.addEventListener('graph:syncUrl', syncUrl);
+  const exportImageBtn = document.getElementById('export-image-btn');
+  const exportDropdown = document.getElementById('export-dropdown');
+
+  if (exportImageBtn && exportDropdown) {
+    exportImageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportDropdown.classList.toggle('hidden');
+    });
+  }
+
+  document.getElementById('export-png-btn')?.addEventListener('click', async () => {
+    exportDropdown?.classList.add('hidden');
+    const includeLegend = document.getElementById('export-legend-toggle')?.checked ?? false;
+    await exportGraphImage('png', includeLegend);
+  });
+
+  document.getElementById('export-svg-btn')?.addEventListener('click', async () => {
+    exportDropdown?.classList.add('hidden');
+    const includeLegend = document.getElementById('export-legend-toggle')?.checked ?? false;
+    await exportGraphImage('svg', includeLegend);
+  });
+
+  document.addEventListener('click', () => {
+    if (exportDropdown) {
+      exportDropdown.classList.add('hidden');
+    }
+  });
 }
 
 // ── AUTH_SUCCESS from popup ─────────────────────────────────────────────────
@@ -292,11 +363,7 @@ async function loadModel(url, modelId, afterLoad) {
     syncUrl();
   } catch (error) {
     hideLoading();
-    if (isGraphLoaded()) {
-      // A model is already displayed — keep it, show a dismissible toast
-      showToast(error.message);
-    }
-    // If no model is loaded, caller (init) detects isGraphLoaded()===false and opens the selector
+    showToast(error.message);
   }
 }
 
@@ -412,10 +479,12 @@ async function init() {
     } else {
       localStorage.removeItem('architeezyGraphModelUrl');
       localStorage.removeItem('architeezyGraphModelName');
+      document.getElementById('cy').classList.add('hidden');
       openModelSelector();
     }
   } else {
     hideLoading();
+    document.getElementById('cy').classList.add('hidden');
     openModelSelector();
   }
 }
@@ -466,4 +535,5 @@ document.getElementById('tooltips-toggle').checked = isTooltipsEnabled();
 document.getElementById('tooltips-toggle').addEventListener('change', (e) => {
   setTooltipsEnabled(e.target.checked);
 });
+restoreSidebarAndPanelState();
 init();

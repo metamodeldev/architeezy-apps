@@ -14,14 +14,14 @@
 ## Acceptance Criteria
 
 - SR-1.1: A model selector interface allows browsing and selecting from available models
-- SR-1.2: Model selector displays model information (icon, name, type, description)
-- SR-1.3: Search filters the model list in real-time
+- SR-1.2: Model selector displays model information
+- SR-1.3: Search can filter the model list
 - SR-1.4: Loading indicators appear during fetch operations
 - SR-1.5: Deep links load specified model with URL parameters for view mode, filters, and drill
   state
-- SR-1.6: URL state is preserved during browser navigation (back/forward)
+- SR-1.6: URL state is preserved during browser navigation
 - SR-1.7: Invalid deep links fall back to model selection
-- SR-1.8: Last-viewed model and filter state persist across sessions via browser storage
+- SR-1.8: Last-viewed model and filter state persist across sessions
 - SR-1.9: If stored model is unavailable, user is prompted to select a new model
 
 ## Scenario
@@ -139,9 +139,6 @@
 - Model list is fetched lazily (only when the user opens the selector), except when a deep link with
   a model identifier is present, which requires an eager fetch.
 - Model selection is saved to browser storage only after successful load.
-- Search in the model selector uses debounced input (200ms).
-- Model list endpoint: GET /api/models
-- Model content is fetched following the content URL from the model metadata.
 
 ### Deep Linking
 
@@ -158,6 +155,15 @@
 
 ## UI/UX
 
+### Responsiveness
+
+- Search in the model selector uses debounced input (200ms delay after typing stops) for real-time
+  filtering.
+- Loading indicators appear during fetch operations to provide feedback.
+- Model list filters in real-time based on search text.
+
+### Visual Design
+
 - The model selector appears as a centered modal with backdrop.
 - Model items display an icon, name, type badge, and description.
 - Loading spinners indicate ongoing operations.
@@ -166,6 +172,11 @@
 - During auto-load from persistence, a loading message indicates progress.
 
 ## Technical Notes
+
+### API Integration
+
+- Model list is retrieved from `GET /api/models`.
+- Model content URL is provided in the model metadata; model content is fetched from that URL.
 
 ### Storage
 

@@ -1,6 +1,7 @@
 // ── AUTH ───────────────────────────────────────────────────────────────────
 
 import { t } from './i18n.js';
+import { showToast } from './ui.js';
 
 export const BASE = 'https://architeezy.com';
 const AUTH_URL = `${BASE}/-/auth`;
@@ -59,6 +60,9 @@ export function startAuth() {
     'architeezy-auth',
     `width=480,height=640,left=${Math.round((screen.width - 480) / 2)},top=${Math.round((screen.height - 640) / 2)}`,
   );
+  if (!authPopup) {
+    showToast(t('popupBlocked'));
+  }
 }
 
 /**

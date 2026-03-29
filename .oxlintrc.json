@@ -61,6 +61,7 @@
     "unicorn/consistent-existence-index-check": "off",
     "unicorn/explicit-length-check": "off",
     "unicorn/no-nested-ternary": "off",
+    "unicorn/number-literal-case": "off",
     "unicorn/prefer-at": "off",
     "unicorn/prefer-query-selector": "off",
     "unicorn/switch-case-braces": "off"
@@ -70,19 +71,24 @@
   },
   "overrides": [
     {
-      "files": ["*.test.js"],
+      "files": ["*.test.js", "*.spec.js"],
       "plugins": ["jest", "vitest"],
       "rules": {
         "eslint/max-lines-per-function": "off",
         "jest/valid-title": "off",
         "unicorn/no-null": "off",
         "vitest/prefer-to-be-falsy": "off",
+        "vitest/consistent-test-filename": [
+          "error",
+          { "pattern": "(/unit/.*\\.test\\.js|/e2e/.*\\.spec\\.js)$" }
+        ],
         "vitest/prefer-to-be-truthy": "off"
       },
       "env": {
         "jest": true
       },
       "globals": {
+        "Buffer": "readonly",
         "expectTypeOf": "readonly"
       }
     }

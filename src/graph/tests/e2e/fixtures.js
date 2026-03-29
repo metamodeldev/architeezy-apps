@@ -8,6 +8,9 @@ export const MODEL_CONTENT_URL =
 const OTHER_CONTENT_URL =
   'https://architeezy.com/api/models/test/test/1/other-model/content?format=json';
 
+export const ECOMMERCE_CONTENT_URL =
+  'https://architeezy.com/api/models/test/test/1/ecommerce/content?format=json';
+
 export const MODEL_LIST = {
   _embedded: {
     models: [
@@ -24,9 +27,48 @@ export const MODEL_LIST = {
         contentType: 'application/vnd.opengroup.archimate/metamodel/archimate/3.0/',
         _links: { content: { href: OTHER_CONTENT_URL } },
       },
+      {
+        id: 'model-ecommerce',
+        name: 'e-commerce',
+        contentType: 'application/vnd.opengroup.archimate/metamodel/archimate/3.0/',
+        _links: { content: { href: ECOMMERCE_CONTENT_URL } },
+      },
     ],
   },
   _links: {},
+};
+
+// Payment Service (ApplicationComponent) → UsedByRelationship → Order Database (DataObject)
+export const ECOMMERCE_CONTENT = {
+  ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
+  content: [
+    {
+      eClass: 'archi:ArchimateModel',
+      id: 'model-root',
+      data: {
+        name: 'e-commerce',
+        elements: [
+          {
+            eClass: 'archi:ApplicationComponent',
+            id: 'pay-svc',
+            data: { name: 'Payment Service', documentation: 'Handles payment processing' },
+          },
+          {
+            eClass: 'archi:DataObject',
+            id: 'order-db',
+            data: { name: 'Order Database' },
+          },
+        ],
+        relations: [
+          {
+            eClass: 'archi:UsedByRelationship',
+            id: 'rel-used',
+            data: { source: 'pay-svc', target: 'order-db' },
+          },
+        ],
+      },
+    },
+  ],
 };
 
 // 3 elements (2 × ApplicationComponent, 1 × ApplicationService), 2 relations
@@ -105,6 +147,14 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
       body: JSON.stringify(MODEL_CONTENT),
     }),
   );
+
+  await page.route(`${ECOMMERCE_CONTENT_URL}*`, (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(ECOMMERCE_CONTENT),
+    }),
+  );
 }
 
 /**
@@ -113,7 +163,7 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
  * @param {import('@playwright/test').Page} page - The Playwright page object.
  */
 export async function waitForLoading(page) {
-  await page.locator('#loading').waitFor({ state: 'hidden', timeout: 10_000 });
+  await page.locator('#loading').waitFor({ state: 'hidden' });
 }
 
 /**

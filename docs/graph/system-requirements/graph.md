@@ -12,12 +12,12 @@ details, and customize the layout and containment visualization to understand th
 
 - SR-2.1: All model elements render as nodes, all relationships as edges
 - SR-2.2: Colors are consistent based on element/relationship types
-- SR-2.3: Multiple layout algorithms available (force-directed, hierarchical, grid, circle, etc.)
-- SR-2.4: Zoom and pan navigation for exploring large graphs
-- SR-2.5: Single-click selects nodes and shows details; double-click triggers drill-down
-- SR-2.6: Containment relationships display as synthetic edges or nested compound nodes
-- SR-2.7: Layout changes and containment mode switches are smooth
-- SR-2.8: Selection, zoom, and pan state preserved across view switches
+- SR-2.3: User can switch between multiple layout algorithms
+- SR-2.4: User can zoom and pan to navigate the graph
+- SR-2.5: Single-click on a node selects it and shows details in the panel
+- SR-2.6: Double-click on a node triggers drill-down mode
+- SR-2.7: Containment relationships can be displayed as synthetic edges or nested compound nodes
+- SR-2.8: Selection, zoom, and pan state are preserved when switching between graph and table views
 
 ## Scenario
 
@@ -39,8 +39,7 @@ details, and customize the layout and containment visualization to understand th
 
 2. **Change Layout**
    - User opens the graph settings
-   - A dropdown presents available layout algorithms (force-directed, hierarchical, grid, circle,
-     etc.)
+   - A dropdown presents available layout algorithms
    - The current layout is indicated as selected
    - User chooses a different layout
    - Graph restructures immediately using the selected algorithm
@@ -163,8 +162,6 @@ details, and customize the layout and containment visualization to understand th
 
 - Node colors are derived from element types using a deterministic method for consistency.
 - Edge colors are derived from relationship types similarly.
-- Node sizes accommodate label text with appropriate padding.
-- Edge labels are shown only when a relationship name exists.
 - Containment relationships are handled through one of three modes: no visualization, synthetic
   edges, or compound nodes.
 - Containment modes:
@@ -177,7 +174,6 @@ details, and customize the layout and containment visualization to understand th
 - Multiple layout algorithms are available, each with characteristics suitable for different model
   structures.
 - Layout selection triggers immediate application of the new layout.
-- Animations are used for smoother transitions when node count is within performance thresholds.
 - The current layout preference is stored in memory for the session.
 - A manual refresh option may be available to re-apply the current layout.
 
@@ -188,13 +184,10 @@ details, and customize the layout and containment visualization to understand th
 - Fit-to-view scales to show all visible nodes with appropriate padding.
 - Mouse wheel zooms centered at cursor position.
 - Middle mouse button or equivalent pans the view.
-- Smooth animated transitions enhance the navigation experience.
 
 ### Selection and Details
 
-- Single-click has a delay to distinguish from double-click.
 - Double-click cancels single-click timer and enters drill mode.
-- Selected nodes receive visual highlighting.
 - Details panel shows comprehensive information about the selected element.
 - Related elements are discovered through graph connections.
 - Clicking a related element in the details panel enters drill mode on that node.
@@ -202,26 +195,47 @@ details, and customize the layout and containment visualization to understand th
 
 ## UI/UX
 
+### Visual Design
+
 - Graph canvas occupies the main content area.
-- Nodes are styled consistently (typically circular with centered labels and type-based colors).
+- Nodes are styled consistently (circular with centered labels and type-based colors).
 - Edges are lines with arrowheads pointing to target nodes; labels may appear near edges.
 - Selected nodes have prominent highlighting (border or glow effect).
-- Hovering over nodes shows a tooltip with element name, type, and documentation summary when
-  tooltips are enabled in visualization settings.
 - Drill root nodes have distinctive styling.
+- Cursor changes indicate available interactions (grab for panning, pointer for nodes).
+
+### Typography and Sizing
+
+- **Node sizes**: Auto-adjust based on label text length; minimum 20×20px, maximum around 100px.
+- **Node label font size**: ~12px, wraps to stay within node bounds.
+- **Edge width**: Default 2px, may vary by relationship importance.
+- **Edge label font size**: ~10px, with background knockout for readability.
+
+### Controls and Indicators
+
+- Hovering over nodes shows a tooltip with element name, type, and documentation summary (when
+  tooltips are enabled in settings).
 - Depth picker displays buttons for available levels with the current level highlighted (visible
   during drill mode only).
 - Containment mode selector in settings shows available options with icons.
 - Zoom controls positioned for easy access (typically bottom-right corner): zoom in, zoom out,
   fit-to-view.
-- Cursor changes indicate available interactions (grab for panning, pointer for nodes).
+
+### Responsiveness and Smoothness
+
+- Layout changes and containment mode switches are smooth.
+- Navigation (zoom, pan) uses smooth animated transitions.
+- Single-click selection has a delay of ~150-200ms to distinguish from double-click.
+- Zoom factor is ~1.3× per step.
+- Animations are enabled for graphs with fewer than 400 visible nodes; disabled for larger graphs to
+  maintain performance.
+- All navigation operations should feel responsive and quick.
 
 ## Technical Notes
 
 ### Graph Implementation
 
-- The graph visualization library used is Cytoscape.js.
-- The graph is initialized with configured styles and initial layout.
+- The graph visualization library is initialized with configured styles and initial layout.
 - Visual styles define node and edge appearance, including colors, shapes, and labels.
 - Theme integration uses CSS custom properties for colors that need theming.
 
@@ -237,14 +251,15 @@ details, and customize the layout and containment visualization to understand th
 
 Multiple layout algorithms are available, each suited for different model structures:
 
-- **fcose** (force-directed): Default for general graphs, provides quality layouts with configurable
-  trade-offs
-- **dagre** (hierarchical): Best for directed flows and tree-like structures, arranges nodes in
-  layers
-- **cose** (compact force-directed): Faster but lower quality, suitable for dense graphs
-- **breadthfirst**: Radial layout from a root node, used for drill mode
-- **grid**: Uniform grid placement for structured graphs
-- **circle**: Nodes arranged on a circle perimeter, mainly for decorative purposes
+- **Force-directed** (force-directed): Default for general graphs, provides quality layouts with
+  configurable trade-offs
+- **Hierarchical** (hierarchical): Best for directed flows and tree-like structures, arranges nodes
+  in layers
+- **Compact force-directed** (compact force-directed): Faster but lower quality, suitable for dense
+  graphs
+- **Radial from root**: Radial layout from a root node, used for drill mode
+- **Grid**: Uniform Grid placement for structured graphs
+- **Circular**: Nodes arranged on a Circular perimeter, mainly for decorative purposes
 
 Layout selection triggers immediate application. Animations are used for smoother transitions when
 node count is within performance thresholds. The current layout preference persists for the session.
@@ -252,19 +267,20 @@ node count is within performance thresholds. The current layout preference persi
 ### Node Styling
 
 - **Shape**: Circle for simple nodes; rectangle (rounded) for compound nodes containing children
-- **Size**: Auto-adjusts based on label text length; minimum 20×20px, maximum reasonable (around
-  100px)
-- **Labels**: Display element name, falling back to type if name missing; font size ~12px; wraps to
-  stay within node bounds
+- **Sizing**: Auto-adjusts based on label text length with appropriate padding. Specific dimensions
+  are defined in the UI/UX section.
+- **Labels**: Display element name, falling back to type if name missing; text wraps to stay within
+  node bounds. Font sizes are specified in the UI/UX section.
 - **Colors**: Deterministic based on element type - each type gets a consistent color using hash of
   type name (saturation and lightness fixed; only hue varies)
 
 ### Edge Styling
 
 - **Color**: Deterministic based on relationship type using similar hashing as nodes
-- **Width**: Default 2px, may vary by relationship importance
-- **Labels**: Relationship name centered on edge with background knockout for readability; font size
-  ~10px
+- **Width**: Varies by relationship importance to indicate edge prominence. Default width is
+  specified in UI/UX.
+- **Labels**: Relationship name centered on edge with background knockout for readability. Font size
+  details are provided in UI/UX.
 - **Markers**: Standard directed edges use arrowheads at target; containment edges use filled
   diamond markers
 
@@ -284,19 +300,20 @@ out.
 
 Event listeners handle taps, double-clicks, wheel events, and drag operations:
 
-- **Single-click**: After ~150-200ms delay to distinguish from double-click; selects node and shows
-  details panel
-- **Double-click**: Cancels single-click timer; triggers drill mode expansion
-- **Background click**: Deselects all nodes, closes details panel
-- **Zoom**: By factor ~1.3× per step; min 0.1×, max 5×; centered at cursor for mouse wheel
-- **Pan**: Middle mouse drag or equivalent
-- **Fit**: Centers graph with 10% padding, showing all visible nodes
+- **Single-click**: After a short delay to distinguish from double-click; selects node and shows
+  details panel. Exact delay is specified in UI/UX.
+- **Double-click**: Cancels single-click timer; triggers drill mode expansion.
+- **Background click**: Deselects all nodes, closes details panel.
+- **Zoom**: By a consistent factor per step; minimum and maximum limits enforced; centered at cursor
+  for mouse wheel. Specific zoom parameters are defined in UI/UX.
+- **Pan**: Middle mouse drag or equivalent.
+- **Fit**: Centers graph with appropriate padding, showing all visible nodes.
 
 ### Filtering and Visibility
 
 Visibility of nodes and edges is controlled based on active element and relationship type filters:
 
-- Nodes hidden when their element type is filtered out (`display: none`)
+- Nodes hidden when their element type is filtered out
 - Edges hidden when:
   - Their relationship type is filtered out, OR
   - Either source or target node is hidden
@@ -309,7 +326,7 @@ Visibility of nodes and edges is controlled based on active element and relation
 - **Animation threshold**: Animations enabled for graphs with < 400 visible nodes; disabled for
   larger graphs
 - Layout computation is synchronous and may block the main thread for large graphs
-- Visibility filtering uses Cytoscape's built-in `display` property for efficiency (no element
+- Visibility filtering uses the library's built-in `display` property for efficiency (no element
   removal)
 - For very large graphs (>1000 nodes), consider progressive loading or Web Worker optimizations
 
@@ -322,9 +339,9 @@ Visibility of nodes and edges is controlled based on active element and relation
 ### Theme Integration
 
 Graph styles reference CSS custom properties for colors that need to support theming. When the theme
-changes, Cytoscape does not automatically refresh styles. An explicit `cy.style().update()` call is
-required to pick up changed CSS variable values - this is needed for canvas background, edge label
-backgrounds (knockout effect), and other theme-dependent styles.
+changes, the graph library does not automatically refresh styles. An explicit refresh is required to
+pick up changed CSS variable values - this is needed for canvas background, edge label backgrounds
+(knockout effect), and other theme-dependent styles.
 
 ### Accessibility
 
