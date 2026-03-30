@@ -75,7 +75,8 @@ export async function exportGraphImage(format) {
  * unavailable.
  *
  * @param {cytoscape.Core} cy - The Cytoscape instance.
- * @returns {{ x: number; y: number } | undefined} Graph-space position of the legend's top-left corner.
+ * @returns {{ x: number; y: number } | undefined} Graph-space position of the legend's top-left
+ *   corner.
  */
 function getLegendGraphPosition(cy) {
   const el = document.getElementById('graph-legend');
@@ -118,7 +119,8 @@ function getLegendGraphPosition(cy) {
  * @param {string} filename - Suggested download filename.
  */
 async function exportPNG(cy, visibleElements, includeLegend, filename) {
-  const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--cy-bg').trim() || '#12172b';
+  const bgColor =
+    getComputedStyle(document.documentElement).getPropertyValue('--cy-bg').trim() || '#12172b';
   const scale = 2;
   const bb = cy.elements().boundingBox();
   const pngBlob = cy.png({ scale, full: true, bg: bgColor, output: 'blob' });
@@ -126,8 +128,26 @@ async function exportPNG(cy, visibleElements, includeLegend, filename) {
   if (img.width * img.height * 4 > 100 * 1024 * 1024) {
     throw new Error('Canvas too large for PNG export');
   }
-  const { legendPos, drawScale, imgOffsetX, imgOffsetY, canvasW, canvasH } = computePngLegendLayout(cy, visibleElements, includeLegend, img, bb, scale);
-  const blob = await renderPngComposite(img, bgColor, canvasW, canvasH, imgOffsetX, imgOffsetY, includeLegend, legendPos, drawScale, visibleElements);
+  const { legendPos, drawScale, imgOffsetX, imgOffsetY, canvasW, canvasH } = computePngLegendLayout(
+    cy,
+    visibleElements,
+    includeLegend,
+    img,
+    bb,
+    scale,
+  );
+  const blob = await renderPngComposite(
+    img,
+    bgColor,
+    canvasW,
+    canvasH,
+    imgOffsetX,
+    imgOffsetY,
+    includeLegend,
+    legendPos,
+    drawScale,
+    visibleElements,
+  );
   triggerDownload(blob, filename);
 }
 
@@ -197,14 +217,18 @@ function computeLegendSize(lines, measureText, scale) {
     const line = lines[i];
     let tw;
     if (line.isHeader) {
-      if (i > 0) {contentH += L.sectionGap * scale;}
+      if (i > 0) {
+        contentH += L.sectionGap * scale;
+      }
       contentH += L.headerH * scale;
       tw = measureText(line.text, L.headerFont * scale);
     } else {
       contentH += L.rowH * scale;
       tw = measureText(line.text, L.rowFont * scale) + (L.dotSize + L.dotGap) * scale;
     }
-    if (tw > maxW) {maxW = tw;}
+    if (tw > maxW) {
+      maxW = tw;
+    }
   }
 
   return {
@@ -215,8 +239,10 @@ function computeLegendSize(lines, measureText, scale) {
 
 /**
  * Renders the legend lines onto the canvas.
+ *
  * @param {CanvasRenderingContext2D} ctx - The canvas 2D rendering context.
- * @param {{ text: string; isHeader?: boolean; isSwatch?: boolean }[]} lines - Legend line descriptors.
+ * @param {{ text: string; isHeader?: boolean; isSwatch?: boolean }[]} lines - Legend line
+ *   descriptors.
  * @param {typeof LEGEND} L - Legend layout constants.
  * @param {number} ox - X coordinate of the legend background's top-left corner.
  * @param {number} oy - Y coordinate of the legend background's top-left corner.
@@ -230,13 +256,19 @@ function renderLegendLines(ctx, lines, L, ox, oy, scale, headerLetterSpacing, mu
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.isHeader) {
-      if (i > 0) {y += L.sectionGap * scale;}
+      if (i > 0) {
+        y += L.sectionGap * scale;
+      }
       ctx.font = `${L.headerFont * scale}px "Segoe UI", system-ui, sans-serif`;
-      if ('letterSpacing' in ctx) {ctx.letterSpacing = headerLetterSpacing;}
+      if ('letterSpacing' in ctx) {
+        ctx.letterSpacing = headerLetterSpacing;
+      }
       ctx.fillStyle = mutedColor;
       ctx.textBaseline = 'top';
       ctx.fillText(line.text, ox + L.padH * scale, y);
-      if ('letterSpacing' in ctx) {ctx.letterSpacing = '0px';}
+      if ('letterSpacing' in ctx) {
+        ctx.letterSpacing = '0px';
+      }
       y += L.headerH * scale;
     } else {
       const midY = y + (L.rowH * scale) / 2;
@@ -285,6 +317,7 @@ function drawLegend(ctx, elements, pos, scale) {
 
   /**
    * Measures the width of the given text with the specified font size.
+   *
    * @param {string} text - The text to measure.
    * @param {number} size - Font size in pixels.
    * @returns {number} Text width in pixels.
@@ -315,21 +348,37 @@ function drawLegend(ctx, elements, pos, scale) {
 
 /**
  * Computes the layout metrics for PNG export, including legend position and canvas dimensions.
+ *
  * @param {cytoscape.Core} cy - The Cytoscape instance.
  * @param {{ nodes: object[]; edges: object[] }} visibleElements - Currently visible graph elements.
  * @param {boolean} includeLegend - Whether to include a legend overlay.
  * @param {HTMLImageElement} img - The Cytoscape-rendered PNG image.
  * @param {{ x1: number; y1: number; x2: number; y2: number }} bb - Bounding box of the graph.
  * @param {number} baseScale - Base scale factor (e.g., 2 for HiDPI).
- * @returns {{ legendPos: { x: number; y: number } | undefined, drawScale: number, imgOffsetX: number, imgOffsetY: number, canvasW: number, canvasH: number }} Computed layout metrics.
+ * @returns {{
+ *   legendPos: { x: number; y: number } | undefined;
+ *   drawScale: number;
+ *   imgOffsetX: number;
+ *   imgOffsetY: number;
+ *   canvasW: number;
+ *   canvasH: number;
+ * }}
+ *   Computed layout metrics.
  */
 function computePngLegendLayout(cy, visibleElements, includeLegend, img, bb, baseScale) {
-  let legendPos, drawScale = baseScale, imgOffsetX = 0, imgOffsetY = 0, canvasW = img.width, canvasH = img.height;
+  let legendPos,
+    drawScale = baseScale,
+    imgOffsetX = 0,
+    imgOffsetY = 0,
+    canvasW = img.width,
+    canvasH = img.height;
   if (includeLegend) {
     const graphPos = getLegendGraphPosition(cy);
-    const bbW = bb.x2 - bb.x1, bbH = bb.y2 - bb.y1;
+    const bbW = bb.x2 - bb.x1,
+      bbH = bb.y2 - bb.y1;
     if (graphPos && Number.isFinite(bb.x1) && bbW > 0 && bbH > 0) {
-      const effScaleX = img.width / Math.ceil(bbW), effScaleY = img.height / Math.ceil(bbH);
+      const effScaleX = img.width / Math.ceil(bbW),
+        effScaleY = img.height / Math.ceil(bbH);
       drawScale = effScaleX / cy.zoom();
       legendPos = {
         x: (graphPos.x - bb.x1) * effScaleX,
@@ -363,6 +412,7 @@ function computePngLegendLayout(cy, visibleElements, includeLegend, img, bb, bas
 
 /**
  * Renders the composite PNG canvas and returns a blob.
+ *
  * @param {HTMLImageElement} img - The Cytoscape PNG image.
  * @param {string} bgColor - Background color.
  * @param {number} canvasW - Composite canvas width.
@@ -375,7 +425,18 @@ function computePngLegendLayout(cy, visibleElements, includeLegend, img, bb, bas
  * @param {{ nodes: object[]; edges: object[] }} visibleElements - Visible graph elements.
  * @returns {Promise<Blob>} The PNG blob.
  */
-async function renderPngComposite(img, bgColor, canvasW, canvasH, imgOffsetX, imgOffsetY, includeLegend, legendPos, drawScale, visibleElements) {
+async function renderPngComposite(
+  img,
+  bgColor,
+  canvasW,
+  canvasH,
+  imgOffsetX,
+  imgOffsetY,
+  includeLegend,
+  legendPos,
+  drawScale,
+  visibleElements,
+) {
   const canvas = document.createElement('canvas');
   canvas.width = canvasW;
   canvas.height = canvasH;
@@ -521,16 +582,28 @@ function buildSvgEdgeMarkup(edges) {
 
 /**
  * Builds SVG markup for the given nodes.
- * @param {{ x: number; y: number; w: number; h: number; shape: string; color: string; label: string }[]} nodes - Node descriptors.
+ *
+ * @param {{
+ *   x: number;
+ *   y: number;
+ *   w: number;
+ *   h: number;
+ *   shape: string;
+ *   color: string;
+ *   label: string;
+ * }[]} nodes
+ *   - Node descriptors.
  * @returns {string} SVG markup for nodes.
  */
 function buildSvgNodeMarkup(nodes) {
   let svg = '';
   for (const n of nodes) {
-    const halfW = n.w / 2, halfH = n.h / 2;
-    svg += n.shape === 'ellipse' || n.shape === 'roundrectangle'
-      ? `  <ellipse cx="${n.x}" cy="${n.y}" rx="${halfW}" ry="${halfH}" fill="${n.color}" stroke="#333" stroke-width="1" />\n`
-      : `  <rect x="${n.x - halfW}" y="${n.y - halfH}" width="${n.w}" height="${n.h}" fill="${n.color}" stroke="#333" stroke-width="1" rx="4" />\n`;
+    const halfW = n.w / 2,
+      halfH = n.h / 2;
+    svg +=
+      n.shape === 'ellipse' || n.shape === 'roundrectangle'
+        ? `  <ellipse cx="${n.x}" cy="${n.y}" rx="${halfW}" ry="${halfH}" fill="${n.color}" stroke="#333" stroke-width="1" />\n`
+        : `  <rect x="${n.x - halfW}" y="${n.y - halfH}" width="${n.w}" height="${n.h}" fill="${n.color}" stroke="#333" stroke-width="1" rx="4" />\n`;
     if (n.label) {
       svg += `  <text x="${n.x}" y="${n.y}" fill="#fff" font-size="10" text-anchor="middle" dominant-baseline="middle" style="pointer-events: none;">${escapeXml(n.label)}</text>\n`;
     }
@@ -540,11 +613,17 @@ function buildSvgNodeMarkup(nodes) {
 
 /**
  * Computes the legend position and updates the viewBox for SVG export.
+ *
  * @param {cytoscape.Core} cy - The Cytoscape instance.
  * @param {{ nodes: object[]; edges: object[] }} visibleElements - Currently visible graph elements.
  * @param {boolean} includeLegend - Whether to include a legend.
- * @param {{ x: number; y: number; w: number; h: number }} vb - ViewBox object (will be modified if legend overflows).
- * @returns {{ legendGraphPos: { x: number; y: number } | undefined, vb: { x: number; y: number; w: number; h: number } }} Legend position and expanded viewBox.
+ * @param {{ x: number; y: number; w: number; h: number }} vb - ViewBox object (will be modified if
+ *   legend overflows).
+ * @returns {{
+ *   legendGraphPos: { x: number; y: number } | undefined;
+ *   vb: { x: number; y: number; w: number; h: number };
+ * }}
+ *   Legend position and expanded viewBox.
  */
 function computeSvgLegendLayout(cy, visibleElements, includeLegend, vb) {
   let legendGraphPos;
@@ -558,7 +637,8 @@ function computeSvgLegendLayout(cy, visibleElements, includeLegend, vb) {
           (text, size) => text.length * size * 0.58,
           1,
         );
-        const legX2 = legendGraphPos.x + lw, legY2 = legendGraphPos.y + lh;
+        const legX2 = legendGraphPos.x + lw,
+          legY2 = legendGraphPos.y + lh;
         if (legendGraphPos.x < vb.x) {
           vb.w += vb.x - legendGraphPos.x;
           vb.x = legendGraphPos.x;
@@ -591,17 +671,26 @@ function computeSvgLegendLayout(cy, visibleElements, includeLegend, vb) {
  * @param {boolean} includeLegend - Whether to include a legend group.
  */
 function exportSVG(cy, visibleElements, filename, includeLegend) {
-  const bgColor = getComputedStyle(document.documentElement).getPropertyValue('--cy-bg').trim() || '#12172b';
+  const bgColor =
+    getComputedStyle(document.documentElement).getPropertyValue('--cy-bg').trim() || '#12172b';
   const nodes = collectSvgNodes(cy);
   const edges = collectSvgEdges(cy);
   const vb = computeSvgViewBox(nodes);
-  const { legendGraphPos, vb: expandedVb } = computeSvgLegendLayout(cy, visibleElements, includeLegend, vb);
+  const { legendGraphPos, vb: expandedVb } = computeSvgLegendLayout(
+    cy,
+    visibleElements,
+    includeLegend,
+    vb,
+  );
   let svg = `<?xml version="1.0" encoding="UTF-8"?>\n`;
   svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${expandedVb.w}" height="${expandedVb.h}" viewBox="${expandedVb.x} ${expandedVb.y} ${expandedVb.w} ${expandedVb.h}" style="background-color: ${bgColor}">\n`;
   svg += buildSvgEdgeMarkup(edges);
   svg += buildSvgNodeMarkup(nodes);
   if (includeLegend) {
-    svg += generateSvgLegend(visibleElements, legendGraphPos ?? { x: expandedVb.x, y: expandedVb.y });
+    svg += generateSvgLegend(
+      visibleElements,
+      legendGraphPos ?? { x: expandedVb.x, y: expandedVb.y },
+    );
   }
   svg += `</svg>`;
   const blob = new Blob([svg], { type: 'image/svg+xml' });
@@ -645,7 +734,9 @@ function generateSvgLegend(elements, pos) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (line.isHeader) {
-      if (i > 0) {y += L.sectionGap;}
+      if (i > 0) {
+        y += L.sectionGap;
+      }
       const letterSpacing = (0.05 * L.headerFont).toFixed(2);
       g += `  <text x="${ox + L.padH}" y="${y + L.headerFont}" fill="${escapeXml(mutedColor)}" font-family="Segoe UI, system-ui, sans-serif" font-size="${L.headerFont}" letter-spacing="${letterSpacing}" style="pointer-events: none;">${escapeXml(line.text)}</text>\n`;
       y += L.headerH;

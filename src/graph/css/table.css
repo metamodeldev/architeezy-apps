@@ -1,0 +1,151 @@
+/* ── TABLE VIEW ──────────────────────────────────────────── */
+#table-view {
+  flex: 1;
+  overflow: hidden;
+  display: none;
+  flex-direction: column;
+}
+
+#table-view.visible {
+  display: flex;
+}
+
+.table-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface);
+}
+
+.table-tab-btn {
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.82rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.table-tab-btn.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.table-toolbar {
+  padding: 7px 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.table-search {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.table-search:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.table-count {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.table-container {
+  flex: 1;
+  overflow: auto;
+}
+
+.table-container::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+thead {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-table-head);
+  background: var(--surface);
+}
+
+th {
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 0.71rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+th:hover {
+  color: var(--text);
+}
+
+th .sort-icon {
+  margin-left: 4px;
+  opacity: 0.35;
+}
+
+th.sorted .sort-icon {
+  opacity: 1;
+  color: var(--accent);
+}
+
+td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+td.wrap {
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 240px;
+}
+
+tr:hover td {
+  background: var(--surface2);
+  cursor: pointer;
+}
+
+.type-badge {
+  display: inline-flex;
+  padding: 1px 7px;
+  border-radius: 20px;
+  font-size: 0.67rem;
+  font-weight: 500;
+  background: var(--type-bg);
+  color: var(--type-color);
+}

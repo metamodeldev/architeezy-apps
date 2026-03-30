@@ -1,0 +1,29 @@
+/* ── BODY ────────────────────────────────────────────────── */
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── MOBILE ──────────────────────────────────────────────── */
+@media (width <= 600px) {
+  header {
+    padding: 0 10px;
+    gap: 8px;
+  }
+
+  .crumb-link,
+  .crumb-link + .crumb-sep {
+    display: none;
+  }
+
+  .crumb-btn,
+  .crumb-entity {
+    max-width: 120px;
+  }
+
+  /* Hide user name text on small screens (keep sign-in/out button) */
+  #user-name {
+    display: none;
+  }
+}

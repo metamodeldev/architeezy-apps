@@ -110,7 +110,10 @@ function makeDraggable(el) {
     }
     dragging = false;
     el.style.cursor = 'grab';
-    const raw = { x: Number.parseInt(el.style.left, 10) || 0, y: Number.parseInt(el.style.top, 10) || 0 };
+    const raw = {
+      x: Number.parseInt(el.style.left, 10) || 0,
+      y: Number.parseInt(el.style.top, 10) || 0,
+    };
     const { x, y } = clampToParent(el, raw.x, raw.y);
     applyPosition(el, x, y);
     savePosition(x, y);
