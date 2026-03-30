@@ -4,12 +4,10 @@ This document provides a complete traceability matrix mapping functional require
 requirements (SR) and test cases (TC). It serves as a single source of truth for understanding the
 complete coverage of all requirements and their validation status.
 
-## Summary
-
 | FR group                                                             | FR count | SR count | TC count | Implemented TCs |
 | -------------------------------------------------------------------- | :------: | :------: | :------: | :-------------: |
 | [FR-1: Model Management](#fr-1-model-management)                     |    3     |    8     |    12    |       12        |
-| [FR-2: Graph Visualization](#fr-2-graph-visualization)               |    4     |    5     |    8     |        8        |
+| [FR-2: Graph Visualization](#fr-2-graph-visualization)               |    5     |    6     |    15    |       15        |
 | [FR-3: Filtering System](#fr-3-filtering-system)                     |    4     |    14    |    29    |       29        |
 | [FR-4: Drill-Down Analysis](#fr-4-drill-down-analysis)               |    4     |    12    |    15    |       15        |
 | [FR-5: Table View](#fr-5-table-view)                                 |    4     |    8     |    16    |       16        |
@@ -19,9 +17,7 @@ complete coverage of all requirements and their validation status.
 | [FR-9: Shareable Views via URL](#fr-9-shareable-views-via-url)       |    2     |    5     |    11    |       11        |
 | [FR-10: Authentication](#fr-10-authentication)                       |    3     |    7     |    14    |       14        |
 | [FR-11: Data Export](#fr-11-data-export)                             |    2     |    8     |    16    |       16        |
-| **Total**                                                            |  **33**  |  **67**  | **129**  |     **129**     |
-
----
+| **Total**                                                            |  **34**  |  **68**  | **136**  |     **136**     |
 
 ## FR-1: Model Management
 
@@ -111,6 +107,24 @@ complete coverage of all requirements and their validation status.
   panel
   - [TC-2.5.1](test-cases/graph/tc-2.5.md#tc-251-single-click-on-a-node-selects-it-and-shows-details-panel):
     Single-click on a node selects it and shows details panel
+
+### [FR-2.5](functional-requirements.md#fr-2-graph-visualization): Display a legend explaining node and edge type visual encodings
+
+- [SR-2.9](system-requirements/graph.md): User can show or hide the legend on the graph canvas
+  - [TC-2.9.1](test-cases/graph/tc-2.9.md#tc-291-enabling-the-legend-setting-makes-the-legend-appear-on-the-canvas):
+    Enabling the Legend setting makes the legend appear on the canvas
+  - [TC-2.9.2](test-cases/graph/tc-2.9.md#tc-292-legend-lists-only-types-that-are-currently-visible-in-the-graph):
+    Legend lists only types that are currently visible in the graph
+  - [TC-2.9.3](test-cases/graph/tc-2.9.md#tc-293-disabling-the-legend-setting-removes-the-legend-from-the-canvas):
+    Disabling the Legend setting removes the legend from the canvas
+  - [TC-2.9.4](test-cases/graph/tc-2.9.md#tc-294-legend-can-be-repositioned-by-dragging): Legend can
+    be repositioned by dragging
+  - [TC-2.9.5](test-cases/graph/tc-2.9.md#tc-295-legend-shows-no-entries-when-all-types-are-filtered-out):
+    Legend shows no entries when all types are filtered out
+  - [TC-2.9.6](test-cases/graph/tc-2.9.md#tc-296-legend-is-clamped-to-canvas-bounds-when-dragged-beyond-the-edge):
+    Legend is clamped to canvas bounds when dragged beyond the edge
+  - [TC-2.9.7](test-cases/graph/tc-2.9.md#tc-297-legend-is-re-clamped-automatically-when-the-canvas-shrinks):
+    Legend is re-clamped automatically when the canvas shrinks
 
 ## FR-3: Filtering System
 
@@ -662,11 +676,12 @@ complete coverage of all requirements and their validation status.
   - [TC-11.5.2](test-cases/export/tc-11.5.md#tc-1152-selecting-export-as-svg-downloads-a-file-with-svg-extension):
     Selecting "Export as SVG" downloads a file with .svg extension
 
-- [SR-11.6](system-requirements/export.md): Exported images may include an optional title/legend
-  - [TC-11.6.1](test-cases/export/tc-11.6.md#tc-1161-when-titlelegend-option-is-enabled-exported-image-includes-a-legend-area):
-    When title/legend option is enabled, exported image includes a legend area
-  - [TC-11.6.2](test-cases/export/tc-11.6.md#tc-1162-when-titlelegend-option-is-disabled-exported-image-contains-no-legend):
-    When title/legend option is disabled, exported image contains no legend
+- [SR-11.6](system-requirements/export.md): Exported image faithfully reproduces the visible graph
+  canvas, including any overlays present on it
+  - [TC-11.6.1](test-cases/export/tc-11.6.md#tc-1161-exported-png-includes-the-legend-when-it-is-visible-on-the-canvas):
+    Exported PNG includes the legend when it is visible on the canvas
+  - [TC-11.6.2](test-cases/export/tc-11.6.md#tc-1162-exported-png-does-not-include-the-legend-when-it-is-hidden):
+    Exported PNG does not include the legend when it is hidden
 
 - [SR-11.8](system-requirements/export.md): Export respects current filters
   - [TC-11.8.2](test-cases/export/tc-11.8.md#tc-1182-graph-image-export-captures-only-visible-nodes-those-not-filtered-out):

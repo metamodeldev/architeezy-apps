@@ -274,6 +274,12 @@
                 <div class="depth-picker" id="depth-picker"></div>
               </div>
               <div class="settings-row">
+                <span class="settings-label" data-i18n="settingsLegend">Legend</span>
+                <div class="settings-row-controls">
+                  <input type="checkbox" id="legend-toggle" />
+                </div>
+              </div>
+              <div class="settings-row">
                 <span class="settings-label" data-i18n="settingsTooltips">Tooltips</span>
                 <div class="settings-row-controls">
                   <input type="checkbox" id="tooltips-toggle" />
@@ -286,6 +292,7 @@
 
       <main>
         <div id="cy" class="hidden"></div>
+        <div id="graph-legend" class="hidden"></div>
 
         <div id="table-view">
           <div class="table-tabs">
@@ -340,10 +347,6 @@
               <button id="export-png-btn" class="dropdown-item">Export as PNG</button>
               <button id="export-svg-btn" class="dropdown-item">Export as SVG</button>
             </div>
-            <label class="export-legend-label">
-              <input type="checkbox" id="export-legend-toggle" />
-              <span>Include legend</span>
-            </label>
             <span id="export-loading" class="hidden">Exporting…</span>
           </div>
         </div>

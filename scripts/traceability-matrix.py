@@ -263,8 +263,6 @@ def generate_requirements_map(mapping, sr_titles, sr_file_map, fr_titles, fr_gro
     groups = group_frs_by_prefix(fr_titles)
 
     # Build summary statistics for each FR group
-    lines.append("## Summary")
-    lines.append("")
     lines.append("| FR group | FR count | SR count | TC count | Implemented TCs |")
     lines.append("|----------|:--------:|:--------:|:--------:|:---------------:|")
 
@@ -324,8 +322,6 @@ def generate_requirements_map(mapping, sr_titles, sr_file_map, fr_titles, fr_gro
     lines.append("| **Total** | **{}** | **{}** | **{}** | **{}** |".format(
         total_fr_count, total_srs_unique, total_scenarios_unique, total_implemented_unique
     ))
-    lines.append("")
-    lines.append("---")
     lines.append("")
 
     # Sort groups numerically

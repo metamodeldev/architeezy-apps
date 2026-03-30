@@ -19,7 +19,8 @@ implemented. This document provides the planned specifications for a future deve
 - SR-11.3: CSV format uses standard formatting with proper escaping of special characters
 - SR-11.4: Image export is accessible when the graph view is active
 - SR-11.5: Image export supports both PNG and SVG formats
-- SR-11.6: Exported images may include an optional title/legend
+- SR-11.6: Exported image faithfully reproduces the visible graph canvas, including any overlays
+  present on it
 - SR-11.7: Export provides progress feedback for large datasets
 - SR-11.8: Export respects current filters
 
@@ -167,12 +168,19 @@ implemented. This document provides the planned specifications for a future deve
 
 ### Image Export Scope
 
-- Image export captures the entire graph, including all nodes and edges that satisfy active filters.
+- Image export captures the **entire graph** — all visible nodes and edges regardless of the current
+  pan/zoom state. Elements outside the visible viewport are included.
+- PNG export uses Cytoscape's built-in full-graph rasterizer (`full: true`). The canvas is sized to
+  the element bounding box, not the browser viewport.
+- SVG export uses graph (model) coordinates so all visible elements are included regardless of
+  pan/zoom. The SVG `viewBox` is computed from the bounding box of all visible nodes.
 - The exported image includes all nodes, edges, and labels.
-- Selection state is preserved in the exported image (selected nodes show highlight).
 - Exported image includes:
   - Nodes with their shapes, colors, labels
   - Edges with lines, arrowheads, labels
+  - The legend overlay (if enabled), placed at the same position it occupies on screen at the time
+    of export; if the legend extends beyond the graph's bounding box, the exported image dimensions
+    are expanded to ensure the legend is fully visible and never clipped
   - Background color (theme-dependent)
 - Excluded:
   - UI overlay elements (sidebar, header, tooltips, selection handles)
@@ -211,7 +219,14 @@ implemented. This document provides the planned specifications for a future deve
 
 - Exported PNG has sufficient resolution (at least 2× display size for clarity).
 - SVG export preserves vector quality for scaling and print.
-- Exported images may include an optional title/legend, configurable in the export settings.
+- Exported image reproduces the full graph faithfully — all visible elements are present, not just
+  those in the current viewport.
+- When the legend is included in an export, its appearance in the exported image must exactly match
+  the on-screen legend: same font sizes (section headers at 0.65 rem, rows at 0.75 rem), same
+  letter-spacing on section headers (0.05 em), same muted color for both section labels and type
+  names (`--text-muted`), same spacing between sections (6 px gap before the second section), and
+  same dot size (10 × 10 px circles). The legend is rendered at the position it occupies on screen
+  at the time of export.
 
 ### Performance Expectations
 

@@ -62,6 +62,7 @@ const STRINGS = {
     signedOut: 'Signed out successfully',
     authRequired: 'Please sign in to continue',
     popupBlocked: 'Pop-up blocked. Please allow pop-ups to sign in.',
+    settingsLegend: 'Legend',
     settingsTooltips: 'Tooltips',
   },
   ru: {
@@ -122,6 +123,7 @@ const STRINGS = {
     signedOut: 'Вы вышли из системы',
     authRequired: 'Войдите, чтобы продолжить',
     popupBlocked: 'Всплывающее окно заблокировано. Разрешите всплывающие окна для входа.',
+    settingsLegend: 'Легенда',
     settingsTooltips: 'Подсказки',
   },
 };

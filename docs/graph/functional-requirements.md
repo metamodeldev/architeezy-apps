@@ -18,6 +18,7 @@ documentation.
 - FR-2.2: Provide multiple layout algorithms
 - FR-2.3: Support zoom and pan navigation
 - FR-2.4: Select nodes and display details
+- FR-2.5: Display a legend explaining node and edge type visual encodings
 
 ## FR-3: Filtering System
 

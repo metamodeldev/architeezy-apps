@@ -49,7 +49,7 @@
     "eslint/sort-vars": "off",
     "import/exports-last": "off",
     "import/group-exports": "off",
-    "import/max-dependencies": ["error", { "max": 15 }],
+    "import/max-dependencies": ["error", { "max": 30 }],
     "import/no-named-export": "off",
     "import/no-relative-parent-imports": "off",
     "import/prefer-default-export": "off",
@@ -75,13 +75,14 @@
       "plugins": ["jest", "vitest"],
       "rules": {
         "eslint/max-lines-per-function": "off",
+        "jest/no-conditional-in-test": "off",
         "jest/valid-title": "off",
         "unicorn/no-null": "off",
-        "vitest/prefer-to-be-falsy": "off",
         "vitest/consistent-test-filename": [
           "error",
           { "pattern": "(/unit/.*\\.test\\.js|/e2e/.*\\.spec\\.js)$" }
         ],
+        "vitest/prefer-to-be-falsy": "off",
         "vitest/prefer-to-be-truthy": "off"
       },
       "env": {

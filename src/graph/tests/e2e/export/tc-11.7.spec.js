@@ -27,7 +27,6 @@ test.describe('TC-11.7: Export Progress Feedback', () => {
     await page.waitForFunction(() => {
       const btn = document.getElementById('export-csv-btn');
       const loading = document.getElementById('export-loading');
-      // oxlint-disable-next-line jest/no-conditional-in-test
       return (btn && btn?.disabled) || (loading && !loading.classList.contains('hidden'));
     });
   });

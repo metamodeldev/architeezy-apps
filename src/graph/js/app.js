@@ -43,6 +43,7 @@ import {
 } from './graph.js';
 import { applyLocale, t } from './i18n.js';
 import { exportGraphImage, getExportingState as getImageExportingState } from './image-export.js';
+import { initLegend, setLegendEnabled, updateLegend } from './legend.js';
 import { getAllElements, getAllRelations, loadModelData, setCurrentModel } from './model.js';
 import {
   closeModelSelector,
@@ -121,6 +122,7 @@ function updateExportButtonState() {
 
 // Expose globally so graph.js/visibility.js can trigger updates
 globalThis.updateExportButtonState = updateExportButtonState;
+globalThis.updateLegend = updateLegend;
 
 // ── EVENT WIRING ────────────────────────────────────────────────────────────
 
@@ -259,14 +261,12 @@ function wireExportEvents() {
 
   document.getElementById('export-png-btn')?.addEventListener('click', async () => {
     exportDropdown?.classList.add('hidden');
-    const includeLegend = document.getElementById('export-legend-toggle')?.checked ?? false;
-    await exportGraphImage('png', includeLegend);
+    await exportGraphImage('png');
   });
 
   document.getElementById('export-svg-btn')?.addEventListener('click', async () => {
     exportDropdown?.classList.add('hidden');
-    const includeLegend = document.getElementById('export-legend-toggle')?.checked ?? false;
-    await exportGraphImage('svg', includeLegend);
+    await exportGraphImage('svg');
   });
 
   document.addEventListener('click', () => {
@@ -361,6 +361,7 @@ async function loadModel(url, modelId, afterLoad) {
     renderTable();
     afterLoad?.();
     syncUrl();
+    updateLegend();
   } catch (error) {
     hideLoading();
     showToast(error.message);
@@ -535,5 +536,9 @@ document.getElementById('tooltips-toggle').checked = isTooltipsEnabled();
 document.getElementById('tooltips-toggle').addEventListener('change', (e) => {
   setTooltipsEnabled(e.target.checked);
 });
+document.getElementById('legend-toggle').addEventListener('change', (e) => {
+  setLegendEnabled(e.target.checked);
+});
 restoreSidebarAndPanelState();
+initLegend();
 init();

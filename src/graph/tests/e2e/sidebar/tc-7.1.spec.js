@@ -42,7 +42,6 @@ test.describe('TC-7.1: Sidebar Collapse and Expand', () => {
     // Wait for sidebar collapse animation to complete (width transition ~200ms)
     await page.waitForFunction(() => {
       const sidebar = document.getElementById('graph-sidebar');
-      // oxlint-disable-next-line jest/no-conditional-in-test
       return sidebar.classList.contains('collapsed') && sidebar.offsetWidth <= 30;
     });
 
@@ -55,7 +54,6 @@ test.describe('TC-7.1: Sidebar Collapse and Expand', () => {
     // Wait for sidebar to expand (width > 100)
     await page.waitForFunction(() => {
       const sidebar = document.getElementById('graph-sidebar');
-      // oxlint-disable-next-line jest/no-conditional-in-test
       return !sidebar.classList.contains('collapsed') && sidebar.offsetWidth > 100;
     });
 

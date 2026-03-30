@@ -981,19 +981,54 @@ main {
   color: var(--text);
 }
 
-.export-legend-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+/* ── GRAPH LEGEND ──────────────────────────────────────────── */
+#graph-legend {
+  position: absolute;
+  z-index: var(--z-overlay);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 10px;
   font-size: 0.75rem;
-  color: var(--text-muted);
-  cursor: pointer;
+  min-width: 140px;
+  max-width: 220px;
+  cursor: grab;
   user-select: none;
 }
 
-.export-legend-label input {
-  cursor: pointer;
-  accent-color: var(--accent);
+.legend-section-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+.legend-section-label:first-child {
+  margin-top: 0;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 0;
+  color: var(--text-muted);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--dot-color);
+}
+
+.legend-type-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #export-loading {

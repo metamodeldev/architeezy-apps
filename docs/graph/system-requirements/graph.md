@@ -1,7 +1,7 @@
 # SR-2: Graph Interactions and Visualization
 
 **Functional Requirements**:
-[FR-2.1, FR-2.2, FR-2.3, FR-2.4](../functional-requirements.md#fr-2-graph-visualization)
+[FR-2.1, FR-2.2, FR-2.3, FR-2.4, FR-2.5](../functional-requirements.md#fr-2-graph-visualization)
 
 ## User Story
 
@@ -18,6 +18,7 @@ details, and customize the layout and containment visualization to understand th
 - SR-2.6: Double-click on a node triggers drill-down mode
 - SR-2.7: Containment relationships can be displayed as synthetic edges or nested compound nodes
 - SR-2.8: Selection, zoom, and pan state are preserved when switching between graph and table views
+- SR-2.9: User can show or hide the legend on the graph canvas
 
 ## Scenario
 
@@ -100,6 +101,18 @@ details, and customize the layout and containment visualization to understand th
    - The corresponding node is centered with smooth animation
    - The node is selected
 
+10. **Toggle Legend**
+    - User opens graph settings and enables the "Legend" toggle
+    - A legend shape appears on the graph canvas listing all visible element types followed by all
+      visible relationship types
+    - Each entry shows a color circle matching the type's color in the graph and filter panel,
+      followed by the type name
+    - User drags the legend to a more convenient position on the canvas
+    - User hides a relationship type using the filter panel
+    - The legend updates to no longer show that relationship type
+    - User disables the "Legend" toggle in settings
+    - The legend disappears from the canvas
+
 ### Expected Results
 
 - All model elements appear as nodes in the graph
@@ -116,6 +129,9 @@ details, and customize the layout and containment visualization to understand th
 - Double-click successfully triggers drill mode
 - Containment visualization renders correctly according to selected mode
 - No layout glitches occur when switching modes
+- Legend is visible on the canvas when enabled and absent when disabled
+- Legend content reflects only types that are currently visible in the graph
+- Legend can be freely repositioned by dragging
 
 ### Edge Cases
 
@@ -149,6 +165,12 @@ details, and customize the layout and containment visualization to understand th
   - Single-click delay prevents multiple rapid selections
   - Double-click reliably cancels single-click timer
 
+- **Legend enabled with all types filtered out**
+  - Legend is shown but displays no entries
+
+- **Legend enabled with only one type visible**
+  - Legend shows a single entry
+
 - **Graph not yet rendered**
   - Early interactions are ignored without errors
 
@@ -168,6 +190,28 @@ details, and customize the layout and containment visualization to understand th
   - None: no special representation of parent-child relationships
   - Edges: synthetic edges with special markers show containment
   - Compound: child nodes visually nested inside parent nodes
+
+### Legend
+
+- Legend visibility is controlled by a dedicated toggle in the visualization settings.
+- When visible, the legend lists all element types that have at least one visible node, followed by
+  all relationship types that have at least one visible edge, in the order they appear in the filter
+  panel.
+- Each entry is preceded by a filled color circle using the same color as the corresponding type in
+  the graph and filter panel.
+- The legend is rendered as a shape directly on the graph canvas, so it can be dragged and is
+  captured in image exports.
+- The legend updates automatically whenever the set of visible types changes due to filter
+  adjustments.
+- The legend's position on the canvas persists across sessions (stored as JSON in localStorage).
+- When the persisted position would place the legend outside the canvas, the legend is clamped to
+  stay within the canvas bounds with a minimum 5 px margin on every side. The same clamping applies
+  after each drag operation and automatically whenever the canvas changes size (e.g., window resize
+  or sidebar toggle). Position adjustments caused by canvas resize are not persisted — the saved
+  position reflects the user's last drag and is re-evaluated against the actual canvas size on each
+  load and resize.
+- Legend visibility preference persists across sessions (stored as `true` / `false` in
+  localStorage).
 
 ### Layout Switching
 
@@ -220,6 +264,17 @@ details, and customize the layout and containment visualization to understand th
 - Containment mode selector in settings shows available options with icons.
 - Zoom controls positioned for easy access (typically bottom-right corner): zoom in, zoom out,
   fit-to-view.
+
+### Legend
+
+- The legend is rendered as a floating panel shape on the graph canvas with a visible border and
+  background fill matching the current theme.
+- Two sections are displayed: "Entities" listing element types, and "Relationships" listing
+  relationship types, each with a section label.
+- Each row shows a small filled circle in the type's color (identical in style to the color
+  indicators in the filter panel) followed by the type name.
+- The legend is draggable; a grab cursor indicates it can be repositioned.
+- The legend does not interfere with graph navigation controls or the sidebar.
 
 ### Responsiveness and Smoothness
 
@@ -342,6 +397,16 @@ Graph styles reference CSS custom properties for colors that need to support the
 changes, the graph library does not automatically refresh styles. An explicit refresh is required to
 pick up changed CSS variable values - this is needed for canvas background, edge label backgrounds
 (knockout effect), and other theme-dependent styles.
+
+### Legend Implementation
+
+- The legend is rendered as a native element within the graph canvas (not a DOM overlay) so that it
+  is captured automatically in PNG and SVG exports.
+- Its position is stored as canvas coordinates and persists via localStorage.
+- Drag behavior is handled by the graph library's built-in node drag support or an equivalent
+  canvas-level drag handler.
+- Legend content is recomputed whenever the active element or relationship type sets change.
+- Color circles reuse the same deterministic color generation logic used for nodes and edges.
 
 ### Accessibility
 

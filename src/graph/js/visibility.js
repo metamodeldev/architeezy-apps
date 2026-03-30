@@ -287,6 +287,7 @@ export function applyVisibility() {
     renderTable();
   }
   globalThis.updateExportButtonState?.();
+  globalThis.updateLegend?.();
 }
 
 /**
@@ -349,4 +350,5 @@ export function applyDrill() {
     renderTable();
   }
   globalThis.updateExportButtonState?.();
+  globalThis.updateLegend?.();
 }

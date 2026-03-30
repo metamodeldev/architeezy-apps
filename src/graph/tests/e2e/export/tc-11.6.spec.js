@@ -1,23 +1,23 @@
 import { expect } from '@playwright/test';
 
-import { mockApi, test, loadTestModelFromSelector } from '../fixtures.js';
+import { mockApi, test, waitForLoading } from '../fixtures.js';
 
-test.describe('TC-11.6: Optional Title/Legend in Exported Image', () => {
+test.describe('TC-11.6: Exported Image Reproduces Visible Canvas Content', () => {
   test.beforeEach(async ({ page }) => {
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/graph/');
-    await expect(page.locator('#model-modal')).toBeVisible();
-    await loadTestModelFromSelector(page);
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
   });
 
-  test('TC-11.6.1: When title/legend option is enabled, exported image includes a legend area', async ({
+  test('TC-11.6.1: Exported PNG includes the legend when it is visible on the canvas', async ({
     page,
   }) => {
-    // Enable the include-legend option
-    const legendToggle = page.locator('#export-legend-toggle');
+    // Enable the legend in Settings — makes #graph-legend visible on canvas
+    const legendToggle = page.locator('#legend-toggle');
     await legendToggle.check();
     await expect(legendToggle).toBeChecked();
+    await expect(page.locator('#graph-legend')).toBeVisible();
 
     await page.locator('#export-image-btn').click();
 
@@ -29,12 +29,11 @@ test.describe('TC-11.6: Optional Title/Legend in Exported Image', () => {
     expect(download.suggestedFilename()).toMatch(/\.png$/i);
   });
 
-  test('TC-11.6.2: When title/legend option is disabled, exported image contains no legend', async ({
-    page,
-  }) => {
-    const legendToggle = page.locator('#export-legend-toggle');
-    await legendToggle.uncheck();
+  test('TC-11.6.2: Exported PNG contains no legend when the legend is hidden', async ({ page }) => {
+    // Legend toggle is off by default — #graph-legend must not be visible
+    const legendToggle = page.locator('#legend-toggle');
     await expect(legendToggle).not.toBeChecked();
+    await expect(page.locator('#graph-legend')).not.toBeVisible();
 
     await page.locator('#export-image-btn').click();
 
