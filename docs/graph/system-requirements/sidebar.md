@@ -10,101 +10,130 @@ panel so I can manage the application state efficiently while maximizing graph v
 
 ## Acceptance Criteria
 
-- SR-7.1: Sidebar supports two functional states: expanded and collapsed
-- SR-7.2: Sidebar manages multiple independent panels that can be toggled individually
-- SR-7.3: Sidebar configuration must persist across sessions
+- [SR-7.1](#sr-71-sidebar-supports-two-functional-states-expanded-and-collapsed): Sidebar supports
+  two functional states: expanded and collapsed
+- [SR-7.2](#sr-72-sidebar-manages-multiple-independent-panels-that-can-be-toggled-individually):
+  Sidebar manages multiple independent panels that can be toggled individually
+- [SR-7.3](#sr-73-sidebar-configuration-must-persist-across-sessions): Sidebar configuration must
+  persist across sessions
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-7.1: Sidebar supports two functional states: expanded and collapsed
+
+#### Preconditions
 
 - Application is running with any active view
 - Sidebar with 4 panels exists on the left
+- Sidebar is in its default expanded state
 
-### Steps
+#### Steps
 
-1. **Initial Load**
-   - Sidebar appears expanded by default (or restores previous state)
-   - All panels are open with chevrons pointing down
-   - Toggle button at right edge shows "collapse" orientation
-   - Scroll positions from last session restored
+1. **Observe initial state**
+   - Sidebar appears expanded with full panel labels visible
+   - Toggle button at the right edge shows the "collapse" orientation
 
-2. **Collapse Sidebar**
-   - User clicks toggle button at sidebar's right edge
+2. **Collapse sidebar**
+   - User clicks the toggle button at the sidebar's right edge
    - Sidebar smoothly shrinks to narrow width (~60px)
-   - Panel text labels hide; icons remain
-   - Main content area grows to fill space
-   - Toggle icon flips outward
-   - States saved to storage
+   - Panel text labels hide; icons remain visible
+   - Main content area grows to fill the freed space
+   - Toggle icon flips to the outward orientation
 
-3. **Expand Sidebar**
-   - User clicks toggle button again
-   - Sidebar smoothly returns to wide width
+3. **Expand sidebar**
+   - User clicks the toggle button again
+   - Sidebar smoothly returns to its wide width
    - Panel labels reappear
    - Main content area shrinks back
-   - Toggle icon flips inward
-   - State saved
+   - Toggle icon flips to the inward orientation
 
-4. **Collapse Panel**
+#### Edge Cases
+
+- **Toggle when already collapsed** — expands sidebar; toggle button is always visible regardless of
+  state.
+- **Multiple clicks during animation** — final state is correct; no broken intermediate states.
+- **Mobile/narrow screen** — collapsed sidebar width remains usable; content scrolls vertically.
+
+### SR-7.2: Sidebar manages multiple independent panels that can be toggled individually
+
+#### Preconditions
+
+- Application is running with any active view
+- Sidebar is expanded and all panels are visible
+- At least two panels are present
+
+#### Steps
+
+1. **Observe initial panel state**
+   - All panels are open with chevrons pointing down
+   - All panel content areas are visible
+
+2. **Collapse a panel**
    - User clicks a panel header button
    - Panel content smoothly collapses
    - Chevron rotates to point right
-   - `aria-expanded` updates to "false"
-   - Controls inside panel removed from tab order
-   - Scroll position for that panel saved
+   - Controls inside the panel are removed from tab order
 
-5. **Expand Panel**
+3. **Verify other panels unaffected**
+   - Remaining panels stay in their current open or closed state
+   - No other panel changes when one is toggled
+
+4. **Expand the collapsed panel**
    - User clicks the same collapsed panel header
    - Content smoothly expands
    - Chevron rotates back to point down
-   - `aria-expanded` updates to "true"
-   - Controls restored to tab order
-   - Previous scroll position restored
+   - Controls are restored to tab order
 
-6. **Rapid Toggling**
-   - User clicks panel header multiple times quickly
-   - Animations may overlap but final state consistent
-   - No broken states or lost scroll positions
+5. **Rapid toggling**
+   - User clicks a panel header multiple times quickly
+   - Animations may overlap but final state is consistent
+   - No broken states occur
 
-7. **State Restoration**
-   - User configures sidebar (collapses some panels, scrolls in others)
-   - User reloads page
-   - Sidebar and panels restore their saved states
-   - All scroll positions restored
-   - Icons and accessibility attributes match states
+#### Edge Cases
 
-### Expected Results
+- **Panel header when already collapsed** — expands panel (toggle behavior).
+- **Panel with contextual controls** — controls become hidden when panel is collapsed; user must
+  expand the panel to access them; no errors occur.
+- **Keyboard user** — can navigate only visible controls; hidden panels are skipped in tab order.
+- **Screen reader user** — collapsed content is not announced; state changes are announced via
+  `aria-live` regions or native semantics.
 
-- Sidebar and panel animations are smooth without sudden jumps
-- Main content always fills available space properly
-- Collapsed panels are truly hidden (cannot be tabbed to or read by screen readers)
-- Scroll positions persist across collapsing/expanding and page reloads
-- Screen readers correctly announce panel state changes
-- Toggle icons always match current state
-- No content gets stuck or becomes inaccessible
-- State saving/restoration works reliably
+### SR-7.3: Sidebar configuration must persist across sessions
 
-### Edge Cases
+#### Preconditions
 
-- **Toggle when already collapsed**: Expands sidebar; toggle always visible.
-- **Panel header when already collapsed**: Expands panel (toggle behavior).
-- **Multiple clicks during animation**: Final state correct; scroll preserved.
-- **Panel with contextual controls**: Controls may become hidden if panel collapsed; user must
-  expand panel to access them. No errors occur.
-- **Browser storage disabled**: App works normally but sidebar state resets on reload (defaults to
-  all expanded).
-- **Empty model**: Panels may show placeholders like "No data" without errors.
-- **Keyboard user**: Can navigate only visible controls; hidden panels skipped in tab order.
-- **Screen reader user**: Collapsed content not announced; state changes announced via `aria-live`
-  regions or native semantics.
-- **Mobile/narrow screen**: Collapsed sidebar width remains usable; content scrolls vertically.
+- Application has been used in a previous session
+- Sidebar and panel states were configured (some panels collapsed, some expanded)
+- User is returning after a page reload or new browser session
+
+#### Steps
+
+1. **Configure sidebar state**
+   - User collapses several panels and scrolls within others
+   - Sidebar state is saved as interactions occur
+
+2. **Reload the page**
+   - User reloads the browser page
+   - Application initializes and reads persisted state
+
+3. **Verify restored state**
+   - Sidebar appears in its previously saved expanded or collapsed state
+   - Each panel is open or closed as it was before the reload
+   - Scroll positions inside panels are restored
+   - Icons and accessibility attributes match the restored states
+
+#### Edge Cases
+
+- **Browser storage disabled** — app works normally but sidebar state resets on reload; defaults to
+  all panels expanded.
+- **Empty model** — panels may show placeholders like "No data" without errors.
 
 ## Business Rules
 
 ### State Persistence
 
-- Sidebar main state and each panel's state stored separately in browser storage.
-- States loaded on app startup before first render.
+- Sidebar state and panel states persist across sessions.
+- States are loaded on app startup before first render.
 - Default: all panels expanded, sidebar expanded.
 - Errors in storage reading fall back to defaults (do not crash).
 

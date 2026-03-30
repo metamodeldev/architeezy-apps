@@ -162,9 +162,18 @@ inside application documents — link instead.
 - **Structure**:
   - **Functional Requirements Mapping**: Explicit list of parent `FR-IDs`.
   - **User Story**: High-level behavioral goal (As a... I want... So that...).
-  - **Acceptance Criteria**: A "Done" checklist of testable conditions.
-  - **Scenario**: Detailed interaction walkthroughs including Preconditions, Steps, and Expected
-    Results.
+  - **Acceptance Criteria**: A "Done" checklist of testable conditions. Each criterion code must be
+    an anchor link to its corresponding scenario subsection (e.g.,
+    `[SR-2.1](#sr-21-all-model-elements...): description`).
+  - **Scenarios**: One subsection per acceptance criterion, named after the criterion code and title
+    (e.g., `### SR-2.1: All model elements render as nodes...`). Each subsection contains:
+    - **Preconditions**: System state required before the scenario begins.
+    - **Steps**: Numbered list of user actions. Each step title describes what the user does.
+      Observable outcomes are listed as an indented sub-list directly under the step — no
+      "Expected:" label is needed, as the sub-list position makes the role self-evident. Each
+      scenario must have at least three steps; avoid collapsing many outcomes into a single step.
+    - **Edge Cases**: Inline entries (single line per case) covering boundary conditions and error
+      paths specific to this criterion.
   - **Business Rules**: Deterministic logic, formulas, state-machine transitions, and constraints.
   - **UI/UX**: Interaction specifications, visual patterns, and focus/navigation rules.
   - **Technical Notes**: Implementation specifics, library usage, and performance considerations.
@@ -220,8 +229,13 @@ inside application documents — link instead.
       - Overly specific naming conventions (exact filename patterns, variable names) Keep them
         testable, behavior-focused, and free of implementation details.
     - **Business Rules** should contain only deterministic domain logic, constraints, and state
-      transitions. Do not include user experience attributes (smooth, fast, responsive) or visual
-      design specifics (sizes, colors, layouts).
+      transitions. Do not include:
+      - User experience attributes (smooth, fast, responsive) or visual design specifics (sizes,
+        colors, layouts) — these belong in UI/UX
+      - Storage mechanism details (e.g., localStorage keys, data formats, in-memory vs. persistent
+        distinctions) — these belong in Technical Notes
+      - Input device specifics (e.g., mouse button assignments, keyboard shortcuts, gesture details)
+        — these belong in UI/UX
     - **UI/UX Section** is the authoritative location for all user interface and experience
       specifications: visual design (dimensions, typography, colors, layouts), interaction timing
       (delays, debounces, frame rates), responsiveness requirements, animation smoothness,

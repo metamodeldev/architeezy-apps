@@ -10,119 +10,233 @@ my filter choices remembered across sessions, and share views with specific filt
 
 ## Acceptance Criteria
 
-- SR-3.1: Element and relationship types are displayed with counts and selection controls
-- SR-3.2: Search inputs can filter the type lists
-- SR-3.3: Bulk selection controls for "select all" and "select none" are available
-- SR-3.4: Changing filter settings updates the graph and table views accordingly
-- SR-3.5: Count badges show visible/total counts
-- SR-3.6: Filter state persists to browser storage per model
-- SR-3.7: URL parameters can encode active filter types for sharing
+- [SR-3.1](#sr-31-element-and-relationship-types-are-displayed-with-counts-and-selection-controls):
+  Element and relationship types are displayed with counts and selection controls
+- [SR-3.2](#sr-32-search-inputs-can-filter-the-type-lists): Search inputs can filter the type lists
+- [SR-3.3](#sr-33-bulk-selection-controls-for-select-all-and-select-none-are-available): Bulk
+  selection controls for "select all" and "select none" are available
+- [SR-3.4](#sr-34-changing-filter-settings-updates-the-graph-and-table-views-accordingly): Changing
+  filter settings updates the graph and table views accordingly
+- [SR-3.5](#sr-35-count-badges-show-visibletotal-counts): Count badges show visible/total counts
+- [SR-3.6](#sr-36-filter-state-persists-to-browser-storage-per-model): Filter state persists to
+  browser storage per model
+- [SR-3.7](#sr-37-url-parameters-can-encode-active-filter-types-for-sharing): URL parameters can
+  encode active filter types for sharing
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-3.1: Element and relationship types are displayed with counts and selection controls
+
+#### Preconditions
 
 - Model is loaded with multiple element types (e.g., components, services, databases) and
   relationship types (e.g., flows, dependencies, ownership)
-- Graph displays all elements and relationships
-- Sidebar shows filter panels with all types checked
+- Sidebar is open and filter panels are visible
+- All types are checked
 
-### Steps
+#### Steps
 
-1. **Initial State**
-   - User sees all elements and relationships in the graph
-   - Entities filter list shows each element type with color indicator, name, and count
-   - Relationships filter list shows each relationship type with color indicator, name, and count
+1. **View Entities Filter Panel**
+   - User opens the sidebar
+   - Entities filter list shows each element type with a color indicator, name, and count
    - All checkboxes are checked
-   - Count badges show total counts
+   - Count reflects total elements per type
 
-2. **Filter Element Types**
-   - User unchecks an element type (e.g., "Database") in the Entities filter
-   - All elements of that type disappear from the graph
-   - Edges incident to those elements also disappear
-   - Count badge updates to show visible elements versus total
-   - Relationship counts update automatically to reflect reduced edge visibility
+2. **View Relationships Filter Panel**
+   - Relationships filter list shows each relationship type with a color indicator, name, and count
+   - All checkboxes are checked
+   - Count reflects total relationships per type
 
-3. **Search Within Filter List**
+3. **Toggle a Checkbox**
+   - User unchecks an element type (e.g., "Database")
+   - Checkbox state changes to unchecked
+   - The change is immediately reflected in the graph
+
+#### Edge Cases
+
+- **Type with zero elements** — only types present in the model appear in the filter list; items
+  with zero count are dimmed or hidden
+
+### SR-3.2: Search inputs can filter the type lists
+
+#### Preconditions
+
+- Model is loaded with multiple element types
+- Filter panel is visible with all types listed
+- Search input is empty
+
+#### Steps
+
+1. **Type Search Text**
    - User types search text into the Entities search field
    - The list filters in real-time
    - Only types containing the search text remain visible in the list
-   - Non-matching items are hidden from the list but their checkbox states are preserved
-   - Clearing the search reveals all types again with states intact
 
-4. **Filter Relationship Types**
+2. **Verify Hidden Items Retain State**
+   - Non-matching items are hidden from the list
+   - Their checkbox states are preserved and unaffected by the search
+
+3. **Clear the Search**
+   - User clears the search input
+   - All types are visible again with their previous checkbox states intact
+
+#### Edge Cases
+
+- **Many types (50+)** — search filter helps find specific types; scrolling remains manageable
+
+### SR-3.3: Bulk selection controls for "select all" and "select none" are available
+
+#### Preconditions
+
+- Model is loaded
+- Filter panel is visible
+- Some types are checked and some are unchecked
+
+#### Steps
+
+1. **Select All**
+   - User clicks the "Select all" button above the Entities section
+   - All visible types in the list become checked
+   - Graph shows all elements and edges
+
+2. **Select None**
+   - User clicks the "Select none" button
+   - All types are unchecked
+   - Graph becomes empty (except for drill root if drill mode is active)
+   - Count badges show zero visible
+
+3. **Verify Relationship Types Bulk Controls**
+   - User clicks "Select all" in the Relationships section
+   - All relationship types become checked
+   - User clicks "Select none" in the Relationships section
+   - All relationship types become unchecked and edges disappear
+
+#### Edge Cases
+
+- **Drill mode active** — drill root remains visible when all types are deselected; counts show
+  visible over total where visible accounts for both filter and drill scope
+
+### SR-3.4: Changing filter settings updates the graph and table views accordingly
+
+#### Preconditions
+
+- Model is loaded with multiple element and relationship types
+- Graph displays all elements and relationships
+- All checkboxes are checked
+
+#### Steps
+
+1. **Filter an Element Type**
+   - User unchecks an element type (e.g., "Database") in the Entities filter
+   - All elements of that type disappear from the graph immediately
+   - Edges incident to those elements also disappear
+   - If table view is visible, its rows update to exclude the filtered type
+
+2. **Filter a Relationship Type**
    - User unchecks a relationship type (e.g., "Depends") in the Relationships filter
    - All edges of that type disappear, provided their endpoints are still visible
-   - Graph updates
-   - Edge count badges reflect the change
+   - Graph updates immediately
    - Note: Containment edges bypass relationship type filters and remain visible if their endpoints
      are visible
 
-5. **Select All / None**
-   - User clicks "Select all" button — all visible types in the list become checked
-   - Graph shows all elements and edges
-   - User clicks "Select none" — all types unchecked
-   - Graph becomes empty (except possibly a drill root if in drill mode)
-   - Count badges show zero visible
+3. **Re-enable a Type**
+   - User re-checks the previously unchecked type
+   - Elements and edges of that type reappear in the graph
+   - Graph, table (if visible), and count badges all update in sync with no visual flicker
 
-6. **URL Encoding**
-   - As user toggles filters, the URL updates automatically
-   - URL includes parameters for active element types and relationship types when not all are
-     visible
-   - User copies the URL and shares with colleague
+#### Edge Cases
 
-7. **Persistence Across Sessions**
-   - User refreshes the page
+- **Rapid filter changes** — each change applies immediately; performance adequate for typical
+  models
+
+### SR-3.5: Count badges show visible/total counts
+
+#### Preconditions
+
+- Model is loaded
+- Filter panel is visible with count badges shown
+- All types are active
+
+#### Steps
+
+1. **View Initial Count**
+   - User sees count badges showing total counts (single number when all are visible)
+   - Badges appear for both element types and relationship types
+
+2. **Filter to Reduce Visible Items**
+   - User unchecks one or more element types
+   - Count badges update immediately to show "visible / total" format
+   - Relationship counts also update to reflect reduced edge visibility
+
+3. **Verify Drill Mode Interaction**
+   - User activates drill mode
+   - Count badges update to reflect the intersection of element type filter and drill scope
+
+#### Edge Cases
+
+- **Drill mode active** — counts show visible over total where visible accounts for both filter and
+  drill scope
+
+### SR-3.6: Filter state persists to browser storage per model
+
+#### Preconditions
+
+- Model is loaded
+- User has previously changed filter settings (some types unchecked)
+- Browser storage is available
+
+#### Steps
+
+1. **Observe Current Filter State**
+   - User sees specific types unchecked in the filter panel
+   - Graph reflects the filtered state
+
+2. **Refresh the Page**
+   - User refreshes the browser
    - App loads and reads filter state from browser storage (isolated per model)
-   - Checkboxes restore to previous settings
-   - Graph reflects the same filtered view
+   - Checkboxes restore to the previous settings
+   - Graph reflects the same filtered view as before
 
-8. **Deep Link Override**
-   - User opens a shared link with filter parameters in the URL
-   - On startup with URL params, they override stored settings
-   - Filters are set to match the URL parameters
-   - Subsequent changes save to both URL and browser storage
+3. **Verify Model Isolation**
+   - User loads a different model
+   - Filter state is independent from the first model's saved state
+   - Each model's filter preferences are stored separately
 
-### Expected Results
+#### Edge Cases
 
-- Filtering is instantaneous
-- Search is instant after user stops typing
-- Graph, table (if visible), and count badges all update in sync
-- No visual flicker or intermediate states
-- Filter state persists to browser storage with model isolation
-- URL updates with active filter types when not all are visible
-- Shared link reproduces exact filter state
-- URL parameters take precedence over stored settings on initial load
-- Count badges accurately reflect visible count versus total model size
+- **Browser storage full or disabled** — filter state may not persist but application continues
+  without crashing
+- **Corrupted data in browser storage** — falls back to default state (all types visible)
 
-### Edge Cases
+### SR-3.7: URL parameters can encode active filter types for sharing
 
-- **Type with zero elements**
-  - Only types present in the model appear in the filter list
-  - Items with zero count are dimmed or hidden
+#### Preconditions
 
-- **Drill mode active**
-  - Counts show visible over total where visible accounts for both filter and drill scope
-  - Drill root remains visible regardless of element type filter
+- Model is loaded
+- Some element or relationship types are currently filtered out
 
-- **Many types (50+)**
-  - Search filter helps find specific types
-  - Scrolling remains manageable
+#### Steps
 
-- **URL parameter with type not in current model**
-  - Parameter is ignored; filter set may become empty resulting in blank view
+1. **Observe URL Update on Filter Change**
+   - User toggles a filter checkbox
+   - URL updates automatically to include parameters for the active element and relationship types
+   - URL parameters are present when not all types are visible
 
-- **Malformed URL parameters**
-  - Handled gracefully without errors
+2. **Share the URL**
+   - User copies the URL and shares it with a colleague
+   - Colleague opens the link in a new browser session
+   - Filters are set to match the URL parameters on load
 
-- **Browser storage full or disabled**
-  - Filter state may not persist but application continues without crashing
+3. **Verify URL Override of Stored State**
+   - Colleague had different stored filter preferences for the same model
+   - URL parameters take precedence over stored settings on initial load
+   - Subsequent filter changes save to both URL and browser storage
 
-- **Corrupted data in browser storage**
-  - Falls back to default state (all types visible)
+#### Edge Cases
 
-- **Rapid filter changes**
-  - Each change applies immediately; performance adequate for typical models
+- **URL parameter with type not in current model** — parameter is ignored; filter set may become
+  empty resulting in a blank view
+- **Malformed URL parameters** — handled gracefully without errors
 
 ## Business Rules
 
@@ -168,7 +282,6 @@ my filter choices remembered across sessions, and share views with specific filt
   visible.
 - Only types that are actively filtered out are omitted from the URL.
 - The order of types in the URL does not matter.
-- URL updates use a method that does not add entries to browser history.
 - Filter changes persist to both URL and browser storage independently.
 
 ## UI/UX

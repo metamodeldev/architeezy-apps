@@ -10,116 +10,286 @@ in detail, controlling the depth of the drill and being able to return to the fu
 
 ## Acceptance Criteria
 
-- SR-4.1: Drill mode can be activated from any node
-- SR-4.2: Drill bar shows selected node and exit option
-- SR-4.3: Selected node remains visible even if its type is filtered
-- SR-4.4: Graph shows nodes within configurable depth from selected node
-- SR-4.5: Only edges connecting visible nodes are shown
-- SR-4.6: Depth is adjustable within a defined range
-- SR-4.7: Exiting drill returns to full model view with current filters
-- SR-4.8: Drill mode respects active element and relationship type filters
-- SR-4.9: Count badges update to show visible/total considering drill scope and filters
-- SR-4.10: Drill state persists in URL for sharing
+- [SR-4.1](#sr-41-drill-mode-can-be-activated-from-any-node): Drill mode can be activated from any
+  node
+- [SR-4.2](#sr-42-drill-bar-shows-selected-node-and-exit-option): Drill bar shows selected node and
+  exit option
+- [SR-4.3](#sr-43-selected-node-remains-visible-even-if-its-type-is-filtered): Selected node remains
+  visible even if its type is filtered
+- [SR-4.4](#sr-44-graph-shows-nodes-within-configurable-depth-from-selected-node): Graph shows nodes
+  within configurable depth from selected node
+- [SR-4.5](#sr-45-only-edges-connecting-visible-nodes-are-shown): Only edges connecting visible
+  nodes are shown
+- [SR-4.6](#sr-46-depth-is-adjustable-within-a-defined-range): Depth is adjustable within a defined
+  range
+- [SR-4.7](#sr-47-exiting-drill-returns-to-full-model-view-with-current-filters): Exiting drill
+  returns to full model view with current filters
+- [SR-4.8](#sr-48-drill-mode-respects-active-element-and-relationship-type-filters): Drill mode
+  respects active element and relationship type filters
+- [SR-4.9](#sr-49-count-badges-update-to-show-visibletotal-considering-drill-scope-and-filters):
+  Count badges update to show visible/total considering drill scope and filters
+- [SR-4.10](#sr-410-drill-state-persists-in-url-for-sharing): Drill state persists in URL for
+  sharing
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-4.1: Drill mode can be activated from any node
+
+#### Preconditions
 
 - Model is loaded with graph displaying multiple nodes and relationships
 - User has identified a node of interest
+- No drill mode is currently active
 
-### Steps
+#### Steps
 
-1. **Enter Drill Mode**
-   - User double-clicks on a node of interest
-   - Drill bar appears showing a "Full model" or "Exit drill" button and the selected node name
-   - The selected node receives special visual highlighting
-   - Graph updates to show:
-     - The selected node (always visible, even if its type is normally filtered)
-     - Nodes within the current depth level (number of connection hops) from the selected node
-     - Edges connecting visible nodes, subject to relationship type filters
-   - The scope of visible nodes is calculated using a graph traversal algorithm
+1. **Double-click a node**
+   - The selected node receives special visual highlighting (border color or glow effect)
+   - A drill bar appears below the header
 
-2. **Adjust Drill Depth**
-   - Depth control becomes visible in the settings area
-   - The depth picker shows buttons for available depth levels (e.g., 1-5) with the current level
-     highlighted
-   - User selects a different depth level
-   - The traversal recalculates with the new depth
-   - Graph updates to show more or fewer nodes based on the new depth
-   - Count badges update to reflect the current visible count over total
-   - Edges are pruned according to the depth boundary
+2. **Observe the updated graph**
+   - Nodes within the default depth level from the selected node become visible
+   - Nodes outside that depth are hidden
+   - The selected node is always visible regardless of its element type filter
 
-3. **Apply Filters While in Drill**
-   - User toggles element or relationship type filters
-   - The drill scope recalculates, taking filters into account
-   - Nodes that no longer match type filters disappear
-   - Their neighbors may become unreachable and also be removed (transitive effect)
-   - Graph updates
-   - Count decreases accordingly
-   - The selected node remains visible regardless of type filter
+3. **Observe edges**
+   - Only edges connecting currently visible nodes are displayed
+   - Edges to hidden nodes disappear
 
-4. **Exit Drill Mode**
-   - User clicks the exit drill button on the drill bar
-   - Drill bar hides
-   - Drill state is cleared
-   - Graph restores to full model view (subject only to current element and relationship filters)
-   - All appropriate edges become visible again
-   - Count badges show counts without drill scope limitations
-   - The selected node loses special highlighting
-   - URL updates to remove drill parameters
+#### Edge Cases
 
-5. **Scope Calculation Logic**
-   - Traversal starts from the selected node
-   - Traversal follows edges of active relationship types and containment edges
-   - A node is added to the visible set if it is the selected node or if its element type is active
-   - Edges are shown when both endpoints are in the visible set and the endpoint depths are within
-     the drill depth
+- **Exit and immediately re-enter drill on same node** — drill activates correctly; depth resets to
+  default value
 
-### Expected Results
+### SR-4.2: Drill bar shows selected node and exit option
 
-- Drill mode activates quickly
-- Selected node is distinctly highlighted
-- Only expected nodes are visible based on traversal from the selected node
-- Counts update accurately as depth or filters change
-- Depth adjustment responds immediately
-- Filter changes propagate correctly through the drill scope calculation
-- Exit is instantaneous
-- No drill state remains after exiting
-- URL correctly represents drill state when active
+#### Preconditions
 
-### Edge Cases
+- Drill mode is active on a selected node
+- The drill bar is visible below the header
 
-- **Drill root's type is filtered out**
-  - The selected node remains visible as an exception to element type filters
-  - Edges from the selected node are subject to relationship type filters as usual
-  - The selected node is counted in the visible count
+#### Steps
 
-- **Filter makes drill root isolated**
-  - If the selected node's outgoing edges are all filtered out, only the selected node remains
-    visible
-  - This is acceptable — user has filtered out all connections
+1. **Inspect the drill bar**
+   - The drill bar displays the selected node's label
+   - A "Full model" or "Exit drill" button is present in the drill bar
 
-- **Large drill depth on large graph**
-  - Traversal may explore many nodes
-  - Performance should remain acceptable for typical models; may briefly affect responsiveness
+2. **Verify label accuracy**
+   - The node name shown matches the node that was double-clicked to enter drill mode
 
-- **Multi-component graph (disconnected sections)**
-  - Traversal only explores the component containing the selected node
-  - Other components remain hidden
-  - This is expected — drill provides focused exploration
+3. **Interact with the exit button**
+   - The exit button is clickable and accessible
 
-- **Cyclic graphs**
-  - Traversal uses a visited set to avoid infinite loops
-  - Cycles within the drill depth are all visible if reachable
+#### Edge Cases
 
-- **Exit while graph is updating**
-  - State cleanup should proceed normally
-  - No race conditions
+- **Node label is very long** — label truncates or wraps within the drill bar without breaking the
+  layout
 
-- **Exit and immediately re-enter drill on same node**
-  - This is allowed and works correctly
-  - Depth resets to default value
+### SR-4.3: Selected node remains visible even if its type is filtered
+
+#### Preconditions
+
+- Drill mode is active on a selected node
+- The element type of the selected node is currently toggled off in filters
+
+#### Steps
+
+1. **Observe the selected node**
+   - The selected node appears in the graph despite its element type being filtered out
+
+2. **Toggle the element type filter off**
+   - Other nodes of that type disappear from the graph
+   - The selected (drill root) node remains visible
+
+3. **Toggle the element type filter back on**
+   - Other nodes of that type reappear
+   - The selected node was already visible and continues to be highlighted
+
+#### Edge Cases
+
+- **Drill root's type is filtered out** — the selected node remains visible as an exception to
+  element type filters; edges from the selected node are still subject to relationship type filters;
+  the selected node is counted in the visible count
+- **Filter makes drill root isolated** — if all outgoing edges of the selected node are filtered
+  out, only the selected node remains visible; this is acceptable
+
+### SR-4.4: Graph shows nodes within configurable depth from selected node
+
+#### Preconditions
+
+- Drill mode is active
+- Default depth level is applied
+
+#### Steps
+
+1. **Observe initial drill scope**
+   - Nodes directly connected to the selected node (depth 1) are visible
+   - Nodes beyond the current depth are hidden
+
+2. **Increase the depth level**
+   - The graph expands to show nodes further from the selected node
+   - Newly reachable nodes appear in the graph
+
+3. **Decrease the depth level**
+   - Nodes that are now beyond the new depth limit disappear
+   - The graph contracts to the closer neighborhood
+
+#### Edge Cases
+
+- **Large drill depth on large graph** — traversal explores many nodes; performance remains
+  acceptable for typical models but may briefly affect responsiveness
+- **Multi-component graph (disconnected sections)** — traversal only explores the component
+  containing the selected node; other components remain hidden
+- **Cyclic graphs** — cycles within the drill depth are all visible if reachable; visited node
+  tracking prevents infinite loops
+
+### SR-4.5: Only edges connecting visible nodes are shown
+
+#### Preconditions
+
+- Drill mode is active with a set of visible nodes determined by depth and filters
+
+#### Steps
+
+1. **Observe edges in drill mode**
+   - Only edges where both endpoints are currently visible are displayed
+   - Edges to hidden nodes are not shown
+
+2. **Change depth to hide some nodes**
+   - Nodes that drop out of the visible set disappear
+   - Edges to those nodes also disappear immediately
+
+3. **Change depth to reveal more nodes**
+   - Newly visible nodes appear
+   - Edges connecting them to the rest of the visible set appear as well
+
+#### Edge Cases
+
+- **Relationship type filter active** — edges of filtered-out types are hidden even if both
+  endpoints are visible
+
+### SR-4.6: Depth is adjustable within a defined range
+
+#### Preconditions
+
+- Drill mode is active
+- Depth picker is visible in the settings area
+
+#### Steps
+
+1. **Inspect the depth picker**
+   - Buttons for available depth levels (e.g., 1–5) are displayed
+   - The current depth level is highlighted
+
+2. **Select a different depth level**
+   - The graph updates to reflect the new depth
+   - Count badges update to show the new visible/total counts
+
+3. **Attempt to go beyond the maximum depth**
+   - No option beyond the defined maximum is available
+   - The picker does not allow out-of-range selection
+
+#### Edge Cases
+
+- **Depth at minimum (1)** — only direct neighbors of the selected node are visible
+- **Depth at maximum (5)** — the widest neighborhood within the model is visible
+
+### SR-4.7: Exiting drill returns to full model view with current filters
+
+#### Preconditions
+
+- Drill mode is active
+- Some element and/or relationship type filters may be toggled on or off
+
+#### Steps
+
+1. **Click the exit drill button on the drill bar**
+   - The drill bar hides
+   - The selected node loses its special highlighting
+
+2. **Observe the restored graph**
+   - The full model becomes visible, subject only to the currently active filters
+   - All edges that were hidden by the drill scope reappear if their endpoints are visible
+
+3. **Inspect count badges**
+   - Count badges now reflect the full model counts without drill scope limitations
+
+#### Edge Cases
+
+- **Exit while graph is updating** — state cleanup proceeds normally with no visual artifacts
+- **Exit and immediately re-enter drill on same node** — this is allowed and works correctly; depth
+  resets to default
+
+### SR-4.8: Drill mode respects active element and relationship type filters
+
+#### Preconditions
+
+- Drill mode is active
+- At least one element or relationship type filter is toggled off
+
+#### Steps
+
+1. **Observe drill scope with filters applied**
+   - Nodes whose element types are filtered out do not appear in the drill scope (except the
+     selected node)
+   - Edges of filtered-out relationship types are not shown
+
+2. **Toggle an element type filter off while in drill mode**
+   - Nodes of that type disappear from the drill scope
+   - Nodes that were only reachable through those now-hidden nodes may also disappear
+
+3. **Toggle a relationship type filter off while in drill mode**
+   - Edges of that type disappear
+   - Nodes only reachable via those edges may also disappear from the drill scope
+
+#### Edge Cases
+
+- **All filters toggled off** — only the selected node remains visible (it is always shown)
+
+### SR-4.9: Count badges update to show visible/total considering drill scope and filters
+
+#### Preconditions
+
+- Drill mode is active
+- Count badges are visible in the UI
+
+#### Steps
+
+1. **Observe count badges on entering drill mode**
+   - Each count badge shows the number of visible elements over the total (e.g., "3/12")
+   - The visible count reflects the drill scope combined with active filters
+
+2. **Adjust drill depth**
+   - Count badges update immediately to reflect the new number of visible nodes
+
+3. **Toggle a filter while in drill mode**
+   - Count badges update to reflect the intersection of filter state and drill scope
+
+#### Edge Cases
+
+- **All nodes filtered out except selected node** — count badge shows "1/N"
+
+### SR-4.10: Drill state persists in URL for sharing
+
+#### Preconditions
+
+- Drill mode is active on a selected node with a specific depth
+
+#### Steps
+
+1. **Inspect the browser URL while in drill mode**
+   - The URL contains parameters representing the selected node and current depth
+
+2. **Copy and open the URL in a new browser tab**
+   - The application loads and enters drill mode on the same node at the same depth
+
+3. **Exit drill mode**
+   - The URL updates to remove the drill parameters
+
+#### Edge Cases
+
+- **URL contains drill state for a node that no longer exists in the model** — drill state is
+  ignored and full model view is shown
 
 ## Business Rules
 

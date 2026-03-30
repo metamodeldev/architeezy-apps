@@ -11,92 +11,167 @@
 
 ## Acceptance Criteria
 
-- SR-6.1: Theme switcher UI allows selection of dark, light, or "system" mode
-- SR-6.2: Theme preference persists across browser sessions
-- SR-6.3: All UI components respect the selected theme with consistent colors
-- SR-6.4: User can switch themes and see the change apply across the application
-- SR-6.5: Graph elements remain clearly visible in both themes
+- [SR-6.1](#sr-61-theme-switcher-ui-allows-selection-of-dark-light-or-system-mode): Theme switcher
+  UI allows selection of dark, light, or "system" mode
+- [SR-6.2](#sr-62-theme-preference-persists-across-browser-sessions): Theme preference persists
+  across browser sessions
+- [SR-6.3](#sr-63-all-ui-components-respect-the-selected-theme-with-consistent-colors): All UI
+  components respect the selected theme with consistent colors
+- [SR-6.4](#sr-64-user-can-switch-themes-and-see-the-change-apply-across-the-application): User can
+  switch themes and see the change apply across the application
+- [SR-6.5](#sr-65-graph-elements-remain-clearly-visible-in-both-themes): Graph elements remain
+  clearly visible in both themes
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-6.1: Theme switcher UI allows selection of dark, light, or "system" mode
 
-- User has the application loaded in a browser
-- The current theme is either the default or a previously saved preference
-- Page has fully rendered with current theme applied
+#### Preconditions
 
-### Steps
+- Application is loaded in a browser
+- Theme has been applied (either default or previously saved preference)
+- Theme switcher is accessible from the header or settings panel
 
-1. **Initial Theme Application**
-   - On app startup, check for stored theme preference
-   - If no preference stored, detect system theme preference (prefers-color-scheme)
-   - Apply selected theme to document root
-   - Render UI with theme-appropriate colors
+#### Steps
 
-2. **Theme Switch via UI**
-   - User opens theme selector from settings menu or header
-   - Available options displayed: Light, Dark, System
-   - Current selection is indicated as active/checked
-   - User selects a different theme
+1. **Open the Theme Switcher**
+   - User opens the theme selector from the settings menu or header
+   - Three options are displayed: Light, Dark, System
+   - The currently active option is visually indicated (e.g., checkmark or highlight)
 
-3. **Theme Application**
-   - Theme preference is saved immediately to browser storage
-   - Root element's data-theme attribute or CSS class is updated
-   - All CSS custom properties for colors are recalculated based on new theme
-   - Graph styles are refreshed to pick up theme changes
+2. **Select a Different Theme**
+   - User selects a theme option not currently active
+   - The selected option becomes visually indicated as active
+   - The theme applies immediately across the application
 
-4. **System Theme Response (if "System" selected)**
-   - Application listens for system theme change events (prefers-color-scheme)
-   - If system theme changes while app is running, theme updates automatically
-   - Graph is notified and refreshes styles accordingly
+3. **Select "System" Mode**
+   - User selects the "System" option
+   - The application defers to the operating system's color scheme preference
+   - The correct theme for the current OS setting is applied immediately
 
-5. **Graph Theme Update**
-   - Cytoscape graph styles reference CSS custom properties for theme-dependent colors
-   - When theme changes, an explicit style refresh is called to update graph colors
-   - Node colors, edge colors, background, and label styles adapt appropriately
+#### Edge Cases
 
-6. **Persistence**
-   - Theme selection is saved to browser storage with a namespaced key
-   - On next page load, stored theme is retrieved and applied before first render
-   - Theme appears consistent on page reload
+- **User changes theme rapidly multiple times** — only the final selection persists; no performance
+  degradation or flicker
 
-### Expected Results
+### SR-6.2: Theme preference persists across browser sessions
 
-- Theme changes apply instantly across all UI elements
-- No content flashes with wrong theme during transition
-- Graph maintains visual quality in both dark and light modes
-- All interactive elements (buttons, inputs, tables) have appropriate colors
-- Text remains readable with sufficient contrast in both themes
-- Theme persists across browser restarts and new tabs
-- "System" option correctly follows OS theme setting
+#### Preconditions
 
-### Edge Cases
+- Application is loaded
+- User has previously selected a non-default theme (e.g., Dark)
+- Browser storage is available
 
-- **Browser storage unavailable or full**
-  - Theme changes still work for current session
-  - Theme may not persist across reload; user sees warning or defaults to system
+#### Steps
 
-- **Corrupted theme value in storage**
-  - Falls back to default (system or light)
-  - Storage key is cleared or replaced with valid value
-  - No error shown to user
+1. **Select a Theme**
+   - User selects "Dark" from the theme switcher
+   - Theme applies immediately
+   - Preference is saved to browser storage
 
-- **Graph not yet initialized when theme changes**
-  - Theme preference still saved
-  - Graph correctly applies theme when it initializes later
+2. **Close and Reopen the Application**
+   - User closes the browser tab and reopens the application
+   - The previously selected theme is applied before the first render
+   - No flash of a different theme occurs on load
 
-- **User changes theme rapidly multiple times**
-  - Only final selection persists
-  - No performance degradation or flicker
-  - Theme value updates are debounced if necessary
+3. **Verify Persistence Across New Tabs**
+   - User opens the application in a new tab
+   - The saved theme preference is loaded and applied
 
-- **System theme change while in "System" mode**
-  - Application updates theme smoothly
-  - Graph theme refreshes correctly
+#### Edge Cases
 
-- **Multiple tabs with different themes**
-  - Each tab maintains independent theme state
-  - Changes in one tab do not affect others (storage event handling optional)
+- **Browser storage unavailable or full** — theme changes still work for the current session; theme
+  may not persist across reload; user sees warning or defaults to system
+- **Corrupted theme value in storage** — falls back to default (system or light); no error shown to
+  user
+- **Multiple tabs with different themes** — each tab maintains independent theme state; changes in
+  one tab do not affect others (storage event handling optional)
+
+### SR-6.3: All UI components respect the selected theme with consistent colors
+
+#### Preconditions
+
+- Application is loaded with a theme applied
+- Various UI components are visible: buttons, inputs, tables, panels, dialogs
+
+#### Steps
+
+1. **Switch to Dark Theme**
+   - User selects "Dark" from the theme switcher
+   - All UI components (buttons, inputs, tables, sidebar, header) update to dark-themed colors
+   - Text remains readable with sufficient contrast
+
+2. **Switch to Light Theme**
+   - User selects "Light" from the theme switcher
+   - All UI components update to light-themed colors
+   - Text remains readable with sufficient contrast
+
+3. **Verify Interactive Elements**
+   - User interacts with buttons, inputs, and dropdowns in both themes
+   - All interactive elements have appropriate colors in each theme
+   - No components retain colors from a previous theme
+
+#### Edge Cases
+
+- **Graph not yet initialized when theme changes** — theme preference is still saved; graph
+  correctly applies the theme when it initializes later
+
+### SR-6.4: User can switch themes and see the change apply across the application
+
+#### Preconditions
+
+- Application is loaded with all major views accessible
+- Current theme is "Light"
+
+#### Steps
+
+1. **Switch Theme**
+   - User selects "Dark" from the theme switcher
+   - Theme change applies instantly across the entire application
+   - No loading indicators appear during the transition
+
+2. **Verify No Flicker**
+   - The transition does not produce visual artifacts or content flashing
+   - Theme-switching does not cause any layout shifts or loading states
+
+3. **Switch Theme Again**
+   - User selects "Light" from the theme switcher
+   - Application returns to the light theme immediately
+   - All elements update consistently
+
+#### Edge Cases
+
+- **User changes theme rapidly multiple times** — only the final selection persists; no performance
+  degradation or flicker; theme value updates are debounced if necessary
+
+### SR-6.5: Graph elements remain clearly visible in both themes
+
+#### Preconditions
+
+- Application is loaded with a model containing nodes and edges
+- Graph view is active and elements are visible
+
+#### Steps
+
+1. **View Graph in Light Theme**
+   - User selects "Light" theme
+   - Graph node colors, edge colors, background, and labels are clearly visible
+   - Node and edge labels are readable against the light background
+
+2. **Switch to Dark Theme**
+   - User selects "Dark" theme
+   - Graph updates to use dark-theme-appropriate colors
+   - Node colors, edge colors, and labels remain clearly visible against the dark background
+
+3. **Verify System Theme Follows OS**
+   - User selects "System" mode
+   - Graph renders appropriately for the current OS color scheme
+   - If OS theme changes while the app is running, the graph updates automatically
+
+#### Edge Cases
+
+- **System theme change while in "System" mode** — application updates theme smoothly; graph theme
+  refreshes correctly
 
 ## Business Rules
 
@@ -107,14 +182,12 @@
 
 ### Storage Key Namespace
 
-- Theme preference stored under a namespaced key (e.g., `architeezy.theme`) in localStorage
+- Theme preference is stored under a namespaced key in browser storage
 - Key follows project standard for storage naming
 
 ### Graph Styling Integration
 
 - Graph CSS custom properties must be defined for both themes
-- Cytoscape stylesheet references these CSS variables
-- Theme change triggers explicit style refresh to pick up variable changes
 
 ## UI/UX
 
@@ -159,7 +232,7 @@ properties at style() time, not render time.
 
 Follow the project's `common/state-management.md` guidelines for storage operations:
 
-- Use namespaced keys
+- Use namespaced keys (e.g., `architeezy.theme`)
 - Wrap storage access with error handling
 - Debounce writes if appropriate
 - Handle browser-specific storage restrictions gracefully

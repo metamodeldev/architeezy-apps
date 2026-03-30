@@ -14,146 +14,267 @@ implemented. This document provides the planned specifications for a future deve
 
 ## Acceptance Criteria
 
-- SR-11.1: CSV export is accessible when the table view is active
-- SR-11.2: CSV export includes all currently visible rows
-- SR-11.3: CSV format uses standard formatting with proper escaping of special characters
-- SR-11.4: Image export is accessible when the graph view is active
-- SR-11.5: Image export supports both PNG and SVG formats
-- SR-11.6: Exported image faithfully reproduces the visible graph canvas, including any overlays
-  present on it
-- SR-11.7: Export provides progress feedback for large datasets
-- SR-11.8: Export respects current filters
+- [SR-11.1](#sr-111-csv-export-is-accessible-when-the-table-view-is-active): CSV export is
+  accessible when the table view is active
+- [SR-11.2](#sr-112-csv-export-includes-all-currently-visible-rows): CSV export includes all
+  currently visible rows
+- [SR-11.3](#sr-113-csv-format-uses-standard-formatting-with-proper-escaping-of-special-characters):
+  CSV format uses standard formatting with proper escaping of special characters
+- [SR-11.4](#sr-114-image-export-is-accessible-when-the-graph-view-is-active): Image export is
+  accessible when the graph view is active
+- [SR-11.5](#sr-115-image-export-supports-both-png-and-svg-formats): Image export supports both PNG
+  and SVG formats
+- [SR-11.6](#sr-116-exported-image-faithfully-reproduces-the-visible-graph-canvas-including-any-overlays-present-on-it):
+  Exported image faithfully reproduces the visible graph canvas, including any overlays present on
+  it
+- [SR-11.7](#sr-117-export-provides-progress-feedback-for-large-datasets): Export provides progress
+  feedback for large datasets
+- [SR-11.8](#sr-118-export-respects-current-filters): Export respects current filters
 
-## Scenario
+## Scenarios
 
-### CSV Export Scenario
+### SR-11.1: CSV export is accessible when the table view is active
+
+#### Preconditions
+
+- Table view is active and a model is loaded
+- The export button is visible in the table toolbar
+- At least some data is present in the table
+
+#### Steps
+
+1. **Locate the export button**
+   - User looks at the table toolbar
+   - An "Export" button (download icon or label) is visible in the toolbar
+
+2. **Open the export menu**
+   - User clicks the "Export" button
+   - A dropdown menu appears with the option "Export to CSV"
+
+3. **Confirm accessibility**
+   - The option is selectable via keyboard (Tab to button, Enter/Space to open, arrow keys to
+     navigate)
+   - The button has a descriptive label accessible to screen readers
+
+#### Edge Cases
+
+- **No model loaded** — export button is disabled; no dropdown appears.
+- **Export already in progress** — button is disabled until the current export completes.
+
+### SR-11.2: CSV export includes all currently visible rows
 
 #### Preconditions
 
 - Table view is active
 - Model is loaded with elements and/or relationships
-- Filters may be applied; table shows subset of data
+- Filters may be applied; the table shows a subset of data
 
 #### Steps
 
-1. User clicks the "Export" button in the table toolbar
-2. Dropdown menu appears with options: "Export to CSV"
-3. User selects "Export to CSV"
-4. A loading indicator appears (for large tables, >10,000 rows)
-5. Application collects data from the current table view:
-   - Visible rows only (respecting filters and search)
-   - All columns currently displayed (sort order preserved)
-   - For elements: name, type, documentation, properties
-   - For relationships: source, target, type, name, documentation
-6. Data is converted to CSV format:
-   - Header row with column names
-   - Data rows with values
-   - Special characters (quotes, commas, newlines) are escaped per RFC 4180
-   - UTF-8 encoding with BOM for Excel compatibility
-7. Browser triggers download via a temporary download element or Blob URL
-8. Filename is generated: `architeezy-{modelName}-elements-{timestamp}.csv`
-9. Toast notification appears: "CSV exported successfully"
-10. Loading indicator disappears
+1. **Apply filters to reduce visible rows**
+   - User applies type filters or a search term
+   - The table updates to show only matching rows
 
-#### Expected Results
+2. **Initiate CSV export**
+   - User clicks the "Export" button and selects "Export to CSV"
+   - Export process begins
 
-- CSV file downloads to user's default download folder
-- File can be opened in Excel, Google Sheets, or text editor
-- Only filtered/visible data is included
-- Column order matches the table's current display
-- Non-ASCII characters display correctly
-- Large exports complete within reasonable time (progress indicator shown)
+3. **Download and verify the file**
+   - The CSV file downloads to the user's default download folder
+   - Opening the file shows only the rows that were visible in the table at the time of export
+   - Column order matches the table's current display order
 
 #### Edge Cases
 
-- **Empty table (no visible rows after filters)**
-  - Export still produces a CSV with headers only
-  - Notification: "Exported 0 rows"
+- **Empty table (no visible rows after filters)** — export still produces a CSV with headers only;
+  notification reads "Exported 0 rows".
+- **Export while table is still loading/filtering** — export button is disabled until data is
+  stable, or the export is queued to run after filtering completes.
 
-- **Very large table (100,000+ rows)**
-  - May take several seconds; progress indicator shown
-  - Browser may warn about slow performance; acceptable
-  - Memory consumption: stream processing may be needed for extreme cases
-
-- **Special characters in data**
-  - Embedded commas, quotes, newlines properly escaped
-  - Example: `"He said, ""Hello"""` becomes quoted and doubled
-
-- **Unicode characters (emojis, non-Latin scripts)**
-  - UTF-8 with BOM ensures Excel compatibility
-  - Without BOM, some apps may misinterpret encoding
-
-- **Export while table is still loading/filtering**
-  - Disable export button until data stable
-  - Or queue export to run after filtering completes
-
-### Image Export Scenario
+### SR-11.3: CSV format uses standard formatting with proper escaping of special characters
 
 #### Preconditions
 
-- Graph view is active
-- Graph is fully rendered with nodes and edges
-- User may have zoomed, panned, or selected specific nodes
+- Table view is active with data that includes special characters (commas, quotes, newlines,
+  Unicode)
+- User initiates a CSV export
 
 #### Steps
 
-1. User clicks the "Export" button in the graph toolbar
-2. Dropdown menu appears with options: "Export as PNG", "Export as SVG"
-3. User selects desired format
-4. Loading indicator appears
-5. Application captures graph canvas:
-   - For PNG: Render to off-screen canvas at 2× resolution
-   - For SVG: Generate SVG markup from graph elements
-   - Capture includes visible nodes and edges within the viewport (or full graph, depending on
-     settings)
-6. For PNG:
-   - Create canvas element with scaled dimensions
-   - Render graph at high resolution
-   - Convert to Blob with image/png type
-7. For SVG:
-   - Generate SVG using graph library's export method
-   - Inline styles or include CSS stylesheet reference
-   - Ensure text labels are rendered as text elements (not converted to paths)
-8. Browser triggers download with appropriate extension (.png or .svg)
-9. Filename generated: `architeezy-{modelName}-graph-{timestamp}.{ext}`
-10. Toast: "Graph exported as PNG/SVG"
-11. Loading indicator disappears
+1. **Initiate export with special character data**
+   - User clicks "Export to CSV"
+   - Export process begins
 
-#### Expected Results
+2. **File downloads**
+   - The CSV file downloads successfully
+   - A toast notification confirms success
 
-- Image file downloads successfully
-- PNG is crisp, high-resolution (at least 2× screen resolution)
-- SVG is vector-based, scales without loss, editable in tools like Inkscape/Illustrator
-- Graph captures exactly what is visible in the viewport (current zoom/pan) unless "export all"
-  option exists
-- Node colors, shapes, edge styles match on-screen appearance
-- Text labels are readable and selectable (in SVG)
+3. **Open the file and verify formatting**
+   - The file opens correctly in Excel, Google Sheets, or a text editor
+   - Special characters (commas, quotes, newlines) are properly escaped
+   - Non-ASCII and Unicode characters display correctly
 
 #### Edge Cases
 
-- **Graph not fully rendered**
-  - Export disabled until graph layout completes
-  - Or show warning: "Graph still loading; export may be incomplete"
+- **Special characters in data** — embedded commas, quotes, and newlines are properly escaped per
+  RFC 4180; e.g., a field containing a comma is wrapped in double quotes.
+- **Unicode characters (emojis, non-Latin scripts)** — characters display correctly when the file is
+  opened in compatible applications.
+- **Very large table (100,000+ rows)** — may take several seconds; progress indicator is shown;
+  browser may warn about performance but export completes.
 
-- **Very large graph (10,000+ nodes)**
-  - PNG export may take time; show progress
-  - Memory usage may be high; consider tiling or simplifying for export
-  - SVG size may become huge (>10 MB); warn user or offer "visible only" option
+### SR-11.4: Image export is accessible when the graph view is active
 
-- **Graph with complex edge labels or overlapping nodes**
-  - Rendered image may show visual clutter (acceptable; what you see is what you get)
-  - Could offer "simplified" export mode with cleaner layout (future)
+#### Preconditions
 
-- **SVG text fonts not available on viewer**
-  - Use web-safe fonts or inline font-family
-  - Or convert text to paths (but loses editability)
+- Graph view is active and a model is loaded
+- The graph has finished rendering
+- The export button is visible in the graph toolbar
 
-- **SVG cross-origin image restrictions**
-  - Graph uses no external images (node icons); all are drawn shapes, so no CORS issues
+#### Steps
 
-- **Browser memory limits for large canvas**
-  - Export of huge PNG may fail due to canvas size limits
-  - Catch errors and show user-friendly message
+1. **Locate the export button**
+   - User looks at the graph toolbar
+   - An "Export" button is visible
+
+2. **Open the export menu**
+   - User clicks the "Export" button
+   - A dropdown menu appears with options: "Export as PNG" and "Export as SVG"
+
+3. **Confirm accessibility**
+   - Options are navigable via keyboard
+   - Buttons have descriptive labels accessible to screen readers
+
+#### Edge Cases
+
+- **Graph not fully rendered** — export button is disabled until graph layout completes, or a
+  warning is shown: "Graph still loading; export may be incomplete".
+- **No model loaded** — export button is disabled.
+
+### SR-11.5: Image export supports both PNG and SVG formats
+
+#### Preconditions
+
+- Graph view is active and fully rendered
+- User has opened the export dropdown
+
+#### Steps
+
+1. **Select PNG format**
+   - User selects "Export as PNG" from the dropdown
+   - A loading indicator appears
+   - A PNG file downloads with the appropriate filename and `.png` extension
+   - A toast notification confirms success
+
+2. **Select SVG format**
+   - User selects "Export as SVG" from the dropdown
+   - A loading indicator appears
+   - An SVG file downloads with the appropriate filename and `.svg` extension
+   - A toast notification confirms success
+
+3. **Verify file quality**
+   - The PNG opens as a high-resolution raster image
+   - The SVG opens as a scalable vector image, editable in tools like Inkscape or Illustrator
+
+#### Edge Cases
+
+- **Very large graph (10,000+ nodes)** — PNG export may take time; progress indicator is shown; SVG
+  file size may become very large (>10 MB) and the user may be warned.
+- **SVG text fonts not available on viewer** — web-safe fonts or inline font-family are used; text
+  remains as editable text elements.
+- **Browser memory limits for large canvas** — if PNG export fails due to canvas size limits, a
+  user-friendly error message is shown.
+
+### SR-11.6: Exported image faithfully reproduces the visible graph canvas, including any overlays present on it
+
+#### Preconditions
+
+- Graph view is active and fully rendered
+- The legend overlay is enabled and visible on the graph canvas
+- User initiates an image export (PNG or SVG)
+
+#### Steps
+
+1. **Initiate image export**
+   - User selects "Export as PNG" or "Export as SVG"
+   - A loading indicator appears
+
+2. **File downloads**
+   - The image file downloads
+   - A toast notification confirms success
+
+3. **Verify exported image contents**
+   - The exported image includes all nodes, edges, and labels across the entire graph — not just the
+     current viewport
+   - Node colors, shapes, and edge styles match the on-screen appearance
+   - The legend appears in the exported image at the same position it occupied on screen
+   - The legend appearance (colors, proportions, text) is consistent with the on-screen legend
+   - UI chrome (sidebar, header, tooltips, zoom controls, scrollbars) is absent from the export
+
+#### Edge Cases
+
+- **Legend extends beyond the graph bounding box** — exported image dimensions are expanded to
+  ensure the legend is fully visible and not clipped.
+- **Graph with complex edge labels or overlapping nodes** — rendered image may show visual clutter;
+  this is acceptable as the export faithfully represents the canvas state.
+- **SVG cross-origin image restrictions** — not applicable; all node icons are drawn shapes with no
+  external image dependencies.
+
+### SR-11.7: Export provides progress feedback for large datasets
+
+#### Preconditions
+
+- A large dataset is loaded (e.g., table with many thousands of rows, or graph with thousands of
+  nodes)
+- User initiates an export
+
+#### Steps
+
+1. **Initiate export**
+   - User clicks the appropriate export option
+   - A loading indicator appears within 100ms of starting
+
+2. **Monitor progress**
+   - For operations taking longer than 1 second, the progress indicator or spinner remains
+     continuously visible
+   - The UI remains responsive during processing
+
+3. **Export completes**
+   - The loading indicator disappears
+   - A toast notification confirms success or describes any failure
+
+#### Edge Cases
+
+- **Export of 50,000+ rows or 5,000+ nodes** — a warning dialog appears: "Exporting X rows. This may
+  take a while." with "Continue" and "Cancel" buttons.
+- **Export fails mid-operation** — loading indicator disappears; an actionable error message is
+  shown (e.g., "Graph too large to export as SVG; try PNG instead").
+
+### SR-11.8: Export respects current filters
+
+#### Preconditions
+
+- A model is loaded with filters applied (type filters, search, etc.)
+- The current view shows a filtered subset of data
+
+#### Steps
+
+1. **Verify filtered state**
+   - User confirms that the current view shows only filtered data
+   - The table or graph reflects the active filters
+
+2. **Initiate export**
+   - User initiates a CSV or image export
+
+3. **Verify exported content reflects filters**
+   - For CSV: the downloaded file contains only the rows visible in the filtered table
+   - For image: the downloaded image shows only the nodes and edges visible in the filtered graph
+     view
+
+#### Edge Cases
+
+- **All data filtered out** — CSV export produces headers only with "Exported 0 rows" notification;
+  image export may show an empty or minimal graph.
 
 ## Business Rules
 
@@ -170,10 +291,6 @@ implemented. This document provides the planned specifications for a future deve
 
 - Image export captures the **entire graph** — all visible nodes and edges regardless of the current
   pan/zoom state. Elements outside the visible viewport are included.
-- PNG export uses Cytoscape's built-in full-graph rasterizer (`full: true`). The canvas is sized to
-  the element bounding box, not the browser viewport.
-- SVG export uses graph (model) coordinates so all visible elements are included regardless of
-  pan/zoom. The SVG `viewBox` is computed from the bounding box of all visible nodes.
 - The exported image includes all nodes, edges, and labels.
 - Exported image includes:
   - Nodes with their shapes, colors, labels
@@ -189,10 +306,11 @@ implemented. This document provides the planned specifications for a future deve
 
 ### File Naming Conventions
 
-- CSV: `architeezy-{modelName}-elements-{YYYYMMDD-HHMM}.csv` or `-relationships-`
-- Image: `architeezy-{modelName}-graph-{YYYYMMDD-HHMM}.png` or `.svg`
+- CSV files use the model name and a timestamp component, with a type segment indicating elements or
+  relationships.
+- Image files use the model name and a timestamp component, with the appropriate extension.
 - Model name is sanitized (remove filesystem-invalid characters) for safe filename.
-- Timestamp uses local time in UTC format to avoid ambiguity.
+- Timestamp uses local time to avoid ambiguity.
 
 ### User Feedback
 
@@ -222,11 +340,8 @@ implemented. This document provides the planned specifications for a future deve
 - Exported image reproduces the full graph faithfully — all visible elements are present, not just
   those in the current viewport.
 - When the legend is included in an export, its appearance in the exported image must exactly match
-  the on-screen legend: same font sizes (section headers at 0.65 rem, rows at 0.75 rem), same
-  letter-spacing on section headers (0.05 em), same muted color for both section labels and type
-  names (`--text-muted`), same spacing between sections (6 px gap before the second section), and
-  same dot size (10 × 10 px circles). The legend is rendered at the position it occupies on screen
-  at the time of export.
+  the on-screen legend. The legend is rendered at the position it occupies on screen at the time of
+  export.
 
 ### Performance Expectations
 
@@ -277,20 +392,33 @@ headers.
 
 ### CSV Filename Convention
 
-Filename format follows the convention defined in Business Rules (File Naming Conventions section).
-The `{type}` component is either `elements` or `relationships` depending on the active table tab.
+Filename format: `architeezy-{modelName}-elements-{YYYYMMDD-HHMM}.csv` or `-relationships-`
+depending on the active table tab.
 
 ### PNG Export (Graph Library)
 
-PNG export uses the graph visualization library's built-in export method or manual canvas rendering.
-Exported PNG has sufficient resolution (at least 2× display size for clarity). Background color
-should match the current theme's background.
+PNG export uses Cytoscape's built-in full-graph rasterizer (`full: true`). The canvas is sized to
+the element bounding box, not the browser viewport, ensuring the entire graph is captured. Exported
+PNG has sufficient resolution (at least 2× display size for clarity). Background color should match
+the current theme's background.
 
 ### SVG Export (Graph Library)
 
-SVG export generates vector markup from graph elements. SVG export preserves vector quality for
-scaling and print. Text labels should remain as text elements for editability. Consider inline
-styles for standalone SVG files.
+SVG export uses graph (model) coordinates so all visible elements are included regardless of
+pan/zoom. The SVG `viewBox` is computed from the bounding box of all visible nodes. SVG export
+preserves vector quality for scaling and print. Text labels should remain as text elements for
+editability. Consider inline styles for standalone SVG files.
+
+### Legend Rendering in Exports
+
+When the legend overlay is included, it must be rendered at the same position it occupies on screen.
+The legend appearance must exactly match the on-screen version: section headers at 0.65 rem, rows at
+0.75 rem, letter-spacing on section headers at 0.05 em, muted color (`--text-muted`) for section
+labels and type names, 6 px gap before the second section, and 10 × 10 px circles for dots.
+
+### Image Filename Convention
+
+Filename format: `architeezy-{modelName}-graph-{YYYYMMDD-HHMM}.png` or `.svg`.
 
 ### Performance Considerations
 

@@ -14,151 +14,216 @@
 
 ## Acceptance Criteria
 
-- SR-10.1: Application works fully in anonymous mode without authentication
-- SR-10.2: A sign-in control is visible in the header when not authenticated
-- SR-10.3: User can initiate authentication from the header
-- SR-10.4: After successful authentication, the user's display name appears in the header with a
-  sign-out option
-- SR-10.5: Sign-out clears the authentication state and returns UI to anonymous state
-- SR-10.6: Sign-out does NOT clear unrelated persisted state
-- SR-10.7: If authentication fails or expires, the UI resets to anonymous state
+- [SR-10.1](#sr-101-application-works-fully-in-anonymous-mode-without-authentication): Application
+  works fully in anonymous mode without authentication
+- [SR-10.2](#sr-102-a-sign-in-control-is-visible-in-the-header-when-not-authenticated): A sign-in
+  control is visible in the header when not authenticated
+- [SR-10.3](#sr-103-user-can-initiate-authentication-from-the-header): User can initiate
+  authentication from the header
+- [SR-10.4](#sr-104-after-successful-authentication-the-users-display-name-appears-in-the-header-with-a-sign-out-option):
+  After successful authentication, the user's display name appears in the header with a sign-out
+  option
+- [SR-10.5](#sr-105-sign-out-clears-the-authentication-state-and-returns-ui-to-anonymous-state):
+  Sign-out clears the authentication state and returns UI to anonymous state
+- [SR-10.6](#sr-106-sign-out-does-not-clear-unrelated-persisted-state): Sign-out does NOT clear
+  unrelated persisted state
+- [SR-10.7](#sr-107-if-authentication-fails-or-expires-the-ui-resets-to-anonymous-state): If
+  authentication fails or expires, the UI resets to anonymous state
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-10.1: Application works fully in anonymous mode without authentication
+
+#### Preconditions
 
 - User has Architeezy Graph open in a browser
-- No authentication token is stored in memory (anonymous state)
-- A private model is available in the repository that requires authentication
+- No authentication session is active (anonymous state)
+- A mix of public and private models is available in the repository
 
-### Steps
+#### Steps
 
-1. **Anonymous Browsing**
-   - User sees the application header with a "Sign in" button on the far right
-   - User can browse public models, use graph and table views without restriction
-   - If user attempts to load a private model, it appears in the model selector but load attempt
-     returns 401
-   - Application shows error notification and continues in anonymous state
+1. **Browse the application without signing in**
+   - Graph view, table view, and all filtering controls are fully accessible
+   - No authentication prompt appears during normal use
 
-2. **Initiate Sign-In**
-   - User clicks the "Sign in" button in the header
-   - A popup window opens to the authentication endpoint URL
-   - Popup opens in a new window with appropriate size and position
-   - If popup is blocked, show an error message with a link to open in new tab manually
+2. **Navigate to a public model**
+   - The model loads and displays correctly
+   - All application features work as expected
 
-3. **Authenticate in Popup**
-   - User completes login flow in the popup (enter credentials, consent, etc.)
-   - Auth service redirects to success callback
-   - Auth service securely transmits tokens to the opener window using cross-origin messaging
-   - Popup closes itself
+3. **Attempt to load a private model**
+   - The model appears in the model selector
+   - Loading the model returns an authorization error
+   - An error notification is shown and the application remains in anonymous state
 
-4. **Receive Tokens in Opener**
-   - Main application window listens for secure cross-origin messaging events
-   - Validates event origin matches expected auth service domain
-   - Checks for the expected message type indicating successful authentication
-   - Extracts tokens from the message
-   - Stores token in memory (not in persistent storage)
-   - Closes popup reference if still open
+#### Edge Cases
 
-5. **Fetch User Profile**
-   - Immediately after storing token, application calls the user profile API endpoint
-   - Request includes authentication credentials in the headers
-   - On success, extracts display name from response
-   - On failure, shows warning and may proceed with placeholder name
+- **Browser reload while anonymous** — application starts in anonymous state; no sign-in prompt is
+  forced
 
-6. **Update UI to Authenticated State**
-   - Header changes: "Sign in" button disappears
-   - In its place, user avatar or name appears (e.g., "John Doe")
-   - "Sign out" button appears next to the name
-   - User can now load private models that previously returned 401
-   - Application may automatically refresh the model list to include private models
+### SR-10.2: A sign-in control is visible in the header when not authenticated
 
-7. **Authentication in Multiple Tabs**
-   - If user opens a second tab without token, it remains anonymous
-   - Tabs do not automatically share memory state
-   - User may need to sign-in separately in each tab (acceptable for initial version)
+#### Preconditions
 
-8. **Sign-Out**
-   - User clicks "Sign out" button in header
-   - Token is removed from memory
-   - Header updates: "Sign out" button disappears, "Sign in" reappears
-   - If current model is private and was loaded due to auth, it remains visible
-   - User can continue viewing current model but cannot load additional private models
+- User has Architeezy Graph open in a browser
+- No authentication session is active
+
+#### Steps
+
+1. **Observe the application header**
+   - A "Sign in" button is visible in the top-right corner of the header bar
+
+2. **Verify button accessibility**
+   - The "Sign in" button is reachable via keyboard navigation
+   - The button has a visible focus style
+
+3. **Confirm no authenticated controls are shown**
+   - No user name, avatar, or "Sign out" button is visible in the header
+
+#### Edge Cases
+
+- **Multiple tabs open in anonymous state** — each tab independently shows the "Sign in" button
+
+### SR-10.3: User can initiate authentication from the header
+
+#### Preconditions
+
+- User has Architeezy Graph open in a browser
+- No authentication session is active
+- The browser permits popup windows from the application origin
+
+#### Steps
+
+1. **Click the "Sign in" button in the header**
+   - A popup window opens to the authentication endpoint
+   - The popup is appropriately sized and positioned
+
+2. **Complete the login flow in the popup**
+   - User enters credentials and completes any consent steps in the popup
+   - The popup closes itself after successful authentication
+
+3. **Return to the main application window**
+   - The main window transitions to authenticated state (see SR-10.4)
+
+#### Edge Cases
+
+- **Popup blocked by browser** — an inline error message appears with instructions; a fallback link
+  lets the user open the auth flow in a new tab or the current tab
+
+### SR-10.4: After successful authentication, the user's display name appears in the header with a sign-out option
+
+#### Preconditions
+
+- User has completed the sign-in flow via the popup
+- Authentication was successful
+
+#### Steps
+
+1. **Observe the header after sign-in completes**
+   - The "Sign in" button disappears
+   - The user's display name (e.g., "John Doe") appears in its place
+   - A "Sign out" button is visible next to the display name
+
+2. **Verify access to private models**
+   - Private models that previously returned an authorization error can now be loaded successfully
+
+3. **Observe profile fallback**
+   - If the user profile could not be fetched, a placeholder name (e.g., "User") appears instead
+   - A warning notification is shown
+
+#### Edge Cases
+
+- **Profile fetch fails after successful token receipt** — user remains authenticated with a
+  placeholder name; a warning toast is shown; private model access is unaffected
+- **Multiple sign-in attempts** — only the latest authentication is active; the previous session is
+  discarded
+
+### SR-10.5: Sign-out clears the authentication state and returns UI to anonymous state
+
+#### Preconditions
+
+- User is currently authenticated
+- The "Sign out" button is visible in the header
+
+#### Steps
+
+1. **Click the "Sign out" button in the header**
+   - The authentication session is ended
+   - The "Sign out" button and user display name disappear from the header
+
+2. **Observe the header after sign-out**
+   - The "Sign in" button reappears in the top-right corner
+   - No user name or avatar is shown
+
+3. **Confirm sign-out notification**
    - A toast notification confirms "Signed out successfully"
+   - The page does not reload
 
-9. **Token Expiry During Session**
-   - User is working with an authenticated view
-   - Some API request returns 401 Unauthorized
-   - Central API client detects 401
-   - Token is cleared from memory immediately
-   - UI resets to anonymous state (header shows "Sign in")
-   - Notification appears: "Session expired. Please sign in again."
-   - Current model data stays visible but may become stale/incomplete
+#### Edge Cases
 
-### Expected Results
+- **Sign out while an API request is in flight** — the in-flight request may fail; the UI already
+  shows anonymous state; no additional sign-out action is needed
+- **Private model loaded, then user signs out** — the currently loaded model remains visible;
+  subsequent requests requiring authentication may fail; the user can continue viewing but cannot
+  load additional private models
 
-- Anonymous mode works identically to authenticated mode except for access to private resources
-- Sign-in flow is smooth and returns user to the app with proper UI state
-- User identity is clearly visible when authenticated
-- Sign-out is quick and does not disrupt the user's current work unnecessarily
-- Unauthorized requests are handled gracefully without confusing the user
-- All token handling complies with security principles (memory-only storage)
+### SR-10.6: Sign-out does NOT clear unrelated persisted state
 
-### Edge Cases
+#### Preconditions
 
-- **Popup blocked by browser**
-  - Detect that the popup failed to open
-  - Show inline message with instructions
-  - Provide fallback: link that opens auth flow in current tab (redirect flow)
+- User is authenticated
+- Active filters, theme, and current model view have been configured by the user
 
-- **Auth service origin mismatch**
-  - secure cross-origin messaging arrives from unexpected domain
-  - Ignore message; log warning in development
-  - Do not accept tokens from unknown sources
+#### Steps
 
-- **secure cross-origin messaging data malformed or missing token**
-  - Check required fields
-  - If missing, ignore message and close popup if possible
-  - Show error toast: "Authentication failed. Please try again."
+1. **Note the current application state**
+   - Observe which filters are active, the current theme, and the loaded model
 
-- **Token is null/empty**
-  - Reject and clear any existing state
-  - Notify user of authentication failure
+2. **Click "Sign out"**
+   - Authentication is cleared and the UI returns to anonymous state
 
-- **Profile fetch fails (token valid but profile endpoint error)**
-  - Continue in authenticated state with placeholder name (e.g., "User")
-  - Show warning toast: "Could not load profile"
-  - Token remains valid; user can still access protected resources
+3. **Verify non-auth state is preserved**
+   - Active filters remain as configured before sign-out
+   - Theme setting is unchanged
+   - The current model view (graph position, zoom) is preserved
 
-- **User signs out while an API request is in flight**
-  - Request continues but may fail with 401
-  - Upon 401, token already cleared, no additional action needed
-  - UI already shows anonymous state
+#### Edge Cases
 
-- **Multiple sign-in attempts**
-  - Only latest token is kept
-  - Previous token is discarded (race condition managed by overwriting)
+- **Cached private data after sign-out** — private data may optionally be cleared if security policy
+  demands, but non-authentication-related state is always preserved
 
-- **Private model loaded, then user signs out**
-  - Model remains visible (default behavior)
-  - Subsequent actions that require auth (e.g., refreshing data, searching) may fail
-  - Consider showing subtle indicator that content is read-only
+### SR-10.7: If authentication fails or expires, the UI resets to anonymous state
 
-- **Token leaked in browser console**
-  - Since token is in memory, it may be visible in debugger
-  - Document this risk: development tools can inspect memory; production builds minify/obfuscate
-  - Use short-lived tokens to mitigate
+#### Preconditions
 
-- **User leaves tab open overnight; token expires**
-  - Next API call that requires auth returns 401
-  - Application clears token and shows authentication prompt
-  - User's view state otherwise preserved
+- User is currently authenticated and working with a loaded model
+- The authentication session is about to expire or has already expired
 
-- **Browser reload/refresh**
-  - Token stored in memory is lost
-  - Application returns to anonymous state
-  - User sees "Sign in" button
-  - (Optional future enhancement: use refresh token in httpOnly cookie to restore session)
+#### Steps
+
+1. **An API request returns an authorization error**
+   - The application detects the failed authorization response
+
+2. **Observe the header**
+   - The user display name and "Sign out" button disappear
+   - The "Sign in" button reappears
+
+3. **Observe the notification**
+   - A notification appears: "Session expired. Please sign in again."
+   - The current model data stays visible but may become stale or incomplete
+
+#### Edge Cases
+
+- **Auth service origin mismatch during sign-in** — the authentication response from an unexpected
+  domain is ignored; no token is accepted; a warning is logged in development
+- **Malformed authentication response** — required fields are checked; if missing, the response is
+  ignored and the user sees an error toast: "Authentication failed. Please try again."
+- **Token is null or empty** — any existing authentication state is cleared; the user is notified of
+  authentication failure
+- **User leaves tab open overnight; token expires** — the next API call that requires authentication
+  returns an authorization error; the application clears the session and shows the sign-in prompt;
+  the user's view state is otherwise preserved
+- **Browser reload** — the authentication session is lost; the application starts in anonymous state
+  with the "Sign in" button shown
 
 ## Business Rules
 
@@ -172,29 +237,24 @@
 
 ### Token Storage Policy
 
-- Tokens MUST be stored in in-memory storage only (not persisted to browser storage).
+- Tokens MUST be stored in memory only and are not persisted to browser storage.
 - Tokens are cleared when the page is reloaded or the browser tab is closed.
-- Memory-only storage aligns with security requirements for token handling.
 - On page reload, token is lost; user must authenticate again.
 
 ### Token Transmission
 
-- All authenticated API requests include authentication credentials in request headers with Bearer
-  token.
-- API client must conditionally add the header only if token is present in memory.
+- All authenticated API requests include authentication credentials in request headers.
 - All requests must use HTTPS.
-- If using cookie-based sessions (alternative implementation), use appropriate credentials
-  configuration.
 
 ### Token Expiry
 
 - Backend controls token lifetime.
 - Frontend does not attempt token refresh automatically.
-- On 401 response: clear token, reset UI to anonymous, prompt user to sign in.
+- On authorization error response: clear token, reset UI to anonymous, prompt user to sign in.
 
 ### Sign-Out Behavior
 
-- Token is removed from memory.
+- Authentication session is ended.
 - UI updates to show anonymous state (sign-in button visible).
 - Persisted non-auth state (filters, theme, current model view) is NOT cleared.
 - Cached private data may optionally be cleared if security policy demands.
@@ -203,8 +263,7 @@
 ### Cross-Tab Auth
 
 - Initial version does not synchronize auth state across tabs.
-- Each tab maintains independent memory state.
-- Optional enhancement: use storage events or BroadcastChannel to propagate sign-out events.
+- Each tab maintains independent session state.
 
 ### User Identity Display
 

@@ -10,188 +10,293 @@ details, and customize the layout and containment visualization to understand th
 
 ## Acceptance Criteria
 
-- SR-2.1: All model elements render as nodes, all relationships as edges
-- SR-2.2: Colors are consistent based on element/relationship types
-- SR-2.3: User can switch between multiple layout algorithms
-- SR-2.4: User can zoom and pan to navigate the graph
-- SR-2.5: Single-click on a node selects it and shows details in the panel
-- SR-2.6: Double-click on a node triggers drill-down mode
-- SR-2.7: Containment relationships can be displayed as synthetic edges or nested compound nodes
-- SR-2.8: Selection, zoom, and pan state are preserved when switching between graph and table views
-- SR-2.9: User can show or hide the legend on the graph canvas
-- SR-2.10: User can refresh the current layout to re-apply the layout algorithm
+- [SR-2.1](#sr-21-all-model-elements-render-as-nodes-all-relationships-as-edges): All model elements
+  render as nodes, all relationships as edges
+- [SR-2.2](#sr-22-colors-are-consistent-based-on-elementrelationship-types): Colors are consistent
+  based on element/relationship types
+- [SR-2.3](#sr-23-user-can-switch-between-multiple-layout-algorithms): User can switch between
+  multiple layout algorithms
+- [SR-2.4](#sr-24-user-can-zoom-and-pan-to-navigate-the-graph): User can zoom and pan to navigate
+  the graph
+- [SR-2.5](#sr-25-single-click-on-a-node-selects-it-and-shows-details-in-the-panel): Single-click on
+  a node selects it and shows details in the panel
+- [SR-2.6](#sr-26-double-click-on-a-node-triggers-drill-down-mode): Double-click on a node triggers
+  drill-down mode
+- [SR-2.7](#sr-27-containment-relationships-can-be-displayed-as-synthetic-edges-or-nested-compound-nodes):
+  Containment relationships can be displayed as synthetic edges or nested compound nodes
+- [SR-2.8](#sr-28-selection-zoom-and-pan-state-are-preserved-when-switching-between-graph-and-table-views):
+  Selection, zoom, and pan state are preserved when switching between graph and table views
+- [SR-2.9](#sr-29-user-can-show-or-hide-the-legend-on-the-graph-canvas): User can show or hide the
+  legend on the graph canvas
+- [SR-2.10](#sr-210-user-can-refresh-the-current-layout-to-re-apply-the-layout-algorithm): User can
+  refresh the current layout to re-apply the layout algorithm
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-2.1: All model elements render as nodes, all relationships as edges
 
-- Model is successfully loaded with elements and relationships
-- Graph view is active and initialized
+#### Preconditions
 
-### Steps
+- Model is loaded with elements and relationships
+- Graph view is active
 
-1. **Initial Render**
-   - Graph canvas displays with nodes and edges arranged according to the current layout algorithm
-   - Each node shows a colored symbol or shape based on its element type
-   - Node labels display the element name (or type if name is unavailable)
-   - Edges connect nodes with arrowheads indicating direction
-   - Edge labels show relationship names when available
-   - Edge colors derive from relationship types
-   - Containment relationships appear according to the current containment mode
+#### Steps
 
-2. **Change Layout**
-   - User opens the graph settings
-   - A dropdown presents available layout algorithms
-   - The current layout is indicated as selected
-   - User chooses a different layout
-   - Graph restructures immediately using the selected algorithm
-   - Animations may be used for smoother transitions when performance allows
-   - After layout completes, any compound node labels are adjusted for readability
+1. **Open graph view**
+   - Canvas renders without errors
+   - A node appears for each model element
+   - An edge appears for each relationship whose both endpoints are present
 
-3. **Navigate Graph**
-   - User zooms using mouse wheel or zoom controls
-   - Zooming centers on the cursor position or control focus
-   - Zoom respects reasonable minimum and maximum limits
-   - User pans by dragging with an appropriate mouse button
-   - User clicks fit button to automatically scale the view to fit all visible nodes with padding
-   - All navigation operations respond quickly
+2. **Inspect node representations**
+   - Each node displays a symbol or shape reflecting its element type
+   - Node label shows the element name, falling back to the element type if name is absent
 
-4. **Refresh Layout**
-   - User has manually adjusted node positions by dragging
-   - User clicks the layout refresh button in the controls area
-   - The graph re-applies the current layout algorithm
-   - Nodes reposition according to the layout while preserving zoom and pan state
-   - Animations may smooth the transition if performance permits
+3. **Inspect edge representations**
+   - Each edge connects its source and target nodes with an arrowhead indicating direction
+   - Edge label shows the relationship name when available
 
-5. **Select Node**
-   - User single-clicks on a node
-   - After a brief delay to distinguish from double-click, the node is selected
-   - The selected node receives visual emphasis (highlighted border or glow)
-   - A details panel opens showing:
-     - Element name and type
-     - Documentation if available
-     - List of related elements with relationship types
-   - Clicking a related element in the details panel enters drill mode on that node
+#### Edge Cases
 
-6. **Enter Drill Mode**
-   - User double-clicks on a node
-   - Single-click action is cancelled
-   - Drill mode activates
-   - Drill bar appears with exit option and the selected node label
-   - Selected node receives special highlighting
-   - Graph updates to show the neighborhood around the selected node at the current drill depth
+- **Model with zero elements** — graph displays an empty canvas without errors
+- **Element with missing name** — node label falls back to the element type name
+- **Relationship with missing endpoint** — edge is not rendered
+- **Graph not yet rendered** — early interactions are ignored without errors
+- **Very large model** (many thousands of nodes) — initial rendering may take several seconds;
+  future improvements could include progressive rendering
 
-7. **Adjust Depth in Drill**
-   - Depth control becomes visible in settings
-   - Buttons for depth levels (1-5) show current selection
-   - User chooses a different depth
-   - Drill scope recalculates, showing more or fewer nodes
-   - Count badges update accordingly
+### SR-2.2: Colors are consistent based on element/relationship types
 
-8. **Switch Containment Mode**
-   - User opens settings and finds the containment mode option
-   - Choices may include: no special containment visualization, synthetic containment edges, or
-     nested compound nodes
-   - User selects a different mode
-   - Graph updates to reflect the chosen containment representation
-   - Switching between modes preserves current element visibility
-   - In compound mode, child nodes appear nested inside parent nodes
-   - Parent-child relationships are handled correctly when parents are filtered
+#### Preconditions
 
-9. **Deselect**
-   - User clicks on empty canvas area
+- Model is loaded with multiple element types and relationship types
+- Graph view is active
+
+#### Steps
+
+1. **Observe nodes across the graph**
+   - All nodes of the same element type display the same color
+   - Colors differ visibly between distinct element types
+
+2. **Observe edges across the graph**
+   - All edges of the same relationship type display the same color
+   - Colors differ visibly between distinct relationship types
+
+3. **Switch to a different layout and observe colors**
+   - Node and edge colors remain unchanged after the layout change
+   - Colors are independent of node position or graph structure
+
+### SR-2.3: User can switch between multiple layout algorithms
+
+#### Preconditions
+
+- Model is loaded
+- Graph view is active
+
+#### Steps
+
+1. **Open graph settings**
+   - A dropdown lists available layout algorithms
+   - The current algorithm is indicated as selected
+
+2. **Select a different layout algorithm**
+   - Graph immediately begins restructuring using the selected algorithm
+   - Animations smooth the transition when the node count allows
+
+3. **Wait for the layout to complete**
+   - Nodes settle into their new positions
+   - Compound node labels adjust for readability within their containers
+
+#### Edge Cases
+
+- **Layout switching during another layout** — new layout applies on top; temporary flicker is
+  acceptable for the initial implementation
+- **Large graph** (many nodes) — animations are disabled for performance; layout still completes
+
+### SR-2.4: User can zoom and pan to navigate the graph
+
+#### Preconditions
+
+- Model is loaded
+- Graph view is active and displaying nodes
+
+#### Steps
+
+1. **Scroll the mouse wheel over the canvas**
+   - Graph zooms in or out centered on the cursor position
+   - Zoom does not exceed the minimum or maximum limit
+
+2. **Drag with the middle mouse button**
+   - Canvas pans in the drag direction
+   - Motion feels responsive
+
+3. **Click the fit button**
+   - Graph scales and centers to show all visible nodes with padding
+
+### SR-2.5: Single-click on a node selects it and shows details in the panel
+
+#### Preconditions
+
+- Model is loaded with at least two related elements
+- Graph view is active
+
+#### Steps
+
+1. **Single-click a node**
+   - After a brief delay, the node is selected
+   - The node receives visual emphasis (highlighted border or glow)
+
+2. **Observe the details panel**
+   - Panel opens showing element name and type
+   - Documentation is shown if available
+   - A list of related elements with their relationship types is shown
+
+3. **Click a related element in the details panel**
+   - Drill mode activates on that node
+   - The graph narrows to that node's neighborhood
+
+4. **Click an empty area of the canvas**
    - Selection clears
-   - Details panel returns to initial placeholder state
+   - Details panel returns to its placeholder state
 
-10. **Navigate from Table**
+#### Edge Cases
 
-- While in table view, user clicks a row
-- View switches to graph
-- The corresponding node is centered with smooth animation
-- The node is selected
+- **Rapid clicking** — single-click delay prevents interference; double-click reliably cancels the
+  single-click action
 
-1. **Toggle Legend**
-   - User opens graph settings and enables the "Legend" toggle
-   - A legend shape appears on the graph canvas listing all visible element types followed by all
-     visible relationship types
-   - Each entry shows a color circle matching the type's color in the graph and filter panel,
-     followed by the type name
-   - User drags the legend to a more convenient position on the canvas
-   - User hides a relationship type using the filter panel
-   - The legend updates to no longer show that relationship type
-   - User disables the "Legend" toggle in settings
+### SR-2.6: Double-click on a node triggers drill-down mode
+
+#### Preconditions
+
+- Model is loaded with connected elements
+- Graph view is active
+
+#### Steps
+
+1. **Double-click a node**
+   - Single-click action is cancelled before it fires
+   - Drill mode activates immediately
+
+2. **Observe the drill UI**
+   - Drill bar appears showing the selected node label and an exit option
+   - The drill root node receives distinctive highlighting
+   - Graph narrows to the node's neighborhood at the current depth
+
+3. **Change the drill depth in settings**
+   - Depth buttons (1–5) reflect the new selection
+   - Drill scope recalculates to include more or fewer nodes
+   - Count badges update to reflect the new scope
+
+#### Edge Cases
+
+- **Rapid clicking** — double-click reliably cancels the single-click action
+
+### SR-2.7: Containment relationships can be displayed as synthetic edges or nested compound nodes
+
+#### Preconditions
+
+- Model is loaded with elements that have parent-child containment relationships
+- Graph view is active
+
+#### Steps
+
+1. **Open containment mode settings**
+   - Three options are shown: none, synthetic edges, compound nodes
+   - The current mode is indicated as selected
+
+2. **Switch to synthetic edge mode**
+   - Graph updates to represent containment as edges with diamond markers
+   - Current element visibility is preserved during the switch
+
+3. **Switch to compound node mode**
+   - Child nodes appear nested inside their parent nodes on the canvas
+   - Current element visibility is preserved during the switch
+
+4. **Switch back to no containment mode**
+   - Graph returns to a flat representation without any containment visualization
+
+#### Edge Cases
+
+- **Circular parent references** — handled gracefully without infinite loops
+- **Child without parent in graph** (compound mode) — child remains visible as a top-level node if
+  its parent is filtered out
+- **Deep nesting** (multiple levels) — nested compound nodes display correctly; labels may wrap
+
+### SR-2.8: Selection, zoom, and pan state are preserved when switching between graph and table views
+
+#### Preconditions
+
+- Model is loaded
+- Both graph and table views are available
+
+#### Steps
+
+1. **Set a zoom level and pan position in the graph view**
+   - Canvas reflects the applied zoom and pan offset
+
+2. **Select a node in the graph view**
+   - The node is highlighted; details panel opens
+
+3. **Switch to table view**
+   - Table view loads; graph is no longer visible
+
+4. **Click a row in the table**
+   - View switches back to the graph
+   - The clicked row's node is selected and centered on screen
+   - Zoom and pan match the state from step 1
+
+### SR-2.9: User can show or hide the legend on the graph canvas
+
+#### Preconditions
+
+- Model is loaded with multiple element and relationship types
+- Graph view is active
+
+#### Steps
+
+1. **Enable the Legend toggle in settings**
+   - A legend shape appears on the canvas
+   - The legend lists all visible element types, then all visible relationship types
+   - Each entry shows a color circle matching the type's color in the filter panel
+
+2. **Drag the legend to a new position**
+   - Legend moves to the chosen position and stays there
+
+3. **Hide a relationship type using the filter panel**
+   - The legend removes that type's entry automatically
+
+4. **Disable the Legend toggle**
    - The legend disappears from the canvas
 
-### Expected Results
+#### Edge Cases
 
-- All model elements appear as nodes in the graph
-- All relationships with both endpoints present are rendered as edges
-- Colors are consistent and deterministic for each type
-- Labels are readable and properly positioned
-- Layout algorithm arranges nodes meaningfully
-- Layout switching completes within a reasonable time
-- Node and edge positions transition smoothly during layout changes
-- Navigation operations feel responsive
-- Zoom respects established limits
-- Single-click selection is reliable
-- Details panel shows accurate information
-- Double-click successfully triggers drill mode
-- Containment visualization renders correctly according to selected mode
-- No layout glitches occur when switching modes
-- Legend is visible on the canvas when enabled and absent when disabled
-- Legend content reflects only types that are currently visible in the graph
-- Legend can be freely repositioned by dragging
-- Layout refresh button re-applies the current layout algorithm correctly
-- Refresh operation maintains current zoom and pan state
+- **Legend enabled with all types filtered out** — legend is shown but contains no entries
+- **Legend enabled with only one type visible** — legend shows a single entry
 
-### Edge Cases
+### SR-2.10: User can refresh the current layout to re-apply the layout algorithm
 
-- **Model with zero elements**
-  - Graph displays empty canvas without errors
+#### Preconditions
 
-- **Element with missing name**
-  - Falls back to displaying the element type name
+- Model is loaded
+- Graph view is active
+- User has manually repositioned nodes by dragging
 
-- **Relationship with missing endpoint**
-  - Edge is not rendered
+#### Steps
 
-- **Circular parent references** (containment)
-  - Handled gracefully without infinite loops
+1. **Note the current zoom level and pan position**
+   - Current zoom and pan serve as the baseline for verification after refresh
 
-- **Child without parent in graph** (compound mode)
-  - Child node remains visible as top-level if its parent is filtered out
+2. **Click the layout refresh button**
+   - The graph re-applies the current layout algorithm
+   - Nodes reposition according to the algorithm's arrangement
+   - Animations smooth the transition if the node count allows
 
-- **Deep nesting** (multiple levels)
-  - Nested compound nodes display correctly; labels may require text wrapping
+3. **Verify zoom and pan state**
+   - Zoom level and pan position are unchanged from step 1
 
-- **Layout switching during another layout**
-  - Previous layout continues briefly; new layout applies on top, which may cause temporary flicker
-  - This is acceptable for initial implementation
+#### Edge Cases
 
-- **Large graph** (many nodes)
-  - Animation may be disabled for performance
-  - Layout completes without smooth transitions but faster
-
-- **Rapid clicking**
-  - Single-click delay prevents multiple rapid selections
-  - Double-click reliably cancels single-click timer
-
-- **Legend enabled with all types filtered out**
-  - Legend is shown but displays no entries
-
-- **Legend enabled with only one type visible**
-  - Legend shows a single entry
-
-- **Graph not yet rendered**
-  - Early interactions are ignored without errors
-
-- **Very large model** (many thousands of nodes)
-  - Initial rendering may take several seconds
-  - Future improvements could include progressive rendering
-
-- **Refresh during layout computation**
-  - Refresh request is ignored until current layout completes
-  - Or: Refresh cancels current layout and starts a new one (implementation choice)
+- **Refresh during layout computation** — request is ignored until the current layout completes, or
+  cancels it and starts a new one (implementation choice)
 
 ## Business Rules
 
@@ -212,45 +317,36 @@ details, and customize the layout and containment visualization to understand th
 - When visible, the legend lists all element types that have at least one visible node, followed by
   all relationship types that have at least one visible edge, in the order they appear in the filter
   panel.
-- Each entry is preceded by a filled color circle using the same color as the corresponding type in
-  the graph and filter panel.
-- The legend is rendered as a shape directly on the graph canvas, so it can be dragged and is
-  captured in image exports.
-- The legend updates automatically whenever the set of visible types changes due to filter
-  adjustments.
-- The legend's position on the canvas persists across sessions (stored as JSON in localStorage).
-- When the persisted position would place the legend outside the canvas, the legend is clamped to
-  stay within the canvas bounds with a minimum 5 px margin on every side. The same clamping applies
-  after each drag operation and automatically whenever the canvas changes size (e.g., window resize
-  or sidebar toggle). Position adjustments caused by canvas resize are not persisted — the saved
-  position reflects the user's last drag and is re-evaluated against the actual canvas size on each
-  load and resize.
-- Legend visibility preference persists across sessions (stored as `true` / `false` in
-  localStorage).
+- Each entry is preceded by a color indicator matching the type's color in the graph and filter
+  panel.
+- The legend can be repositioned by dragging and is included in image exports.
+- The legend updates automatically whenever the set of visible types changes.
+- The legend's position persists across sessions. When the persisted position would place the legend
+  outside the canvas, the position is clamped to keep the legend within the canvas bounds. Clamping
+  also applies after each drag and whenever the canvas is resized.
+- Position adjustments caused by canvas resize are not persisted — the saved position reflects the
+  user's last drag and is re-evaluated on each load and resize.
+- Legend visibility preference persists across sessions.
 
 ### Layout Switching
 
-- Multiple layout algorithms are available, each with characteristics suitable for different model
-  structures.
+- Multiple layout algorithms are available, each suited to different model structures.
 - Layout selection triggers immediate application of the new layout.
-- The current layout preference is stored in memory for the session.
-- A manual refresh option may be available to re-apply the current layout.
+- The current layout algorithm selection persists for the session.
 
 ### Navigation
 
-- Zoom changes by a consistent factor per increment.
-- Minimum and maximum zoom levels are enforced.
-- Fit-to-view scales to show all visible nodes with appropriate padding.
-- Mouse wheel zooms centered at cursor position.
-- Middle mouse button or equivalent pans the view.
+- Zoom has minimum and maximum limits.
+- Zoom increments are consistent and predictable.
+- Fit-to-view scales the canvas to show all visible nodes with appropriate padding.
 
 ### Selection and Details
 
-- Double-click cancels single-click timer and enters drill mode.
-- Details panel shows comprehensive information about the selected element.
-- Related elements are discovered through graph connections.
-- Clicking a related element in the details panel enters drill mode on that node.
-- Clicking empty canvas clears the selection.
+- Single-clicking a node selects it and shows its details in the panel.
+- Double-click triggers drill mode; any pending single-click action is cancelled.
+- Details panel shows the selected element's name, type, documentation, and related elements.
+- Clicking a related element in the details panel triggers drill mode on that node.
+- Clicking the empty canvas clears the selection.
 
 ## UI/UX
 
@@ -279,10 +375,11 @@ details, and customize the layout and containment visualization to understand th
 - Containment mode selector in settings shows available options with icons.
 - Zoom controls positioned for easy access (typically bottom-right corner): zoom in, zoom out,
   fit-to-view.
-- Layout refresh button positioned immediately after fit button
+- Mouse wheel zooms the canvas centered on the cursor position.
+- Middle mouse button (or equivalent) pans the canvas.
+- Layout refresh button positioned immediately after fit button.
 - Download diagram button positioned after layout refresh, with a format selector (PNG, SVG)
-  displayed to its left
-- See also: [Data Export](../export.md) for full specification of the diagram download functionality
+  displayed to its left.
 
 ### Legend
 
@@ -293,6 +390,7 @@ details, and customize the layout and containment visualization to understand th
 - Each row shows a small filled circle in the type's color (identical in style to the color
   indicators in the filter panel) followed by the type name.
 - The legend is draggable; a grab cursor indicates it can be repositioned.
+- When clamped to the canvas boundary, a minimum margin of 5 px is maintained on all sides.
 - The legend does not interfere with graph navigation controls or the sidebar.
 
 ### Responsiveness and Smoothness
@@ -301,8 +399,7 @@ details, and customize the layout and containment visualization to understand th
 - Navigation (zoom, pan) uses smooth animated transitions.
 - Single-click selection has a delay of ~150-200ms to distinguish from double-click.
 - Zoom factor is ~1.3× per step.
-- Animations are enabled for graphs with fewer than 400 visible nodes; disabled for larger graphs to
-  maintain performance.
+- Animations may be disabled for very large graphs to maintain responsiveness.
 - All navigation operations should feel responsive and quick.
 
 ## Technical Notes
@@ -345,8 +442,8 @@ node count is within performance thresholds. The current layout preference persi
   are defined in the UI/UX section.
 - **Labels**: Display element name, falling back to type if name missing; text wraps to stay within
   node bounds. Font sizes are specified in the UI/UX section.
-- **Colors**: Deterministic based on element type - each type gets a consistent color using hash of
-  type name (saturation and lightness fixed; only hue varies)
+- **Colors**: Deterministic based on element type — each type gets a consistent color using a hash
+  of the type name (saturation and lightness fixed; only hue varies)
 
 ### Edge Styling
 
@@ -366,9 +463,9 @@ Three modes represent parent-child relationships:
 - **edge**: Synthetic containment edges with diamond markers
 - **compound**: Child nodes visually nested inside parent nodes (compound nodes)
 
-The containment mode preference is stored per session. Switching modes rebuilds the graph with new
-configuration. In compound mode, child nodes remain visible as top-level if their parent is filtered
-out.
+The containment mode preference persists across sessions. Switching modes rebuilds the graph with
+the new configuration. In compound mode, child nodes remain visible as top-level if their parent is
+filtered out.
 
 ### Interaction Handling
 
@@ -376,7 +473,7 @@ Event listeners handle taps, double-clicks, wheel events, and drag operations:
 
 - **Single-click**: After a short delay to distinguish from double-click; selects node and shows
   details panel. Exact delay is specified in UI/UX.
-- **Double-click**: Cancels single-click timer; triggers drill mode expansion.
+- **Double-click**: Cancels single-click action; triggers drill mode expansion.
 - **Background click**: Deselects all nodes, closes details panel.
 - **Zoom**: By a consistent factor per step; minimum and maximum limits enforced; centered at cursor
   for mouse wheel. Specific zoom parameters are defined in UI/UX.
@@ -393,39 +490,35 @@ Visibility of nodes and edges is controlled based on active element and relation
   - Either source or target node is hidden
 - **Containment edge exception**: Containment edges remain visible even when the parent node is
   filtered, to maintain structural context
-- Changes apply immediately; no need to rebuild graph
+- Changes apply immediately without rebuilding the graph structure
 
 ### Performance Considerations
 
-- **Animation threshold**: Animations enabled for graphs with < 400 visible nodes; disabled for
-  larger graphs
+- **Animation threshold**: Animations enabled for graphs with fewer than 400 visible nodes; disabled
+  for larger graphs to maintain performance
 - Layout computation is synchronous and may block the main thread for large graphs
-- Visibility filtering uses the library's built-in `display` property for efficiency (no element
-  removal)
+- Visibility filtering avoids element removal; nodes and edges are shown or hidden using the graph
+  library's display mechanism, preserving graph structure
 - For very large graphs (>1000 nodes), consider progressive loading or Web Worker optimizations
 
 ### State Persistence
 
 - Zoom level and pan position are preserved across view switches
 - Current layout preference persists for the session
-- Containment mode preference persists across sessions via localStorage
+- Containment mode preference and legend position persist across sessions via localStorage
 
 ### Theme Integration
 
 Graph styles reference CSS custom properties for colors that need to support theming. When the theme
 changes, the graph library does not automatically refresh styles. An explicit refresh is required to
-pick up changed CSS variable values - this is needed for canvas background, edge label backgrounds
+pick up changed CSS variable values — this is needed for canvas background, edge label backgrounds
 (knockout effect), and other theme-dependent styles.
 
 ### Layout Refresh
 
-- The layout refresh button re-applies the currently selected layout algorithm without changing the
-  selection
-- This is useful when the user has made manual adjustments (node dragging) and wants to return to
-  the automated layout
-- The refresh operation uses the same layout algorithm with the same configuration parameters as
-  initially applied
-- The refresh may include smooth animations if the node count is below the performance threshold
+- The layout refresh operation re-applies the currently selected algorithm with the same
+  configuration, without changing the selection
+- Refresh may include smooth animations if the node count is below the animation threshold
 
 ### Legend Implementation
 

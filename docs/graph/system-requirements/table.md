@@ -11,132 +11,240 @@ and drill state.
 
 ## Acceptance Criteria
 
-- SR-5.1: View switching controls allow toggling between Graph and Table views
-- SR-5.2: Table has separate tabs for Elements and Relationships
-- SR-5.3: Table includes search functionality and row count statistics
-- SR-5.4: Columns are sortable
-- SR-5.5: Row clicks select corresponding nodes in the graph
-- SR-5.6: Switching views preserves graph state (zoom, pan, and selection) and table scroll position
-- SR-5.7: Table respects active filters and drill mode scope
+- [SR-5.1](#sr-51-view-switching-controls-allow-toggling-between-graph-and-table-views): View
+  switching controls allow toggling between Graph and Table views
+- [SR-5.2](#sr-52-table-has-separate-tabs-for-elements-and-relationships): Table has separate tabs
+  for Elements and Relationships
+- [SR-5.3](#sr-53-table-includes-search-functionality-and-row-count-statistics): Table includes
+  search functionality and row count statistics
+- [SR-5.4](#sr-54-columns-are-sortable): Columns are sortable
+- [SR-5.5](#sr-55-row-clicks-select-corresponding-nodes-in-the-graph): Row clicks select
+  corresponding nodes in the graph
+- [SR-5.6](#sr-56-switching-views-preserves-graph-state-zoom-pan-and-selection-and-table-scroll-position):
+  Switching views preserves graph state (zoom, pan, and selection) and table scroll position
+- [SR-5.7](#sr-57-table-respects-active-filters-and-drill-mode-scope): Table respects active filters
+  and drill mode scope
 
-## Scenario
+## Scenarios
 
-### Preconditions
+### SR-5.1: View switching controls allow toggling between Graph and Table views
+
+#### Preconditions
 
 - Model is loaded
 - Graph view is currently active
+- View switcher buttons ("Graph" and "Table") are visible in the header
 
-### Steps
+#### Steps
 
 1. **Switch to Table View**
    - User clicks the "Table" button in the view switcher
    - The active button changes from "Graph" to "Table"
    - Graph is hidden and table view becomes visible
    - Default active table tab is "Elements"
-   - Search input is cleared
-   - Sort is reset (no column initially sorted)
+   - Search input is cleared and sort is reset
 
-2. **Elements Table Renders**
-   - Table headers display column names (e.g., Name, Type, Documentation)
-   - Table body populates with rows for elements matching:
-     - Element type is in the active element types
-     - Element is within the current drill scope if drill mode is active
-   - Count badge shows visible rows over total elements, or just the count if all are visible
-   - Rows initially appear in data insertion order
+2. **Switch Back to Graph**
+   - User clicks the "Graph" button in the view switcher
+   - Table hides and graph becomes visible
+   - Graph state is restored exactly as it was before switching
 
-3. **Sort Table**
-   - User clicks a column header (e.g., "Type")
-   - The column indicates sorted state with a visual indicator (up or down arrow)
-   - Table re-sorts in ascending order based on the column values
-   - Clicking the same header again toggles to descending order
-   - Further clicking may return to unsorted (or typically cycles between ascending/descending)
+3. **Verify Switching is Instantaneous**
+   - User toggles between views repeatedly
+   - Each switch is immediate with no loading delay
+   - No data or state is lost when switching views
 
-4. **Search Table**
-   - User enters text in the search input
-   - Table filters in real-time
-   - Rows are included where any searchable field (name, type, namespace, etc.) contains the search
-     text (case-insensitive)
-   - Count updates to show matching rows over total
-   - Current sort order is preserved for the filtered results
+#### Edge Cases
 
-5. **Switch to Relationships Tab**
+- **Switch before model loaded** — tabs are present but table may show empty or placeholder content;
+  acceptable for initial version
+
+### SR-5.2: Table has separate tabs for Elements and Relationships
+
+#### Preconditions
+
+- Model is loaded with both elements and relationships
+- Table view is active
+
+#### Steps
+
+1. **View Elements Tab**
+   - User sees "Elements" tab active by default
+   - Table headers display element-specific columns (e.g., Name, Type, Documentation)
+   - Table body populates with rows for all visible elements
+   - Active tab is clearly indicated
+
+2. **Switch to Relationships Tab**
    - User clicks the "Relationships" tab
-   - Active tab indicator switches
+   - Active tab indicator switches to "Relationships"
    - Headers change to show relationship-specific columns (e.g., Source, Relationship Type, Target,
      Relationship Name)
    - Search input clears
-   - Table populates with relationships where:
-     - Relationship type is active
-     - Both source and target element types are active
-     - If drill mode is active, both endpoints are within the drill scope
-   - Count badge updates for relationships
+   - Table populates with visible relationships
 
-6. **Navigate from Table Row to Graph**
-   - User on the Elements tab clicks a row for a specific element
+3. **Switch Back to Elements Tab**
+   - User clicks the "Elements" tab
+   - Active tab indicator returns to "Elements"
+   - Elements content is rendered fresh with cleared search
+
+#### Edge Cases
+
+- **Rapid tab switching** — each switch clears search and re-renders table; performance may be
+  impacted with large tables
+
+### SR-5.3: Table includes search functionality and row count statistics
+
+#### Preconditions
+
+- Model is loaded with multiple elements of varying types
+- Table view is active on the Elements tab
+
+#### Steps
+
+1. **View Initial Count**
+   - User sees a count badge in the table toolbar
+   - Badge shows a single number when all rows are visible, or "visible / total" when filtered
+   - Count accurately reflects current table content relative to total model size
+
+2. **Enter Search Text**
+   - User types text into the search input
+   - Table filters in real-time as the user types
+   - Rows are included where any searchable field (name, type, namespace, etc.) contains the search
+     text (case-insensitive)
+   - Count badge updates to show matching rows over total
+
+3. **Clear Search**
+   - User clears the search input
+   - All rows matching other active filters are restored
+   - Count badge returns to the pre-search value
+
+#### Edge Cases
+
+- **Empty search results** — table body shows no rows; count shows "0 / total"; acceptable behavior
+- **Special characters in cell text** — search matches raw data correctly; rendering handles
+  characters safely
+
+### SR-5.4: Columns are sortable
+
+#### Preconditions
+
+- Model is loaded with multiple elements
+- Table view is active and populated with rows
+- No column is currently sorted
+
+#### Steps
+
+1. **Sort Ascending**
+   - User clicks a column header (e.g., "Type")
+   - The column header shows an ascending sort indicator (up arrow)
+   - Table rows re-order in ascending order based on that column's values
+
+2. **Sort Descending**
+   - User clicks the same column header again
+   - The sort indicator changes to descending (down arrow)
+   - Table rows re-order in descending order
+
+3. **Sort a Different Column**
+   - User clicks a different column header (e.g., "Name")
+   - The previous sort indicator clears
+   - The new column shows the ascending sort indicator
+   - Rows re-order by the new column
+
+#### Edge Cases
+
+- **Large table** — sorting responds quickly; noticeable pause possible with very many rows
+
+### SR-5.5: Row clicks select corresponding nodes in the graph
+
+#### Preconditions
+
+- Model is loaded
+- Table view is active on the Elements tab
+- At least one element row is visible
+
+#### Steps
+
+1. **Click a Row**
+   - User clicks a row for a specific element
    - The application switches to Graph view
-   - The graph is prepared
-   - The corresponding node is centered in the view with smooth animation
-   - The node is selected and shown in the details panel
 
-7. **Return to Graph**
+2. **Node is Centered**
+   - The corresponding node is centered in the viewport with smooth animation
+   - Zoom level is adjusted to a level suitable for detail viewing
+
+3. **Node is Selected**
+   - The node is selected
+   - The details panel shows the selected node's information
+
+#### Edge Cases
+
+- **Row click for node not in current graph view** — if a row exists in the table, the node should
+  be present in the graph (table and graph respect same filters); if node lookup fails, the action
+  silently fails and may log a warning
+- **Rapid double-clicks in table** — multiple animations could queue; acceptable for initial
+  version; debouncing could improve experience
+
+### SR-5.6: Switching views preserves graph state (zoom, pan, and selection) and table scroll position
+
+#### Preconditions
+
+- Model is loaded
+- User has navigated the graph (zoomed in, panned, and selected a node)
+- User has scrolled the table to a non-default position
+
+#### Steps
+
+1. **Switch from Graph to Table**
+   - User clicks the "Table" button
+   - Table view becomes active
+   - Graph state (zoom level, pan position, selected node) is retained in memory
+
+2. **Scroll the Table**
+   - User scrolls the table to a specific row
+   - Table scroll position changes
+
+3. **Switch Back to Graph**
    - User clicks the "Graph" button
-   - Table hides, Graph shows
-   - Graph state is preserved (same zoom, pan, and selection as before switching)
+   - Graph view becomes active
+   - Zoom, pan, and selection are exactly as left before switching
+   - No state is lost or reset
 
-### Expected Results
+#### Edge Cases
 
-- View switching is instantaneous
-- No data or state is lost when switching views
-- Active tab is clearly indicated
-- Table scroll position is preserved when switching views
-- Row click reliably switches to graph and focuses the node
-- Animation is smooth
-- Node is found and centered even if it was outside the viewport
-- Count badge accurately reflects current table content relative to total model size
-- Sorting responds quickly
-- Search filtering is responsive
-- Combined filter state (element types, relationship types, drill scope, search) correctly
-  determines table content
+- **Switch before model loaded** — no graph state to preserve; behaves as initial load
 
-### Edge Cases
+### SR-5.7: Table respects active filters and drill mode scope
 
-- **Switch before model loaded**
-  - Tabs are present but table may show empty or placeholder content
-  - This is acceptable for initial version
+#### Preconditions
 
-- **Rapid tab switching**
-  - Each switch clears search and re-renders table
-  - Performance may be impacted with large tables; debouncing could be considered
+- Model is loaded with multiple element types and relationship types
+- At least one element type is currently filtered out
+- Table view is active
 
-- **Row click for node not in current graph view**
-  - If a row exists in the table, the node should be present in the graph (table and graph respect
-    same filters)
-  - If node lookup fails, the action silently fails; could log a warning for debugging
+#### Steps
 
-- **Large table** (many rows)
-  - Rendering all rows may cause noticeable UI pause
-  - Current approach renders all filtered rows at once
-  - Future versions may implement virtual scrolling for better performance with large datasets
+1. **Observe Filtered Elements Table**
+   - User sees the Elements table
+   - Only elements whose type is in the active element types appear as rows
+   - Count badge reflects the filtered visible count versus total elements in the model
 
-- **Counting logic**
-  - Elements: visible count equals rows after applying active element types and drill scope; total
-    equals all elements in the model
-  - Relationships: visible count equals rows after applying active relationship types, endpoint
-    element type filters, drill scope, and search; total equals all relationships in the model
-  - Format shows "N" when all are visible, or "M / N" when some are filtered
+2. **Observe Filtered Relationships Table**
+   - User switches to the Relationships tab
+   - Only relationships where the type is active and both endpoint element types are active appear
+     as rows
+   - Count badge reflects the filtered visible count versus total relationships
 
-- **Empty search results**
-  - Table body shows no rows
-  - Count shows "0 / total"
-  - This is acceptable
+3. **Observe Drill Mode Scope**
+   - User activates drill mode on a node (if not already active)
+   - Table rows are further restricted to elements within the drill scope
+   - Count badge updates accordingly
 
-- **Special characters in cell text**
-  - Proper escaping prevents security issues
-  - Search matches the raw data, not rendered HTML
+#### Edge Cases
 
-- **Rapid double-clicks in table**
-  - Multiple animations could queue
-  - Acceptable for initial version; debouncing could improve experience
+- **Counting logic** — elements: visible count equals rows after applying active element types and
+  drill scope; relationships: visible count equals rows after applying active relationship types,
+  endpoint element type filters, drill scope, and search; format shows "N" when all are visible, or
+  "M / N" when some are filtered
 
 ## Business Rules
 
@@ -147,8 +255,6 @@ and drill state.
 - Switching to table clears search input and resets sort.
 - Clicking a table row triggers graph view activation and focuses the corresponding node.
 - Focus animation smoothly centers the node with a zoom level suitable for detail viewing.
-- Table rendering populates the entire table body in a single operation for simplicity in the
-  initial version.
 - The active view can be encoded in the URL for sharing.
 
 ### Elements Table
