@@ -146,12 +146,19 @@
     <!-- ── BODY ─────────────────────────────────────────────────── -->
     <div class="body">
       <aside id="graph-sidebar">
-        <button id="sidebar-collapse-btn" class="sidebar-toggle" title="Hide sidebar">‹</button>
+        <button
+          id="sidebar-collapse-btn"
+          class="sidebar-toggle"
+          title="Hide sidebar"
+          aria-expanded="true"
+        >
+          ‹
+        </button>
 
         <div class="sidebar-scroll">
           <div class="sidebar-section">
             <div class="sidebar-header">
-              <button class="sidebar-toggle-btn" data-section="sec-elem">
+              <button class="sidebar-toggle-btn" data-section="sec-elem" aria-expanded="true">
                 <span class="sidebar-header-title" data-i18n="sectionElements">Entities</span>
                 <span class="sidebar-count-badge" id="badge-elem"></span>
                 <span class="toggle-icon" id="icon-sec-elem">▼</span>
@@ -193,7 +200,7 @@
 
           <div class="sidebar-section">
             <div class="sidebar-header">
-              <button class="sidebar-toggle-btn" data-section="sec-rel">
+              <button class="sidebar-toggle-btn" data-section="sec-rel" aria-expanded="true">
                 <span class="sidebar-header-title" data-i18n="sectionRelations">Relationships</span>
                 <span class="sidebar-count-badge" id="badge-rel"></span>
                 <span class="toggle-icon" id="icon-sec-rel">▼</span>
@@ -235,7 +242,7 @@
 
           <div class="sidebar-section">
             <div class="sidebar-header">
-              <button class="sidebar-toggle-btn" data-section="sec-detail">
+              <button class="sidebar-toggle-btn" data-section="sec-detail" aria-expanded="true">
                 <span class="sidebar-header-title" data-i18n="sectionDetail">Details</span>
                 <span class="toggle-icon" id="icon-sec-detail">▼</span>
               </button>
@@ -249,50 +256,50 @@
 
           <div class="sidebar-section">
             <div class="sidebar-header">
-              <button class="sidebar-toggle-btn" data-section="sec-settings">
+              <button class="sidebar-toggle-btn" data-section="sec-settings" aria-expanded="true">
                 <span class="sidebar-header-title" data-i18n="sectionSettings">Settings</span>
                 <span class="toggle-icon" id="icon-sec-settings">▼</span>
               </button>
             </div>
             <div class="sidebar-content" id="sec-settings">
               <div class="settings-row">
-                <span class="settings-label" data-i18n="settingsLayout">Layout</span>
-                <div class="settings-row-controls">
-                  <select class="ctrl sidebar-ctrl" id="layout-select">
-                    <option value="fcose" selected>fCoSE</option>
-                    <option value="dagre">Dagre</option>
-                    <option value="cose">CoSE</option>
-                    <option value="breadthfirst">Breadthfirst</option>
-                    <option value="grid">Grid</option>
-                    <option value="circle">Circle</option>
-                  </select>
-                </div>
+                <label class="settings-label" for="layout-select" data-i18n="settingsLayout"
+                  >Layout</label
+                >
+                <select class="ctrl sidebar-ctrl" id="layout-select">
+                  <option value="fcose" selected>fCoSE</option>
+                  <option value="dagre">Dagre</option>
+                  <option value="cose">CoSE</option>
+                  <option value="breadthfirst">Breadthfirst</option>
+                  <option value="grid">Grid</option>
+                  <option value="circle">Circle</option>
+                </select>
               </div>
               <div class="settings-row">
-                <span class="settings-label" data-i18n="settingsNesting">Nesting</span>
-                <div class="settings-row-controls">
-                  <select class="ctrl sidebar-ctrl" id="containment-select">
-                    <option value="none" data-i18n="cnNone">none</option>
-                    <option value="edge" data-i18n="cnEdge">edges ◆</option>
-                    <option value="compound" data-i18n="cnCompound">shapes ⬚</option>
-                  </select>
-                </div>
+                <label class="settings-label" for="containment-select" data-i18n="settingsNesting"
+                  >Nesting</label
+                >
+                <select class="ctrl sidebar-ctrl" id="containment-select">
+                  <option value="none" data-i18n="cnNone">none</option>
+                  <option value="edge" data-i18n="cnEdge">edges ◆</option>
+                  <option value="compound" data-i18n="cnCompound">shapes ⬚</option>
+                </select>
               </div>
               <div class="settings-row hidden" id="settings-depth-row">
                 <span class="settings-label" data-i18n="settingsDepth">Link depth</span>
                 <div class="depth-picker" id="depth-picker"></div>
               </div>
               <div class="settings-row">
-                <span class="settings-label" data-i18n="settingsLegend">Legend</span>
-                <div class="settings-row-controls">
-                  <input type="checkbox" id="legend-toggle" />
-                </div>
+                <label class="settings-label" for="legend-toggle" data-i18n="settingsLegend"
+                  >Legend</label
+                >
+                <input type="checkbox" id="legend-toggle" class="sidebar-ctrl" />
               </div>
               <div class="settings-row">
-                <span class="settings-label" data-i18n="settingsTooltips">Tooltips</span>
-                <div class="settings-row-controls">
-                  <input type="checkbox" id="tooltips-toggle" />
-                </div>
+                <label class="settings-label" for="tooltips-toggle" data-i18n="settingsTooltips"
+                  >Tooltips</label
+                >
+                <input type="checkbox" id="tooltips-toggle" class="sidebar-ctrl" />
               </div>
             </div>
           </div>

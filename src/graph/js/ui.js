@@ -60,7 +60,13 @@ export function hideToast() {
  * @param {string} id - The `id` attribute of the section element to toggle.
  */
 export function toggleSection(id) {
-  const collapsed = document.getElementById(id).classList.toggle('collapsed');
+  const section = document.getElementById(id);
+  const collapsed = section.classList.toggle('collapsed');
+  // Update button's aria-expanded attribute
+  const toggleBtn = document.querySelector(`.sidebar-toggle-btn[data-section="${id}"]`);
+  if (toggleBtn) {
+    toggleBtn.setAttribute('aria-expanded', !collapsed);
+  }
   const icon = document.getElementById(`icon-${id}`);
   if (icon) {
     icon.classList.toggle('rotated', collapsed);
@@ -80,6 +86,7 @@ export function toggleSidebar() {
   const collapsed = sidebar.classList.toggle('collapsed');
   btn.textContent = collapsed ? '›' : '‹';
   btn.title = collapsed ? 'Show sidebar' : 'Hide sidebar';
+  btn.setAttribute('aria-expanded', !collapsed);
   // Persist sidebar collapsed state
   try {
     localStorage.setItem('architeezyGraphSidebarCollapsed', collapsed);
@@ -101,10 +108,12 @@ export function restoreSidebarState() {
       sidebar.classList.add('collapsed');
       btn.textContent = '›';
       btn.title = 'Show sidebar';
+      btn.setAttribute('aria-expanded', 'false');
     } else {
       sidebar.classList.remove('collapsed');
       btn.textContent = '‹';
       btn.title = 'Hide sidebar';
+      btn.setAttribute('aria-expanded', 'true');
     }
   } catch {
     // Storage unavailable — default to expanded
@@ -113,6 +122,7 @@ export function restoreSidebarState() {
     sidebar.classList.remove('collapsed');
     btn.textContent = '‹';
     btn.title = 'Hide sidebar';
+    btn.setAttribute('aria-expanded', 'true');
   }
 }
 
@@ -125,24 +135,35 @@ export function restorePanelStates() {
       const collapsed = stored === 'true';
       const section = document.getElementById(id);
       const icon = document.getElementById(`icon-${id}`);
+      const toggleBtn = document.querySelector(`.sidebar-toggle-btn[data-section="${id}"]`);
       if (collapsed) {
         section.classList.add('collapsed');
         if (icon) {
           icon.classList.add('rotated');
+        }
+        if (toggleBtn) {
+          toggleBtn.setAttribute('aria-expanded', 'false');
         }
       } else {
         section.classList.remove('collapsed');
         if (icon) {
           icon.classList.remove('rotated');
         }
+        if (toggleBtn) {
+          toggleBtn.setAttribute('aria-expanded', 'true');
+        }
       }
     } catch {
       // Default to expanded
       const section = document.getElementById(id);
       const icon = document.getElementById(`icon-${id}`);
+      const toggleBtn = document.querySelector(`.sidebar-toggle-btn[data-section="${id}"]`);
       section.classList.remove('collapsed');
       if (icon) {
         icon.classList.remove('rotated');
+      }
+      if (toggleBtn) {
+        toggleBtn.setAttribute('aria-expanded', 'true');
       }
     }
   }

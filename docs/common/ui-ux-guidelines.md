@@ -100,8 +100,18 @@ types, etc.):
 
 - Sidebar sections must be independently collapsible
 - Section headers are interactive buttons with `aria-expanded` attribute
-- Collapsed content hidden using `display: none` (removes from tab order)
-- Smooth animation (~300ms) for transitions
+- **Collapsed content must use CSS transitions for smooth animation** (never `display: none`):
+  - Use `max-height: 0`, `opacity: 0`, `padding: 0`, and `visibility: hidden` for collapsed state
+  - Use `max-height: [sufficiently-large-value]`, `opacity: 1`, `padding: [normal]`, and
+    `visibility: visible` for expanded state
+  - Set `overflow: hidden` to contain content during animation
+  - Transition properties defined on the base element (not in `:hover`/`.collapsed`):
+    - `max-height` 0.2s cubic-bezier(0.4, 0, 0.2, 1)
+    - `opacity` 0.15s ease
+    - `padding` 0.15s ease
+  - **Important**: `visibility` should NOT be transitioned — it changes instantly at start/end to
+    ensure immediate response and proper accessibility
+- Smooth but responsive animation (total ~200ms) for transitions
 - State within sections (form inputs, scroll position) preserved when collapsed
 - Badge counters continue updating while section is collapsed
 
@@ -201,7 +211,98 @@ types, etc.):
   browsers
 - Never remove default browser focus outline without providing equally visible replacement
 
-#### Keyboard Activation
+#### Form Labels & Controls
+
+##### Label-Input Association
+
+All form controls must have proper label association:
+
+- **Checkboxes & Radio Buttons**: Wrap inside `<label>` OR use `for` attribute on label pointing to
+  input `id`
+- **Text Inputs & Selects**: Use `<label for="input-id">` linked to input/select `id`
+- **Clickable area**: The entire label text should activate the control when clicked
+- **Accessibility**: Proper association ensures screen readers announce the control correctly
+- **Critical in**: Sidebar settings, filter controls, modal forms, preference dialogs
+
+**Correct pattern for checkboxes:**
+
+```html
+<!-- Pattern 1: Input wrapped by label (simplest, recommended) -->
+<label class="filter-item">
+  <input type="checkbox" />
+  Option text
+</label>
+
+<!-- Pattern 2: Label with for attribute (used in sidebar settings) -->
+<div class="settings-row">
+  <label class="settings-label" for="legend-toggle">Legend</label>
+  <input type="checkbox" id="legend-toggle" />
+</div>
+```
+
+**Incorrect pattern (label not clickable):**
+
+```html
+<span class="settings-label">Legend</span> <input type="checkbox" id="legend-toggle" />
+```
+
+This pattern is especially critical in:
+
+- Sidebar settings panels
+- Filter controls
+- Modal forms
+- Preference dialogs
+
+##### Interactive Label Styling
+
+Clickable labels (and other interactive elements) must provide clear visual feedback:
+
+**Required CSS:**
+
+- `cursor: pointer` - indicates element is clickable
+- `user-select: none` - prevents accidental text selection and context menu
+- `-webkit-user-select: none` - Safari support
+- `-moz-user-select: none` - Firefox support (if needed)
+
+**Rationale:**
+
+- Prevents confusing text highlighting during clicks
+- Stops unwanted browser context menus on long-press/right-click
+- Provides consistent interaction model across all controls
+
+**Apply to:**
+
+- All `<label>` elements associated with form controls
+- Checkbox/radio button labels (both wrapped and `for` patterns)
+- Filter list items (`.filter-item`, `.bl-drop-item`)
+- Settings labels (`.settings-label`)
+- Interactive headers and section toggles (`.sidebar-toggle-btn`)
+- Table headers (`th` with sorting)
+- Toggle switches and custom controls
+
+**Example CSS:**
+
+```css
+.filter-item,
+.settings-label,
+.bl-drop-item,
+.sidebar-toggle-btn,
+th {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none; /* Safari */
+}
+```
+
+**Incorrect (missing styles):**
+
+```css
+label {
+  /* missing cursor and user-select */
+}
+```
+
+### Keyboard Activation
 
 - Buttons: `Enter` or `Space`
 - Checkboxes: `Space` toggles
@@ -273,13 +374,15 @@ repetitive navigation elements, jumping directly to the main content area. The s
 
 ## Animation Standards
 
-- **Transitions**: 0.2s ease for UI elements (sidebar, buttons, toggles)
-- **Layout changes**: ~300ms for accordion panels, sidebars
+- **UI element transitions** (buttons, toggles, section accordions): 0.15–0.2s ease
+- **Layout changes** (sidebar width, modal appearance): ~200ms with appropriate easing
 - **Heavy content**: Consider disabling complex animations for large content sets (1000+ items) for
   performance
-- **Easing**: Use `ease` or `cubic-bezier`; avoid linear
+- **Easing**: Use `cubic-bezier(0.4, 0, 0.2, 1)` for smooth motion, or `ease` for simple
+  transitions; avoid linear
 - **No autoplay**: All animations user-initiated only; respect `prefers-reduced-motion`
-- When `prefers-reduced-motion` is set, disable or significantly reduce animations
+- When `prefers-reduced-motion` is set, disable or significantly reduce animations (especially
+  height/width transitions)
 
 ## Testing Requirements
 

@@ -47,12 +47,13 @@ select.sidebar-ctrl {
   color: var(--text-muted);
   flex-shrink: 0;
   width: 100px;
+  cursor: pointer;
+  user-select: none;
 }
 
-.settings-row-controls {
-  display: flex;
+/* Controls (checkbox, select) directly in settings-row */
+.settings-row > .sidebar-ctrl {
   flex: 1;
-  gap: 4px;
   min-width: 0;
 }
 
@@ -185,21 +186,18 @@ select.sidebar-ctrl {
   overflow: hidden;
   max-height: 2400px;
   opacity: 1;
+  visibility: visible;
   transition:
-    max-height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.25s ease;
+    max-height 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.15s ease,
+    padding 0.15s ease;
 }
 
 .sidebar-content.collapsed {
   max-height: 0;
   opacity: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  display: none;
-  transition:
-    max-height 0.26s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.2s ease,
-    padding 0s 0.26s;
+  padding: 0;
+  visibility: hidden;
 }
 
 .sidebar-detail-content {
@@ -246,6 +244,7 @@ select.sidebar-ctrl {
   font-size: 0.78rem;
   padding: 2px 0;
   cursor: pointer;
+  user-select: none;
   transition: opacity 0.15s;
 }
 
