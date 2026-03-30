@@ -136,21 +136,7 @@ function wireEvents() {
   document.getElementById('signout-btn').addEventListener('click', onSignOut);
 
   // Model selector
-  document.getElementById('modal-close-btn').addEventListener('click', closeModelSelector);
-  document
-    .getElementById('model-search')
-    .addEventListener('input', (e) => filterModelList(e.target.value));
-  document.getElementById('current-model-btn').addEventListener('click', openModelSelector);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeModelSelector();
-    }
-  });
-  document.getElementById('model-modal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-      closeModelSelector();
-    }
-  });
+  wireModelSelectorEvents();
 
   // View tabs — delegation on .tab-group
   document.querySelector('.tab-group').addEventListener('click', (e) => {
@@ -168,18 +154,18 @@ function wireEvents() {
 
   // Layout / graph controls
   document.getElementById('layout-select').addEventListener('change', applyLayout);
-  document.getElementById('apply-layout-btn').addEventListener('click', applyLayout);
   document
     .getElementById('containment-select')
     .addEventListener('change', (e) => onContainmentChange(e.target.value));
 
-  // Theme — delegation on .theme-switcher
-  document.querySelector('.theme-switcher').addEventListener('click', (e) => {
-    const btn = e.target.closest('.theme-btn[data-theme]');
-    if (btn) {
-      setTheme(btn.dataset.theme);
-    }
-  });
+  // Refresh layout button (on main controls panel)
+  const refreshLayoutBtn = document.getElementById('refresh-layout-btn');
+  if (refreshLayoutBtn) {
+    refreshLayoutBtn.addEventListener('click', applyLayout);
+  }
+
+  // Theme
+  wireThemeEvents();
 
   // Drill bar
   document.getElementById('drill-exit-btn').addEventListener('click', exitDrill);
@@ -189,24 +175,8 @@ function wireEvents() {
   // Sidebar collapse
   document.getElementById('sidebar-collapse-btn').addEventListener('click', toggleSidebar);
 
-  // Sidebar: section toggles + select-all/none — single delegated listener on aside
-  document.querySelector('aside').addEventListener('click', (e) => {
-    const toggleBtn = e.target.closest('.sidebar-toggle-btn[data-section]');
-    if (toggleBtn) {
-      toggleSection(toggleBtn.dataset.section);
-      return;
-    }
-    const actionBtn = e.target.closest('[data-action]');
-    if (!actionBtn) {
-      return;
-    }
-    if (actionBtn.dataset.action === 'select-all') {
-      selectAll(actionBtn.dataset.kind, true);
-    }
-    if (actionBtn.dataset.action === 'select-none') {
-      selectAll(actionBtn.dataset.kind, false);
-    }
-  });
+  // Sidebar events
+  wireSidebarEvents();
 
   // Filter searches
   document
@@ -230,6 +200,53 @@ function wireEvents() {
   document.addEventListener('graph:applyVisibility', applyVisibility);
   document.addEventListener('graph:syncUrl', syncUrl);
   updateExportButtonState();
+}
+
+function wireModelSelectorEvents() {
+  document.getElementById('modal-close-btn').addEventListener('click', closeModelSelector);
+  document
+    .getElementById('model-search')
+    .addEventListener('input', (e) => filterModelList(e.target.value));
+  document.getElementById('current-model-btn').addEventListener('click', openModelSelector);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModelSelector();
+    }
+  });
+  document.getElementById('model-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+      closeModelSelector();
+    }
+  });
+}
+
+function wireThemeEvents() {
+  document.querySelector('.theme-switcher').addEventListener('click', (e) => {
+    const btn = e.target.closest('.theme-btn[data-theme]');
+    if (btn) {
+      setTheme(btn.dataset.theme);
+    }
+  });
+}
+
+function wireSidebarEvents() {
+  document.querySelector('aside').addEventListener('click', (e) => {
+    const toggleBtn = e.target.closest('.sidebar-toggle-btn[data-section]');
+    if (toggleBtn) {
+      toggleSection(toggleBtn.dataset.section);
+      return;
+    }
+    const actionBtn = e.target.closest('[data-action]');
+    if (!actionBtn) {
+      return;
+    }
+    if (actionBtn.dataset.action === 'select-all') {
+      selectAll(actionBtn.dataset.kind, true);
+    }
+    if (actionBtn.dataset.action === 'select-none') {
+      selectAll(actionBtn.dataset.kind, false);
+    }
+  });
 }
 
 function wireTableEvents() {
@@ -537,7 +554,12 @@ document.getElementById('tooltips-toggle').addEventListener('change', (e) => {
   setTooltipsEnabled(e.target.checked);
 });
 document.getElementById('legend-toggle').addEventListener('change', (e) => {
-  setLegendEnabled(e.target.checked);
+  const enabled = e.target.checked;
+  setLegendEnabled(enabled);
+  // If currently in table view, keep legend hidden regardless of toggle state
+  if (getCurrentView() === 'table') {
+    document.getElementById('graph-legend').classList.add('hidden');
+  }
 });
 restoreSidebarAndPanelState();
 initLegend();

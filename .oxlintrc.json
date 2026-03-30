@@ -75,6 +75,7 @@
       "plugins": ["jest", "vitest"],
       "rules": {
         "eslint/max-lines-per-function": "off",
+        "eslint/no-await-in-loop": "off",
         "jest/no-conditional-in-test": "off",
         "jest/valid-title": "off",
         "unicorn/no-null": "off",

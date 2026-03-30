@@ -9,7 +9,7 @@
 
 import { getAllElements, getAllRelations, getCurrentModelNs } from './model.js';
 import { elemColor, relColor } from './palette.js';
-import { escHtml } from './ui.js';
+import { escHtml } from './utils.js';
 
 // ── FILTER STATE ─────────────────────────────────────────────────────────────
 

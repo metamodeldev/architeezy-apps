@@ -35,10 +35,6 @@ select.sidebar-ctrl {
   min-width: 0;
 }
 
-#apply-layout-btn.sidebar-ctrl {
-  flex: 0 0 auto;
-}
-
 .settings-row {
   display: flex;
   align-items: center;

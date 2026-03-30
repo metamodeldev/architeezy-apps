@@ -3,7 +3,7 @@
 import { cancelTapTimer, hasGraphNode } from './graph.js';
 import { t } from './i18n.js';
 import { getAllRelations, getElemMap } from './model.js';
-import { escHtml } from './ui.js';
+import { escHtml } from './utils.js';
 
 /**
  * Renders the detail panel for the element with the given `id`. Lists the element's name, type,

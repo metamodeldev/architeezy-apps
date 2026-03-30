@@ -65,7 +65,6 @@ test.describe('TC-2.4: Zoom and Pan Navigation', () => {
     const pos = await getNodePos(page, 'comp-a');
 
     for (let i = 0; i < 3; i++) {
-      // eslint-disable-next-line oxlint/no-await-in-loop
       await page.mouse.wheel(pos.x, pos.y, { deltaY: -120 });
     }
 
@@ -75,7 +74,6 @@ test.describe('TC-2.4: Zoom and Pan Navigation', () => {
     expect(zoomedInLevel).toBeGreaterThan(initialZoom);
 
     for (let i = 0; i < 6; i++) {
-      // eslint-disable-next-line oxlint/no-await-in-loop
       await page.mouse.wheel(pos.x, pos.y, { deltaY: 120 });
     }
 

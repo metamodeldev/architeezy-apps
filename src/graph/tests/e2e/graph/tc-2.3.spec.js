@@ -69,14 +69,14 @@ test.describe('TC-2.3: Multiple Layout Algorithms', () => {
 
   test('TC-2.3.2: Selecting a different layout rerenders the graph', async ({ page }) => {
     await page.locator('#layout-select').selectOption('dagre');
-    await page.locator('#apply-layout-btn').click();
+    // Layout applies automatically on change
     await waitForCyNode(page, 'comp-a');
 
     const nodeCountAfterDagre = await page.evaluate(() => globalThis.__cy.nodes().length);
     expect(nodeCountAfterDagre).toBe(3);
 
     await page.locator('#layout-select').selectOption('grid');
-    await page.locator('#apply-layout-btn').click();
+    // Layout applies automatically on change
     await waitForCyNode(page, 'comp-a');
 
     const nodeCountAfterGrid = await page.evaluate(() => globalThis.__cy.nodes().length);

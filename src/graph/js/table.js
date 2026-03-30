@@ -7,7 +7,8 @@ import { focusCyNode } from './graph.js';
 import { t } from './i18n.js';
 import { getAllElements, getAllRelations, getElemMap } from './model.js';
 import { elemColor, relColor } from './palette.js';
-import { escHtml, switchView, showToast, getCurrentView } from './ui.js';
+import { switchView, showToast, getCurrentView } from './ui.js';
+import { escHtml } from './utils.js';
 
 // Table UI state — owned here, not in global state.
 let _currentTTab = 'elements';

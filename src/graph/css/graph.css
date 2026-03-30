@@ -52,9 +52,8 @@ main {
 
 .export-controls .dropdown {
   position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 4px;
+  bottom: 0;
+  right: calc(100% + 4px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;

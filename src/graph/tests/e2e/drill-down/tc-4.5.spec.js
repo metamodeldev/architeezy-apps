@@ -21,7 +21,6 @@ test.describe('TC-4.5: Only Edges Connecting Visible Nodes Are Shown', () => {
     const rows = page.locator('#table-body tr');
     const count = await rows.count();
     for (let i = 0; i < count; i++) {
-      // eslint-disable-next-line no-await-in-loop
       await expect(rows.nth(i)).not.toContainText('AssociationRelationship');
     }
   });

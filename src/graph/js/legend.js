@@ -7,7 +7,7 @@
 
 import { getVisibleElements } from './graph.js';
 import { elemColor, relColor } from './palette.js';
-import { escHtml } from './ui.js';
+import { escHtml } from './utils.js';
 
 const STORAGE_KEY_VISIBLE = 'architeezyGraphLegend';
 const STORAGE_KEY_POS = 'architeezyGraphLegendPos';
@@ -20,6 +20,16 @@ let _enabled = false;
  * @returns {boolean} True if legend is visible, false otherwise.
  */
 export function isLegendEnabled() {
+  return _enabled;
+}
+
+/**
+ * Returns whether the legend is currently enabled. Alias for isLegendEnabled() for use in view
+ * switching.
+ *
+ * @returns {boolean} True if legend is visible, false otherwise.
+ */
+export function getLegendEnabled() {
   return _enabled;
 }
 

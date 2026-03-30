@@ -1,15 +1,7 @@
 // ── NODE TOOLTIPS ─────────────────────────────────────────────────────────────
 
 import { getElemMap } from './model.js';
-
-// Inlined to avoid a circular dependency (graph.js → tooltip.js → ui.js → graph.js).
-function escHtml(s) {
-  return String(s ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
+import { escHtml } from './utils.js';
 
 const LS_KEY = 'architeezyGraphTooltips';
 

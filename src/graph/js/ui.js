@@ -1,20 +1,7 @@
 // ── UI UTILITIES ───────────────────────────────────────────────────────────
 
 import { cyBg, refreshEdgeLabelBg } from './graph.js';
-
-/**
- * Escapes `s` for safe insertion into HTML attribute values and text content.
- *
- * @param {unknown} s - Value to escape; non-strings are coerced via String().
- * @returns {string} HTML-escaped string.
- */
-export function escHtml(s) {
-  return String(s ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
-}
+import { getLegendEnabled, setLegendEnabled } from './legend.js';
 
 // Auto-dismiss timer for the toast notification (owned here, not in global state).
 let _toastTimer;
@@ -183,7 +170,7 @@ export function getCurrentView() {
 
 /**
  * Switches between the graph and table views. Updates tab button active states and element
- * visibility.
+ * visibility. The legend is only visible in graph view.
  *
  * @param {'graph' | 'table'} view - Target view.
  * @param {Function | null} afterSwitch - Optional callback invoked after switching to table view.
@@ -196,6 +183,20 @@ export function switchView(view, afterSwitch) {
   document.getElementById('cy').classList.toggle('hidden', !g);
   document.getElementById('cy-controls').classList.toggle('hidden', !g);
   document.getElementById('table-view').classList.toggle('visible', !g);
+
+  // Legend: only visible in graph view and only if legend is enabled
+  const legendEl = document.getElementById('graph-legend');
+  if (!legendEl) {
+    // No legend element in DOM - skip
+  } else if (g) {
+    // Switching to graph: restore legend to its enabled state (and rebuild content if needed)
+    const enabled = getLegendEnabled();
+    setLegendEnabled(enabled);
+  } else {
+    // Switching to table: hide legend (but don't change the enabled state)
+    legendEl.classList.add('hidden');
+  }
+
   if (!g && afterSwitch) {
     afterSwitch();
   }

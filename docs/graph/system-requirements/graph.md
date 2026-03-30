@@ -19,6 +19,7 @@ details, and customize the layout and containment visualization to understand th
 - SR-2.7: Containment relationships can be displayed as synthetic edges or nested compound nodes
 - SR-2.8: Selection, zoom, and pan state are preserved when switching between graph and table views
 - SR-2.9: User can show or hide the legend on the graph canvas
+- SR-2.10: User can refresh the current layout to re-apply the layout algorithm
 
 ## Scenario
 
@@ -55,7 +56,14 @@ details, and customize the layout and containment visualization to understand th
    - User clicks fit button to automatically scale the view to fit all visible nodes with padding
    - All navigation operations respond quickly
 
-4. **Select Node**
+4. **Refresh Layout**
+   - User has manually adjusted node positions by dragging
+   - User clicks the layout refresh button in the controls area
+   - The graph re-applies the current layout algorithm
+   - Nodes reposition according to the layout while preserving zoom and pan state
+   - Animations may smooth the transition if performance permits
+
+5. **Select Node**
    - User single-clicks on a node
    - After a brief delay to distinguish from double-click, the node is selected
    - The selected node receives visual emphasis (highlighted border or glow)
@@ -65,7 +73,7 @@ details, and customize the layout and containment visualization to understand th
      - List of related elements with relationship types
    - Clicking a related element in the details panel enters drill mode on that node
 
-5. **Enter Drill Mode**
+6. **Enter Drill Mode**
    - User double-clicks on a node
    - Single-click action is cancelled
    - Drill mode activates
@@ -73,14 +81,14 @@ details, and customize the layout and containment visualization to understand th
    - Selected node receives special highlighting
    - Graph updates to show the neighborhood around the selected node at the current drill depth
 
-6. **Adjust Depth in Drill**
+7. **Adjust Depth in Drill**
    - Depth control becomes visible in settings
    - Buttons for depth levels (1-5) show current selection
    - User chooses a different depth
    - Drill scope recalculates, showing more or fewer nodes
    - Count badges update accordingly
 
-7. **Switch Containment Mode**
+8. **Switch Containment Mode**
    - User opens settings and finds the containment mode option
    - Choices may include: no special containment visualization, synthetic containment edges, or
      nested compound nodes
@@ -90,28 +98,29 @@ details, and customize the layout and containment visualization to understand th
    - In compound mode, child nodes appear nested inside parent nodes
    - Parent-child relationships are handled correctly when parents are filtered
 
-8. **Deselect**
+9. **Deselect**
    - User clicks on empty canvas area
    - Selection clears
    - Details panel returns to initial placeholder state
 
-9. **Navigate from Table**
-   - While in table view, user clicks a row
-   - View switches to graph
-   - The corresponding node is centered with smooth animation
-   - The node is selected
+10. **Navigate from Table**
 
-10. **Toggle Legend**
-    - User opens graph settings and enables the "Legend" toggle
-    - A legend shape appears on the graph canvas listing all visible element types followed by all
-      visible relationship types
-    - Each entry shows a color circle matching the type's color in the graph and filter panel,
-      followed by the type name
-    - User drags the legend to a more convenient position on the canvas
-    - User hides a relationship type using the filter panel
-    - The legend updates to no longer show that relationship type
-    - User disables the "Legend" toggle in settings
-    - The legend disappears from the canvas
+- While in table view, user clicks a row
+- View switches to graph
+- The corresponding node is centered with smooth animation
+- The node is selected
+
+1. **Toggle Legend**
+   - User opens graph settings and enables the "Legend" toggle
+   - A legend shape appears on the graph canvas listing all visible element types followed by all
+     visible relationship types
+   - Each entry shows a color circle matching the type's color in the graph and filter panel,
+     followed by the type name
+   - User drags the legend to a more convenient position on the canvas
+   - User hides a relationship type using the filter panel
+   - The legend updates to no longer show that relationship type
+   - User disables the "Legend" toggle in settings
+   - The legend disappears from the canvas
 
 ### Expected Results
 
@@ -132,6 +141,8 @@ details, and customize the layout and containment visualization to understand th
 - Legend is visible on the canvas when enabled and absent when disabled
 - Legend content reflects only types that are currently visible in the graph
 - Legend can be freely repositioned by dragging
+- Layout refresh button re-applies the current layout algorithm correctly
+- Refresh operation maintains current zoom and pan state
 
 ### Edge Cases
 
@@ -177,6 +188,10 @@ details, and customize the layout and containment visualization to understand th
 - **Very large model** (many thousands of nodes)
   - Initial rendering may take several seconds
   - Future improvements could include progressive rendering
+
+- **Refresh during layout computation**
+  - Refresh request is ignored until current layout completes
+  - Or: Refresh cancels current layout and starts a new one (implementation choice)
 
 ## Business Rules
 
@@ -264,6 +279,10 @@ details, and customize the layout and containment visualization to understand th
 - Containment mode selector in settings shows available options with icons.
 - Zoom controls positioned for easy access (typically bottom-right corner): zoom in, zoom out,
   fit-to-view.
+- Layout refresh button positioned immediately after fit button
+- Download diagram button positioned after layout refresh, with a format selector (PNG, SVG)
+  displayed to its left
+- See also: [Data Export](../export.md) for full specification of the diagram download functionality
 
 ### Legend
 
@@ -397,6 +416,16 @@ Graph styles reference CSS custom properties for colors that need to support the
 changes, the graph library does not automatically refresh styles. An explicit refresh is required to
 pick up changed CSS variable values - this is needed for canvas background, edge label backgrounds
 (knockout effect), and other theme-dependent styles.
+
+### Layout Refresh
+
+- The layout refresh button re-applies the currently selected layout algorithm without changing the
+  selection
+- This is useful when the user has made manual adjustments (node dragging) and wants to return to
+  the automated layout
+- The refresh operation uses the same layout algorithm with the same configuration parameters as
+  initially applied
+- The refresh may include smooth animations if the node count is below the performance threshold
 
 ### Legend Implementation
 

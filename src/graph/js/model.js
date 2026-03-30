@@ -6,22 +6,12 @@
 // Also owns model identity (_currentModelId / _currentModelNs) and the
 // Universal JSON parser (formerly parser.js).
 
+import { isUUID } from './utils.js';
+
 // ── ECORE / UUID ─────────────────────────────────────────────────────────────
 
 /** Full URI of the ecore namespace used in EMF models. */
 export const ECORE_NS = 'http://www.eclipse.org/emf/2002/Ecore';
-
-export const UUID_RE = /^[0-9a-f]{8,}(-[0-9a-f]+)*$/i;
-
-/**
- * Returns true if `v` is a string that looks like a UUID or UUID-like identifier.
- *
- * @param {unknown} v - The value to test.
- * @returns {boolean} True if the value is a UUID-like string.
- */
-export function isUUID(v) {
-  return typeof v === 'string' && UUID_RE.test(v);
-}
 
 // ── MODEL IDENTITY ────────────────────────────────────────────────────────────
 

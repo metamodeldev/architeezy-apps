@@ -2,7 +2,7 @@
 
 import { apiFetch, BASE } from './auth.js';
 import { t } from './i18n.js';
-import { escHtml } from './ui.js';
+import { escHtml } from './utils.js';
 
 const MODELS_API = `${BASE}/api/models?size=100`;
 
