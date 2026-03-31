@@ -65,6 +65,7 @@ const STRINGS = {
     popupBlocked: 'Pop-up blocked. Please allow pop-ups to sign in.',
     settingsLegend: 'Legend',
     settingsTooltips: 'Tooltips',
+    settingsHighlight: 'Highlight',
   },
   ru: {
     loadingModels: 'Загрузка списка моделей…',
@@ -127,6 +128,7 @@ const STRINGS = {
     popupBlocked: 'Всплывающее окно заблокировано. Разрешите всплывающие окна для входа.',
     settingsLegend: 'Легенда',
     settingsTooltips: 'Подсказки',
+    settingsHighlight: 'Подсветка',
   },
 };
 

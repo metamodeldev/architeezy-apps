@@ -57,11 +57,16 @@ test.describe('TC-3.7: URL Encoding of Filter State', () => {
     await page.goto('/graph/?model=model-test&entities=ApplicationComponent');
     await waitForLoading(page);
 
+    // Check all other element types to restore full set
     await page.locator('input[data-kind="elem"][data-type="ApplicationService"]').check();
+    await page.locator('input[data-kind="elem"][data-type="ApplicationFunction"]').check();
 
     await expect(page).not.toHaveURL(/entities=/);
     await expect(
       page.locator('input[data-kind="elem"][data-type="ApplicationService"]'),
+    ).toBeChecked();
+    await expect(
+      page.locator('input[data-kind="elem"][data-type="ApplicationFunction"]'),
     ).toBeChecked();
   });
 

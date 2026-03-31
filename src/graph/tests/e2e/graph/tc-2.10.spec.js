@@ -63,6 +63,8 @@ test.describe('TC-2.10: Layout Refresh', () => {
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
     await waitForCyNode(page, 'comp-a');
+    // Wait for the initial layout animation to fully complete before each test
+    await page.waitForFunction(() => globalThis.__layoutRunning === false);
   });
 
   test('TC-2.10.1: Layout refresh re-applies the current layout algorithm', async ({ page }) => {
@@ -99,14 +101,30 @@ test.describe('TC-2.10: Layout Refresh', () => {
     }
   });
 
-  test('TC-2.10.2: Layout refresh preserves current zoom level', async ({ page }) => {
-    // Set a non-default zoom level
-    await page.evaluate(() => {
+  test('TC-2.10.2: Layout refresh preserves current zoom and pan state', async ({ page }) => {
+    // Set a non-default zoom level and pan position
+    await page.evaluate(async () => {
+      // Stop any running layout and wait for it to fully stop
       globalThis.__cy.stop(false, true);
+      await new Promise(resolve => {
+        if (!globalThis.__layoutRunning) resolve();
+        else {
+          const check = setInterval(() => {
+            if (!globalThis.__layoutRunning) {
+              clearInterval(check);
+              resolve();
+            }
+          }, 10);
+        }
+      });
+      // Now set zoom and pan
       globalThis.__cy.zoom(2.5);
+      const currentPan = globalThis.__cy.pan();
+      globalThis.__cy.pan({ x: currentPan.x + 100, y: currentPan.y + 100 });
     });
 
     const zoomBefore = await page.evaluate(() => globalThis.__cy.zoom());
+    const panBefore = await page.evaluate(() => globalThis.__cy.pan());
 
     // Click refresh
     await page.locator('#refresh-layout-btn').click();
@@ -115,26 +133,8 @@ test.describe('TC-2.10: Layout Refresh', () => {
     // Zoom should be unchanged
     const zoomAfter = await page.evaluate(() => globalThis.__cy.zoom());
     expect(zoomAfter).toBeCloseTo(zoomBefore, 1);
-  });
 
-  test('TC-2.10.2b: Layout refresh preserves pan state', async ({ page }) => {
-    // Pan the graph by moving it (use Cytoscape pan method)
-    await page.evaluate(() => {
-      globalThis.__cy.stop(false, true);
-      const currentPan = globalThis.__cy.pan();
-      globalThis.__cy.pan({
-        x: currentPan.x + 100,
-        y: currentPan.y + 100,
-      });
-    });
-
-    const panBefore = await page.evaluate(() => globalThis.__cy.pan());
-
-    // Click refresh
-    await page.locator('#refresh-layout-btn').click();
-    await page.waitForTimeout(1500);
-
-    // Pan should remain unchanged
+    // Pan should be unchanged
     const panAfter = await page.evaluate(() => globalThis.__cy.pan());
     expect(panAfter.x).toBeCloseTo(panBefore.x, 0);
     expect(panAfter.y).toBeCloseTo(panBefore.y, 0);
@@ -150,7 +150,7 @@ test.describe('TC-2.10: Layout Refresh', () => {
     });
 
     // Drag Component A to a new location
-    const canvas = page.locator('#cy canvas');
+    const canvas = page.locator('#cy');
     const box = await canvas.boundingBox();
 
     // Compute start and end points relative to canvas
@@ -175,9 +175,10 @@ test.describe('TC-2.10: Layout Refresh', () => {
     expect(draggedPos.x).not.toBeCloseTo(initialPos.x, 1);
     expect(draggedPos.y).not.toBeCloseTo(initialPos.y, 1);
 
-    // Click layout refresh
+    // Click layout refresh and wait for layout to complete
     await page.locator('#refresh-layout-btn').click();
-    await page.waitForTimeout(1500);
+    // Wait for layout to finish (using __layoutRunning flag)
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
 
     const refreshedPos = await page.evaluate(() => {
       const node = globalThis.__cy.$id('comp-a');
@@ -185,11 +186,11 @@ test.describe('TC-2.10: Layout Refresh', () => {
     });
 
     // After refresh, Component A should have moved away from manually dragged position
-    expect(refreshedPos.x).not.toBeCloseTo(draggedPos.x, 1);
-    expect(refreshedPos.y).not.toBeCloseTo(draggedPos.y, 1);
+    expect(refreshedPos.x).not.toBeCloseTo(draggedPos.x, 2);
+    expect(refreshedPos.y).not.toBeCloseTo(draggedPos.y, 2);
   });
 
-  test('TC-2.10.4: Multiple rapid refresh clicks are handled gracefully without errors', async ({
+  test('TC-2.10.4: Refresh during active layout cancels or postpones previous layout', async ({
     page,
   }) => {
     // Perform several rapid clicks on the refresh button

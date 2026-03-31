@@ -17,6 +17,6 @@ test.describe('TC-4.9: Count Badges Reflect Drill Scope and Active Filters', () 
 
     await expect(page.locator('#table-body tr')).toHaveCount(2);
     await expect(page.locator('#badge-elem')).toContainText('2');
-    await expect(page.locator('#badge-elem')).toContainText('3');
+    await expect(page.locator('#badge-elem')).toContainText('4');
   });
 });

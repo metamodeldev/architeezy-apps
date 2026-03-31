@@ -1,347 +1,187 @@
-# SR-3: Filtering System
-
-**Functional Requirements**:
-[FR-3.1, FR-3.2, FR-3.3, FR-3.4](../functional-requirements.md#fr-3-filtering-system)
-
-## User Story
-
-As a user, I want to show/hide elements and relationships by type, search within filter lists, have
-my filter choices remembered across sessions, and share views with specific filters applied via URL.
-
-## Acceptance Criteria
-
-- [SR-3.1](#sr-31-element-and-relationship-types-are-displayed-with-counts-and-selection-controls):
-  Element and relationship types are displayed with counts and selection controls
-- [SR-3.2](#sr-32-search-inputs-can-filter-the-type-lists): Search inputs can filter the type lists
-- [SR-3.3](#sr-33-bulk-selection-controls-for-select-all-and-select-none-are-available): Bulk
-  selection controls for "select all" and "select none" are available
-- [SR-3.4](#sr-34-changing-filter-settings-updates-the-graph-and-table-views-accordingly): Changing
-  filter settings updates the graph and table views accordingly
-- [SR-3.5](#sr-35-count-badges-show-visibletotal-counts): Count badges show visible/total counts
-- [SR-3.6](#sr-36-filter-state-persists-to-browser-storage-per-model): Filter state persists to
-  browser storage per model
-- [SR-3.7](#sr-37-url-parameters-can-encode-active-filter-types-for-sharing): URL parameters can
-  encode active filter types for sharing
+# SR-4: Filtering
 
 ## Scenarios
 
-### SR-3.1: Element and relationship types are displayed with counts and selection controls
+### SR-4.1: Visibility
 
-#### Preconditions
+The system allows toggling the visibility of model elements by their functional types.
 
-- Model is loaded with multiple element types (e.g., components, services, databases) and
-  relationship types (e.g., flows, dependencies, ownership)
-- Sidebar is open and filter panels are visible
-- All types are checked
+#### Functional Requirements
 
-#### Steps
+- [FR-4.1](../functional-requirements.md#fr-4-filtering): Filter model visibility by entity and
+  relationship types.
 
-1. **View Entities Filter Panel**
-   - User opens the sidebar
-   - Entities filter list shows each element type with a color indicator, name, and count
-   - All checkboxes are checked
-   - Count reflects total elements per type
+#### User Story
 
-2. **View Relationships Filter Panel**
-   - Relationships filter list shows each relationship type with a color indicator, name, and count
-   - All checkboxes are checked
-   - Count reflects total relationships per type
-
-3. **Toggle a Checkbox**
-   - User unchecks an element type (e.g., "Database")
-   - Checkbox state changes to unchecked
-   - The change is immediately reflected in the graph
-
-#### Edge Cases
-
-- **Type with zero elements** — only types present in the model appear in the filter list; items
-  with zero count are dimmed or hidden
-
-### SR-3.2: Search inputs can filter the type lists
-
-#### Preconditions
-
-- Model is loaded with multiple element types
-- Filter panel is visible with all types listed
-- Search input is empty
+As a user, I want to hide or show specific types of entities and relationships to focus on relevant
+layers of the architecture.
 
 #### Steps
 
-1. **Type Search Text**
-   - User types search text into the Entities search field
-   - The list filters in real-time
-   - Only types containing the search text remain visible in the list
+1. Open the filtering panel.
+   - Two lists are displayed: "Entities" and "Relationships", with checkboxes for each type.
+   - Each type displays an "Available / Total" count.
+2. Uncheck an entity type.
+   - All nodes of that type and their associated relationships disappear from the view.
+   - The "Available" count for the unchecked entity type remains unchanged.
+3. Uncheck a relationship type.
+   - All edges of that type disappear, while the connected nodes remain visible.
 
-2. **Verify Hidden Items Retain State**
-   - Non-matching items are hidden from the list
-   - Their checkbox states are preserved and unaffected by the search
+### SR-4.2: Bulk actions
 
-3. **Clear the Search**
-   - User clears the search input
-   - All types are visible again with their previous checkbox states intact
+The system provides controls to quickly check or uncheck all types within a specific category.
 
-#### Edge Cases
+#### Functional Requirements
 
-- **Many types (50+)** — search filter helps find specific types; scrolling remains manageable
+- [FR-4.1](../functional-requirements.md#fr-4-filtering): Filter model visibility by entity and
+  relationship types.
 
-### SR-3.3: Bulk selection controls for "select all" and "select none" are available
+#### User Story
 
-#### Preconditions
-
-- Model is loaded
-- Filter panel is visible
-- Some types are checked and some are unchecked
+As a user, I want to reset the visibility of all entities or all relationships with a single action.
 
 #### Steps
 
-1. **Select All**
-   - User clicks the "Select all" button above the Entities section
-   - All visible types in the list become checked
-   - Graph shows all elements and edges
-
-2. **Select None**
-   - User clicks the "Select none" button
-   - All types are unchecked
-   - Graph becomes empty (except for drill root if drill mode is active)
-   - Count badges show zero visible
-
-3. **Verify Relationship Types Bulk Controls**
-   - User clicks "Select all" in the Relationships section
-   - All relationship types become checked
-   - User clicks "Select none" in the Relationships section
-   - All relationship types become unchecked and edges disappear
+1. Click "Uncheck all" in the Entities section.
+   - All entity checkboxes become unchecked; the graph becomes empty (except for the Drill-down
+     root).
+   - The "Available" counts for all relationship types drop to 0.
+   - Relationship types that were unchecked disappear from the list; those that were checked become
+     dimmed (grayed out).
+2. Click "Check all" in the Entities section.
+   - All entity types become checked and visible on the canvas.
+   - The "Available" counts for relationship types are restored.
+3. Click "Check all" in the Relationships section.
+   - All relationship types become checked and visible.
 
 #### Edge Cases
 
-- **Drill mode active** — drill root remains visible when all types are deselected; counts show
-  visible over total where visible accounts for both filter and drill scope
+- **Search Preservation**: Clicking "Check/Uncheck all" affects all types in the category but does
+  not clear the text in the search field.
 
-### SR-3.4: Changing filter settings updates the graph and table views accordingly
+### SR-4.3: Dynamic filter management
 
-#### Preconditions
+The system hides types from the list when they are unavailable in the current view or scope.
 
-- Model is loaded with multiple element and relationship types
-- Graph displays all elements and relationships
-- All checkboxes are checked
+#### Functional Requirements
+
+- [FR-4.1](../functional-requirements.md#fr-4-filtering): Filter model visibility by entity and
+  relationship types.
+
+#### User Story
+
+As a user, I want the filter list to show only types that are relevant to the current model view or
+drill-down scope.
 
 #### Steps
 
-1. **Filter an Element Type**
-   - User unchecks an element type (e.g., "Database") in the Entities filter
-   - All elements of that type disappear from the graph immediately
-   - Edges incident to those elements also disappear
-   - If table view is visible, its rows update to exclude the filtered type
+1. Uncheck an entity type that is a mandatory endpoint for a specific relationship type.
+   - The available count for that relationship type drops to 0.
+   - If the relationship type was unchecked, it disappears from the list; if it was checked, it
+     remains visible but dimmed.
+2. Activate Drill-down mode on a specific node.
+   - Types that do not exist within the current drill-down scope disappear from the filter lists (if
+     unchecked).
+   - Types that do not exist in the scope but are currently **checked** remain visible in the list
+     but are displayed as dimmed with a 0 count.
+   - Types that exist in the scope but are **unchecked** remain visible as normal unchecked items
+     with their available count.
 
-2. **Filter a Relationship Type**
-   - User unchecks a relationship type (e.g., "Depends") in the Relationships filter
-   - All edges of that type disappear, provided their endpoints are still visible
-   - Graph updates immediately
-   - Note: Containment edges bypass relationship type filters and remain visible if their endpoints
-     are visible
+### SR-4.4: Global search
 
-3. **Re-enable a Type**
-   - User re-checks the previously unchecked type
-   - Elements and edges of that type reappear in the graph
-   - Graph, table (if visible), and count badges all update in sync with no visual flicker
+The system allows locating specific elements within the current view scope.
 
-#### Edge Cases
+#### Functional Requirements
 
-- **Rapid filter changes** — each change applies immediately; performance adequate for typical
-  models
+- [FR-4.2](../functional-requirements.md#fr-4-filtering): Search for specific entities and
+  relationships within the model data.
+- [FR-4.3](../functional-requirements.md#fr-4-filtering): Maintain consistent filtering and search
+  results across graph and table views.
 
-### SR-3.5: Count badges show visible/total counts
+#### User Story
 
-#### Preconditions
-
-- Model is loaded
-- Filter panel is visible with count badges shown
-- All types are active
+As a user, I want to search for specific entities to highlight them on the canvas or find them in
+the table.
 
 #### Steps
 
-1. **View Initial Count**
-   - User sees count badges showing total counts (single number when all are visible)
-   - Badges appear for both element types and relationship types
+1. Enter a query into the global search field in the header.
+   - In the **Graph view**, matching elements remain opaque; others are dimmed.
+   - In the **Table view**, only matching rows are rendered.
+2. Search for an element that is hidden by current filters or is outside the drill-down scope.
+   - The system displays no results and provides a hint: "No results found in the current scope.
+     Check your filters."
+3. Clear the search field.
+   - All currently visible elements return to their default opacity/visibility.
 
-2. **Filter to Reduce Visible Items**
-   - User unchecks one or more element types
-   - Count badges update immediately to show "visible / total" format
-   - Relationship counts also update to reflect reduced edge visibility
+### SR-4.5: Filter list discovery
 
-3. **Verify Drill Mode Interaction**
-   - User activates drill mode
-   - Count badges update to reflect the intersection of element type filter and drill scope
+The system allows finding and enabling types that are currently hidden from the list.
 
-#### Edge Cases
+#### Functional Requirements
 
-- **Drill mode active** — counts show visible over total where visible accounts for both filter and
-  drill scope
+- [FR-4.1](../functional-requirements.md#fr-4-filtering): Filter model visibility by entity and
+  relationship types.
 
-### SR-3.6: Filter state persists to browser storage per model
+#### User Story
 
-#### Preconditions
-
-- Model is loaded
-- User has previously changed filter settings (some types unchecked)
-- Browser storage is available
+As a user, I want to find and enable a type that is hidden because it has no available elements in
+the current scope.
 
 #### Steps
 
-1. **Observe Current Filter State**
-   - User sees specific types unchecked in the filter panel
-   - Graph reflects the filtered state
-
-2. **Refresh the Page**
-   - User refreshes the browser
-   - App loads and reads filter state from browser storage (isolated per model)
-   - Checkboxes restore to the previous settings
-   - Graph reflects the same filtered view as before
-
-3. **Verify Model Isolation**
-   - User loads a different model
-   - Filter state is independent from the first model's saved state
-   - Each model's filter preferences are stored separately
-
-#### Edge Cases
-
-- **Browser storage full or disabled** — filter state may not persist but application continues
-  without crashing
-- **Corrupted data in browser storage** — falls back to default state (all types visible)
-
-### SR-3.7: URL parameters can encode active filter types for sharing
-
-#### Preconditions
-
-- Model is loaded
-- Some element or relationship types are currently filtered out
-
-#### Steps
-
-1. **Observe URL Update on Filter Change**
-   - User toggles a filter checkbox
-   - URL updates automatically to include parameters for the active element and relationship types
-   - URL parameters are present when not all types are visible
-
-2. **Share the URL**
-   - User copies the URL and shares it with a colleague
-   - Colleague opens the link in a new browser session
-   - Filters are set to match the URL parameters on load
-
-3. **Verify URL Override of Stored State**
-   - Colleague had different stored filter preferences for the same model
-   - URL parameters take precedence over stored settings on initial load
-   - Subsequent filter changes save to both URL and browser storage
-
-#### Edge Cases
-
-- **URL parameter with type not in current model** — parameter is ignored; filter set may become
-  empty resulting in a blank view
-- **Malformed URL parameters** — handled gracefully without errors
+1. Enter a query into the search field within a filter list.
+   - The list updates to show matching types, including those that are currently hidden (with a 0
+     available count).
+2. Activate the "Show all" switch next to the search field.
+   - The list expands to show every type present in the model metadata.
+3. Check a dimmed type with a 0 available count.
+   - The type is now "pinned" to the list (it will stay visible even after search is cleared),
+     although no elements appear on the canvas until the scope changes.
 
 ## Business Rules
 
-### Element Type Filter
+- **Available Count Definition**: The number of elements of a type that satisfy current spatial
+  (Drill-down) and dependency (endpoint visibility) constraints.
+- **Dependency Rule**: The "Available Count" for a relationship type is 0 if any of its mandatory
+  endpoint entity types are **unchecked** in the filter.
+- **Dynamic Hiding Rule**:
+  - A type is automatically hidden from the filter list if its "Available Count" is 0 AND its
+    checkbox is unchecked.
+  - If a type's checkbox is **checked**, it is never hidden from the list, even if its count is 0
+    (it becomes dimmed instead).
+- **URL Parameter Policy**:
+  - If all types of a category (Entities or Relationships) are checked, no corresponding parameter
+    is added to the URL.
+  - If at least one type is unchecked, a parameter (e.g., `entities` or `rels`) containing the list
+    of **checked** types is added to the URL.
+  - If no parameters are present in the URL, the system assumes all types are visible.
+- **Search Logic**:
+  - **Global search** is a subset of active filters:
+    `Result = (Active Types) AND (Active Scope) AND (Query)`.
+  - **Bulk Actions**: "Check/Uncheck all" affect only checkbox states and do not clear search
+    inputs.
+- **Persistence**: Filter states are isolated by **model type** and stored in browser storage.
 
-- Filter state is keyed by model identifier to isolate per-model preferences.
-- In drill mode, the drill root node remains visible regardless of element type filter.
-- The set of active element type names determines visibility.
-- Elements are visible if their type is in the active set or if they are the drill root.
-- "Select all" checks all types currently present in the model.
-- "Select none" unchecks all; the graph may become empty except for drill root if present.
-- Count badges reflect the intersection of element type filter and drill scope when applicable.
+## UI/UX Functional Details
 
-### Relationship Type Filter
-
-- Relationship type filter operates on edges that have both endpoints visible after element
-  filtering.
-- Edges are visible only when both endpoints are visible and the relationship type is active, or
-  when the edge is a containment edge.
-- Containment edges bypass relationship type filters and are always shown if endpoints are visible.
-
-### Filter Search
-
-- Search input is present in both Entities and Relationships filter panels.
-- Search filters the list items in the user interface, not the underlying active type sets.
-- Checkbox states are preserved even when items are hidden by search.
-- Search does not affect graph visibility; it only filters which types are shown in the UI list.
-- Search is case-insensitive and matches substrings in the type display name.
-
-### Filter Persistence
-
-- On each filter change, the entire filter state is saved to browser storage.
-- The state is organized per model using the model identifier as a key.
-- Filter state is loaded after model parsing, before the first render.
-- Active element types are initially set to all types from the model, then any hidden types are
-  removed.
-- Active relationship types are derived similarly.
-- URL parameters override stored settings when present during startup.
-
-### URL Encoding
-
-- URL parameters include element types and relationship types (comma-separated) when not all are
-  visible.
-- Only types that are actively filtered out are omitted from the URL.
-- The order of types in the URL does not matter.
-- Filter changes persist to both URL and browser storage independently.
-
-## UI/UX
-
-### Responsiveness
-
-- Filtering is instantaneous.
-- Search is real-time with debounced input (200ms delay after typing stops).
-- Graph, table (if visible), and count badges all update in sync with no visual flicker.
-
-### Visual Design
-
-- Each type displays with a color indicator (matching the graph), name, and count.
-- Checkboxes enable selection.
-- "Select all" and "Select none" buttons appear above each section.
-- Search input field with placeholder text.
-- Active filters are visually distinguished through checked checkboxes.
-- Count badge displays visible count over total or a single number when all are visible.
-- Updates to filters reflect immediately in the graph and table views.
+- **Feedback**: A loading indicator appears if recalculation exceeds 200ms.
+- **Search Interaction**: Filter list search is debounced by 300ms. All search fields include a
+  "Clear" button.
+- **Highlight Opacity**: In the Graph view, dimmed nodes use 35% opacity and dimmed edges use 15%
+  opacity.
+- **Empty States**: If global search returns no results, a hint suggesting a filter check is
+  displayed.
 
 ## Technical Notes
 
-### Storage
-
-- Browser storage is used to persist filter state across sessions.
-- Storage is namespaced by model identifier to maintain separate preferences for each model.
-- Data structure maps model identifiers to sets of hidden element and relationship types.
-
-### State Management
-
-- The application maintains sets of active element types and relationship types.
-- These sets drive visibility of nodes and edges in the graph and rows in the table.
-- Filter changes trigger immediate recalculation of visible elements and edges.
-
-### Performance
-
-- For very large graphs, filter operations should remain responsive.
-- Current implementation processes synchronously; future optimization may include asynchronous
-  processing or web workers.
-
-### URL Integration
-
-- The URL parameter system enables sharing of filtered views.
-- On initial load, URL parameters override stored preferences.
-- As users interact with filters, the URL updates to reflect the current state.
-- Filter changes use `replaceState` and do not add entries to the browser history; pressing Back
-  navigates away from the application rather than to a previous filter state.
-
-### Edge Visibility Logic
-
-Edge visibility rules are defined in Business Rules (Relationship Type Filter section).
-Implementation notes:
-
-- Visibility is evaluated after element type filtering, combining both conditions in a single pass.
-- Visibility changes are applied without rebuilding the graph structure.
-
-### Cross-Cutting Concerns
-
-- Filter interaction with drill mode: drill root visibility exception is defined in Business Rules
-  (Element Type Filter section).
-- Filter integration with table view: table respects the same active types as the graph.
-- Accessibility: search inputs have proper labels; checkboxes have associated labels; keyboard
-  navigation is supported.
+- **URL Sync**: States are synchronized using `replaceState`. To keep URLs short, only the
+  identifiers of **checked** types are listed.
+- **Initialization**: Upon loading a link, the system must first restore the **Hidden/Checked
+  Types** state from URL parameters (or storage) and only then calculate the **Available Counts**.
+- **Table Rendering**: Visibility in the Table view is managed by **data array filtering**
+  (re-rendering only matched rows).
+- **Performance**: Graph visibility is managed by the rendering engine's display flags.
+- **Storage**: Uses `localStorage`, keyed by the model type identifier.
+- **BFS Consistency**: Filter counters in Drill-down mode use the same BFS algorithm as the Graph
+  view.

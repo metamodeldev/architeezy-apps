@@ -61,192 +61,214 @@ inside application documents — link instead.
 
 ### Vision (`vision.md`)
 
-- **Purpose**: Defines the product strategy, value proposition, and high-level objectives.
-- **Perspective**: Product Owner / Business Stakeholder.
-- **Target Audience**: All project contributors and stakeholders.
-- **Structure**:
-  - **Overview**: A summary of the product's core intent.
-  - **Problem Statements**: The specific pain points the product aims to solve.
-  - **Target Audience**: Definition of the primary and secondary users.
-  - **Strategic Goals**: High-level success criteria and business objectives.
-- **Principles**:
-  - Focus strictly on strategic alignment and the "Why" behind the product.
-  - Maintain a technology-agnostic perspective.
-  - Do not include requirement identifiers (IDs).
-  - Do not include technical specifications, UI mockups, or detailed feature lists.
+**Purpose**: Defines the product strategy, value proposition, and alignment with the broader
+ecosystem ("Why" the product exists).
+
+**Perspective**: Product Owner, Strategic Lead.
+
+**Target Audience**: Project Contributors, Stakeholders, Potential Partners.
+
+**Structure**:
+
+- **Summary**: A concise 1-2 paragraph overview of the product’s intent and core value.
+- **Problems & Solutions**: A side-by-side comparison table of pain points and addressing features.
+- **Target Users**: A combined section defining primary roles and concrete usage journeys.
+- **Market Positioning**: An analysis of the competitive landscape and key differentiators (table).
+- **Strategic Context**: The product's role in the ecosystem and its relationship to other services.
+- **Success Metrics**: Strategic targets including high-level performance and business adoption
+  KPIs.
+- **Product Roadmap**: A phased plan showing the current state and future direction.
+- **Call to Action**: A direct appeal to stakeholders or users focusing on immediate practical
+  value.
+
+**Principles**:
+
+- **Focus on Strategic Intent:** Prioritize the reasoning behind the product over a detailed feature
+  list.
+- **Professional Tone:** Avoid marketing pathos. Use calm, objective, and business-focused language.
+- **Data-Driven:** Use concrete numbers and specific targets (e.g., "10k+ entities").
+- **Scannability:** Use tables and bullet points. Avoid long, dense blocks of text.
+- **Visual Simplicity:** Use Mermaid flowcharts or tables instead of UI mockups.
+- **Consistency:** Ensure terms and strategic targets align with the FR and NFR documents.
 
 ### Functional Requirements (`functional-requirements.md`)
 
-- **Purpose**: Serves as a high-level inventory of system capabilities.
-- **Perspective**: Product Manager / System Analyst.
-- **Target Audience**: Project Managers, Architects, and Lead Developers.
-- **Structure**:
-  - **Overview**: Scope of the functional inventory.
-  - **Functional Requirement Categories**: High-level capabilities (e.g., `FR-1: Model Management`).
-  - **Feature Inventory**: Sub-requirements providing a brief description of each capability.
-  - **Out of Scope**: Explicit list of features intentionally excluded from the project.
-- **Principles**:
-  - Act as the comprehensive "What" list for the system.
-  - Requirements must be organized by business capability.
-  - Use the **`FR-X`** identifier format for high-level functional requirements (e.g., `FR-1.1`).
-  - Do not include user stories, acceptance criteria, or UI design.
-  - Do not include technical implementation details or raw code.
+**Purpose**: Serves as a high-level inventory of system capabilities ("What" the system does).
+
+**Perspective**: Product Manager, System Analyst.
+
+**Target Audience**: Project Managers, Architects, Lead Developers.
+
+**Structure**:
+
+- **Overview**: A brief statement defining the scope of the functional inventory and its purpose.
+- **Categories**: Requirements must be grouped into logical functional domains using hierarchical
+  headers (e.g., `## FR-1: Models`).
+- **Out of Scope**: A clear list of features intentionally excluded from the current project or
+  phase.
+
+**Principles**:
+
+- **Focus on Capability:** Describe what the system enables, not the UI procedure.
+- **Consistency:** Use standardized terminology for model components across all documents.
+- **Business-Oriented Grouping:** Organize requirements by logical domains rather than technical
+  components.
+- **Conciseness:** Keep descriptions brief. Detailed specs belong in supplementary documentation.
+- **No UI/Technical Details:** Do not include button placements, database schemas, or raw code.
+
+**Formatting**:
+
+- **Requirement ID**: Use FR-X.Y format (e.g., `FR-1.1`).
+- **Separation**: Do not bold IDs. Use a colon and a space after the ID (`FR-1.1: Text`).
+- **Out of Scope**: Use bold labels with colons (e.g., **Model Authoring:**) without numeric IDs.
 
 ### Non-Functional Requirements (`non-functional-requirements.md`)
 
-- **Purpose**: Defines quality attributes, operational constraints, and performance benchmarks.
-- **Perspective**: Architect / QA Lead.
-- **Target Audience**: Developers, DevOps, and QA Engineers.
-- **Structure**:
-  - **Overview**: Scope of quality standards.
-  - **Quality Attributes**: Requirements categorized by Domain (Performance, Security, Reliability,
-    Maintainability, Accessibility, Internationalization, Browser Compatibility, Scalability,
-    Monitoring, Deployment, Compliance).
-  - **Requirement Block**: Each entry must include a unique ID, a Requirement Statement, Expected
-    Technical Behavior (metrics), and User Experience Impact.
-- **Principles**:
-  - Focus on "How well" the system performs and its operational boundaries.
-  - **Feedback** requirements govern user communication, response times, and interactive
-    responsiveness (loading indicators, notifications, transitions).
-  - All requirements must be measurable and testable.
-  - Use the **`NFR-X`** identifier format for quality attributes, where the prefix encodes the
-    domain:
+**Purpose**: Defines the quality attributes, operational constraints, and technical benchmarks ("How
+well" the system performs).
 
-    | Prefix  | Domain                     |
-    | ------- | -------------------------- |
-    | `NFR-P` | Performance                |
-    | `NFR-S` | Security                   |
-    | `NFR-R` | Reliability                |
-    | `NFR-F` | Feedback                   |
-    | `NFR-M` | Maintainability            |
-    | `NFR-A` | Accessibility              |
-    | `NFR-I` | Internationalization       |
-    | `NFR-B` | Browser Compatibility      |
-    | `NFR-L` | Scalability (Load)         |
-    | `NFR-O` | Monitoring (Observability) |
-    | `NFR-D` | Deployment                 |
-    | `NFR-C` | Compliance                 |
+**Perspective**: Architect, QA Lead.
 
-  - Do not include business logic or feature-specific interaction flows.
-  - Do not include UI-specific behavioral scenarios.
+**Target Audience**: Developers, DevOps, QA Engineers.
+
+**Structure**:
+
+- **Overview**: A brief statement defining the scope of quality standards and technical behavior.
+- **Domains**: Requirements must be organized into six specific categories:
+  - **NFR-1: Performance**: Speed, scale, responsiveness, memory, and payload size.
+  - **NFR-2: Reliability**: Security, error handling, data protection, and state consistency.
+  - **NFR-3: Usability**: Feedback, accessibility, visual standards, and responsive design.
+  - **NFR-4: Quality**: Code standards, testing coverage (%), and architecture.
+  - **NFR-5: Infrastructure**: No-Build constraints, hosting, browser support, and dependency
+    integrity.
+  - **NFR-6: Compliance**: Privacy and licensing.
+
+**Principles**:
+
+- **Measurability:** Every requirement must use specific units (s, ms, MB, FPS, %).
+- **The 100/200ms Rule:** Focus on UI responsiveness (<100ms) and data feedback (<200ms).
+- **Constraints:** Explicitly state technical boundaries like the No-Build Architecture.
+- **Verifiable Benchmarks:** Use data-driven thresholds for different scales of data.
+- **Objective Tone:** Use verifiable, technical statements instead of vague descriptors like "fast."
+- **Consistency:** Section headers and ID patterns must match the functional requirements.
+
+**Formatting**:
+
+- **Requirement ID**: Use NFR-X.Y: format in standard weight (e.g., `NFR-1.1:`).
+- **Requirement Title**: Use bold text followed by a period (`**Title.**`).
+- **Statement**: A concise sentence containing measurable metrics and behavior.
 
 ### Traceability Matrix (`traceability-matrix.md`)
 
-- **Purpose**: Provides complete traceability across all requirement levels, showing mapping between
-  functional requirements (FR), system requirements (SR), and test cases (TC). Serves as the single
-  source of truth for understanding coverage and gaps.
-- **Perspective**: Project Manager / QA Lead / Architect.
-- **Target Audience**: All contributors (developers, QA, architects, stakeholders).
-- **Structure**:
-  - **Complete Requirements Hierarchy**: Detailed table for each FR, listing linked SRs and test
-    cases with descriptions and coverage status.
-  - **Coverage Summary**: High-level overview table showing which FRs have full documentation, which
-    are implied/architectural, and which are pending.
-  - **Gap Analysis**: Identification of missing documentation and future work items.
-  - **Traceability Matrix**: Compact matrix showing FR → SR coverage and SR → TC coverage with
-    legend.
-  - **Related Documents**: Comprehensive cross-reference list.
-- **Principles**:
-  - Act as the authoritative traceability index for the entire project.
-  - Must be updated whenever FR, SR, or TC documents are added, removed, or renumbered.
-  - Never contradict the source documents (FR, SR, TC); this document only references them.
-  - Use the coverage summary to audit documentation completeness at a glance.
-  - Keep gap analysis actionable and up-to-date.
+**Purpose**: Provides complete mapping across requirement levels to track implementation progress
+and verification status ("What is built").
+
+**Perspective**: Project Manager, QA Lead, Architect.
+
+**Target Audience**: All Project Contributors and Stakeholders.
+
+**Structure**:
+
+- **Overview**: A brief statement defining the document’s role as the single source of truth for
+  tracking the current state of implementation and testing.
+- **Coverage Summary**: A high-level table showing the counts of FR, SR, TC, and Implemented items
+  for each domain to visualize project progress.
+- **Requirement Hierarchy**: A detailed mapping of each functional requirement to its linked system
+  requirements and test cases.
+
+**Principles**:
+
+- **Verification Tracking:** Act as the authoritative index for what is built, tested, and ready for
+  production.
+- **Implementation Status:** Use the "Implemented" metric to show the actual verification progress
+  against the total number of test cases.
+- **Non-Contradiction:** Reference source documents only; do not redefine or override requirements
+  within the matrix.
+- **Synchronization:** Update the matrix whenever requirements are added, IDs are changed, or new
+  test cases are validated.
+- **Consistency:** Use domain names and identifiers that match the **Vision** and **Functional
+  Requirements** documents.
+
+**Formatting**:
+
+- **Summary Table**: Use concise headers: Requirement Domain, FR, SR, TC, Implemented.
+- **Requirement ID**: Use standard formats (FR-X.Y, SR-X.Y, TC-X.Y) in standard weight without
+  bolding.
+- **Hierarchical Links**: Use Markdown links to the original source files for every requirement and
+  test case.
+- **Nesting**: Use bulleted lists to represent the relationship between SRs (level 1) and their
+  associated TCs (level 2).
 
 ### System Requirements (`system-requirements/*.md`)
 
-- **Purpose**: Provides detailed behavioral specifications and technical logic for specific
-  features.
-- **Perspective**: System Analyst.
-- **Target Audience**: Implementation and QA teams.
-- **Structure**:
-  - **Functional Requirements Mapping**: Explicit list of parent `FR-IDs`.
-  - **User Story**: High-level behavioral goal (As a... I want... So that...).
-  - **Acceptance Criteria**: A "Done" checklist of testable conditions. Each criterion code must be
-    an anchor link to its corresponding scenario subsection (e.g.,
-    `[SR-2.1](#sr-21-all-model-elements...): description`).
-  - **Scenarios**: One subsection per acceptance criterion, named after the criterion code and title
-    (e.g., `### SR-2.1: All model elements render as nodes...`). Each subsection contains:
-    - **Preconditions**: System state required before the scenario begins.
-    - **Steps**: Numbered list of user actions. Each step title describes what the user does.
-      Observable outcomes are listed as an indented sub-list directly under the step — no
-      "Expected:" label is needed, as the sub-list position makes the role self-evident. Each
-      scenario must have at least three steps; avoid collapsing many outcomes into a single step.
-    - **Edge Cases**: Inline entries (single line per case) covering boundary conditions and error
-      paths specific to this criterion.
-  - **Business Rules**: Deterministic logic, formulas, state-machine transitions, and constraints.
-  - **UI/UX**: Interaction specifications, visual patterns, and focus/navigation rules.
-  - **Technical Notes**: Implementation specifics, library usage, and performance considerations.
-- **Principles**:
-  - Focus on the "How" of feature implementation.
-  - Ensure every file contains a section mapping it to the corresponding FR-ID in the root
-    documentation.
-  - Use the **`SR-X`** identifier format for detailed system requirements.
-  - Do not include project management data such as schedules, task assignments, or deadlines.
-  - Do not include raw source code; use pseudo-code or logic descriptions instead.
-  - **No Duplication**: Acceptance Criteria must be unique to each SR. Do not copy criteria from
-    other SR documents. If multiple features share a requirement, reference it conceptually without
-    repeating the exact criterion.
-  - **No Implementation Details**: Do not mention specific function names, class names, file paths,
-    or library-specific APIs. Describe behavior in technology-agnostic, analyst-facing language.
-    Technical Notes may discuss libraries and patterns, but avoid naming specific functions or
-    variables that are implementation artifacts.
-  - **Atomic Acceptance Criteria**: Each acceptance criterion must describe exactly one
-    independently testable behavior. Avoid compound statements using "and", "or", or semicolons that
-    combine multiple independent requirements. Split combined criteria into separate atomic items.
-    For example, "Nodes can be selected to show details; drill-down mode can be triggered" should be
-    split into two separate criteria: one for node selection and one for drill-down activation.
-    **Exception**: tightly coupled behaviors that are the direct, inseparable outcome of a single
-    user action may be expressed as one criterion. If the two behaviors always occur together as a
-    single observable effect and cannot be tested in isolation, splitting them adds no value. For
-    example, "Changing filter settings updates the graph and table views" is acceptable as one
-    criterion because both views update atomically as part of the same filter operation.
-  - **Balanced Acceptance Criteria**: Acceptance Criteria should be neither too general nor too
-    specific. They must provide complete coverage of the corresponding FR without gaps, but avoid
-    excessive detail that belongs in other sections. Each criterion should be:
-    - **Testable**: Can be verified through manual or automated testing
-    - **Observable**: User can perceive the outcome directly or through system feedback
-    - **Free of implementation**: No mechanisms, algorithms, or technical specifics
-    - **Free of UI/UX qualities**: No "smooth", "fast", "responsive"—these go in UI/UX
-    - **Free of UI interaction details**: Do not specify user interface mechanisms (e.g.,
-      "double-click", "button", "dropdown", "checkbox", "hover", "keyboard shortcuts"). These
-      interaction patterns belong in the UI/UX section. Instead, describe the functional outcome
-      (e.g., "User can activate drill mode" rather than "Double-click activates drill mode").
-    - **Free of examples**: Do not include illustrative examples (e.g., "chevron icons",
-      "force-directed, hierarchical") or explanatory asides (e.g., "(back/forward)"). These belong
-      in UI/UX, Technical Notes, or can be omitted if self-evident. When in doubt, ask: "Can a user
-      or QA tester validate this without knowing how it's implemented?" If not, move it to Business
-      Rules, UI/UX, or Technical Notes as appropriate.
-  - **Separation of Concerns**: Maintain clear boundaries between document sections:
-    - **Acceptance Criteria** should express functional outcomes that are directly observable or
-      verifiable by users or QA. They must NOT include:
-      - Implementation mechanisms (e.g., `postMessage`, localStorage keys, file formats, API
-        endpoints, specific algorithms)
-      - UI/UX qualities (smooth, fast, responsive) or quantitative targets (dimensions, timings)
-      - UI interaction patterns (e.g., "double-click", "button", "dropdown", "checkbox", "hover",
-        "keyboard shortcuts") — these belong in UI/UX
-      - Future/planning notes (e.g., "future, marked as NFR-I2")
-      - Overly specific naming conventions (exact filename patterns, variable names) Keep them
-        testable, behavior-focused, and free of implementation details.
-    - **Business Rules** should contain only deterministic domain logic, constraints, and state
-      transitions. Do not include:
-      - User experience attributes (smooth, fast, responsive) or visual design specifics (sizes,
-        colors, layouts) — these belong in UI/UX
-      - Storage mechanism details (e.g., localStorage keys, data formats, in-memory vs. persistent
-        distinctions) — these belong in Technical Notes
-      - Input device specifics (e.g., mouse button assignments, keyboard shortcuts, gesture details)
-        — these belong in UI/UX
-    - **UI/UX Section** is the authoritative location for all user interface and experience
-      specifications: visual design (dimensions, typography, colors, layouts), interaction timing
-      (delays, debounces, frame rates), responsiveness requirements, animation smoothness,
-      performance expectations (load times, interaction latency), adaptability (responsive
-      breakpoints), accessibility criteria, and any other user-facing quality attributes. Move such
-      details here from Acceptance Criteria or Business Rules.
-    - **Technical Notes** contain implementation-specific guidance: library choices, algorithms,
-      data structures, storage mechanisms, API contracts, technical thresholds (e.g., animation
-      cutoff at 400 nodes), filename conventions, encoding standards, and engineering trade-offs.
-      These support UI/UX requirements but are not directly user-perceivable. When moving items from
-      Acceptance Criteria, preserve the information here with appropriate technical context.
+**Purpose**: Provides detailed behavioral specifications and technical logic for specific features
+("How" the system works).
+
+**Perspective**: System Analyst.
+
+**Target Audience**: Implementation (Dev) and QA teams.
+
+**Structure**:
+
+- **Scenarios**: A collection of detailed behavioral cases grouped under `## Scenarios`.
+  - **SR Header**: Use `### SR-X.Y: Title` format.
+  - **Description**: A brief introductory sentence explaining the scope of the scenario.
+  - **Functional Requirements**: A `#### Functional Requirements` subsection listing the linked FR
+    IDs with colon and description (e.g.,
+    `- [FR-1.1](../functional-requirements.md#fr-1-models): Load models...`). Multiple FRs allowed.
+  - **User Story**: A `#### User Story` subsection (As a... I want... So that...).
+  - **Preconditions** (Optional): A `#### Preconditions` subsection listing specific system states
+    or user data required before the steps begin.
+  - **Steps**: A `#### Steps` subsection containing a numbered list of actions.
+    - **Outcomes**: Observable system reactions, listed as an indented sub-list directly under each
+      step (no "Expected:" label).
+  - **Edge Cases**: A `#### Edge Cases` subsection with bulleted entries covering boundary
+    conditions and error paths.
+- **Business Rules**: A `## Business Rules` section containing deterministic domain logic, isolation
+  rules, and constraints.
+- **UI/UX Functional Details**: A `## UI/UX Functional Details` section covering feedback (loaders),
+  visibility rules, context, and keyboard support.
+- **Technical Notes**: A `## Technical Notes` section covering implementation-specific mechanisms
+  (History API, Storage, Concurrency).
+
+**Principles**:
+
+- **Imperative Mood**: Steps must be written as direct commands (e.g., "Open...", "Select...",
+  "Navigate...") without the word "User".
+- **Observability**: Every step outcome must be a perceivable change in the interface or system
+  state.
+- **Technology-Agnostic Language**: Scenarios must be free of technical jargon like `localStorage`,
+  `pushState`, or `abort controller`. Use functional equivalents (e.g., "browser storage",
+  "navigation history is not extended"). Place exact technical specifications strictly in the
+  **Technical Notes** or **Business Rules**.
+- **Atomic Scenarios**: Each `SR-X.Y` scenario should represent one distinct functional capability
+  or a tightly coupled set of behaviors.
+- **Separation of Concerns**:
+  - **Steps**: Focus on user intent and visible results.
+  - **Business Rules**: Focus on logic and "truth" (e.g., priority, isolation, definitions).
+  - **UI/UX**: Focus on interaction quality (debounce, feedback thresholds, accessibility).
+  - **Technical Notes**: Focus on engineering artifacts (API types, specific storage keys, race
+    condition handling).
+- **Error Consistency**: Define a unified approach for common errors (e.g., "Fetch Failure") within
+  the scenario's edge cases.
+- **Single Source of Truth**: Ensure that business logic (like namespacing or loading priority) is
+  documented in the Business Rules, not scattered across scenarios.
+- **Traceability**: Every scenario must explicitly list its linked Functional Requirements in the
+  `#### Functional Requirements` subsection with clickable links to `functional-requirements.md`.
+
+**Formatting**:
+
+- **Requirement ID**: Use `SR-X.Y` format.
+- **Functional Requirements List**: Use Markdown links with colon:
+  `- [FR-1.1](../functional-requirements.md#fr-1-models): Description`
+- **Outcome Bullets**: Use a single dash `-` for system reactions under numbered steps.
+- **Edge Case Labels**: Use bullet points with bold labels for the case title (e.g.,
+  `- **Invalid Link**: description`).
+- **Sub-headers**: Use `####` for Functional Requirements, User Story, Preconditions, Steps, and
+  Edge Cases to maintain a clear hierarchy under the H3 scenario header.
+- **Business Rule Bullets**: Use clean, descriptive bullet points for logical constraints.
+- **Highlighting**: Use bold text only for emphasis of critical logical concepts (e.g., **clean
+  default settings**, **model type**).
 
 ### Test cases (`test-cases/<feature>/tc-{sr-number}.md`)
 
@@ -254,17 +276,13 @@ inside application documents — link instead.
 - **Perspective**: QA Engineer / Developer.
 - **Target Audience**: QA team, Developers (for manual and automated testing).
 - **Structure**:
-  - **System Requirement**: Link to the parent `SR` document.
-  - **Functional Requirements**: Explicit list of parent `FR-IDs` that this test scenario validates.
-    Multiple FRs can be listed if applicable (e.g.,
-    `[FR-1.1](../../functional-requirements.md#fr-1-model-management), [FR-9.1](../../functional-requirements.md#fr-9-shareable-views-via-url)`).
-    This section must appear at the beginning of each test scenario subsection (before
-    Preconditions).
-  - **Preconditions**: Required system state before execution.
-  - **Test Steps**: Numbered list of actions; each step that requires verification is followed by an
-    indented `**Expected**:` line describing the expected result.
-  - **Post-conditions**: System state after execution.
-  - **Test Data**: Specific inputs or mock data used for validation.
+  - At file level: `**System Requirement**: [SR-X](../../system-requirements/<app>.md#sr-id)`
+  - For each test scenario subsection (`##`):
+    - `### Preconditions` (heading, not bold)
+    - `### Test Steps` (heading with numbered list; steps requiring verification followed by
+      indented `**Expected**:` lines)
+    - `### Post-conditions` (optional; heading)
+    - `### Test Data` (optional; heading with table)
 - **Principles**:
   - **Verifiability**: Every step must have a clear, objective expected result.
   - **Negative Testing**: Must include scenarios for invalid inputs, errors, and edge cases.
@@ -281,9 +299,6 @@ inside application documents — link instead.
     created or deleted accordingly.
   - **Concreteness**: Use specific element names, types, and values from the test data throughout
     the steps and expected results. Avoid generic placeholders such as "any node" or "some element".
-  - **FR Traceability**: Each test scenario (each `##` subsection) must explicitly list the
-    functional requirement(s) it covers with a clickable link to the FR document. This ensures
-    bidirectional traceability from test scenarios back to the high-level functional inventory.
   - Do not include technical implementation details of how the test is automated (keep it
     descriptive).
 

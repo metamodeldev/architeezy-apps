@@ -93,6 +93,6 @@ test.describe('TC-2.4: Zoom and Pan Navigation', () => {
     await page.locator('#fit-cy-btn').click();
 
     const visibleNodeCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
-    expect(visibleNodeCount).toBe(3);
+    expect(visibleNodeCount).toBe(4);
   });
 });

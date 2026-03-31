@@ -13,17 +13,17 @@ test.describe('TC-5.7: Table Respects Active Filters and Drill Mode', () => {
     await loadTestModelFromSelector(page);
     await page.locator('#tab-table').click();
 
-    await expect(page.locator('#table-body tr')).toHaveCount(3);
+    await expect(page.locator('#table-body tr')).toHaveCount(4);
 
     await page.locator('input[data-kind="elem"][data-type="ApplicationService"]').uncheck();
 
-    await expect(page.locator('#table-body tr')).toHaveCount(2);
-    await expect(page.locator('#badge-elem')).toContainText('2');
+    await expect(page.locator('#table-body tr')).toHaveCount(3);
     await expect(page.locator('#badge-elem')).toContainText('3');
+    await expect(page.locator('#badge-elem')).toContainText('4');
 
     await page.locator('input[data-kind="elem"][data-type="ApplicationService"]').check();
 
-    await expect(page.locator('#table-body tr')).toHaveCount(3);
+    await expect(page.locator('#table-body tr')).toHaveCount(4);
   });
 
   test('TC-5.7.2: Table excludes rows for elements outside the active drill scope', async ({
@@ -42,6 +42,6 @@ test.describe('TC-5.7: Table Respects Active Filters and Drill Mode', () => {
     await expect(rows.filter({ hasText: 'Component B' })).toHaveCount(0);
 
     await expect(page.locator('#badge-elem')).toContainText('2');
-    await expect(page.locator('#badge-elem')).toContainText('3');
+    await expect(page.locator('#badge-elem')).toContainText('4');
   });
 });

@@ -15,6 +15,7 @@ import {
   clearDrillRootNodes,
   fitGraph,
   setDrillRootNode,
+  stopLayout,
 } from './graph.js';
 import { getElemMap } from './model.js';
 
@@ -25,6 +26,9 @@ let _drillNodeId;
 
 /** @type {number} BFS depth for drill-down (1–5) */
 let _drillDepth = 2;
+
+/** @type {number | undefined} Depth saved before entering drill; restored on exit so highlight is unaffected */
+let _savedDepthBeforeDrill;
 
 /** @type {Set<string> | undefined} node IDs visible in drill scope; undefined = full model shown */
 let _drillVisibleIds;
@@ -100,6 +104,7 @@ export function initDrillEvents() {
     setDrillDepth(Number(btn.dataset.depth));
     buildDepthPicker(getDrillDepth());
     document.dispatchEvent(new CustomEvent('graph:applyDrill'));
+    document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
     applyLayout();
     document.dispatchEvent(new CustomEvent('graph:syncUrl'));
   });
@@ -113,6 +118,8 @@ export function initDrillEvents() {
  * @param {string} nodeId - ID of the node to drill into.
  */
 export function onNodeDrill(nodeId) {
+  // Save current depth so highlight depth is unaffected by depth changes during drill
+  _savedDepthBeforeDrill = _drillDepth;
   setDrillNodeId(nodeId);
 
   document.getElementById('crumb-entity-sep').classList.remove('hidden');
@@ -135,12 +142,18 @@ export function onNodeDrill(nodeId) {
  * reapplies full visibility, fits the graph, and re-renders the table if it is active.
  */
 export function exitDrill() {
+  // Restore the depth that was active before drill mode so highlight uses the pre-drill depth
+  if (_savedDepthBeforeDrill !== undefined) {
+    _drillDepth = _savedDepthBeforeDrill;
+    _savedDepthBeforeDrill = undefined;
+    buildDepthPicker(_drillDepth);
+  }
   clearDrillRootNodes();
   clearDrillState();
   document.getElementById('crumb-entity-sep').classList.add('hidden');
   document.getElementById('drill-label').classList.add('hidden');
-  document.getElementById('settings-depth-row').classList.add('hidden');
   document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
+  stopLayout();
   fitGraph();
   document.dispatchEvent(new CustomEvent('graph:syncUrl'));
 }

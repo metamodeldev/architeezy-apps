@@ -58,7 +58,7 @@ test.describe('TC-5.6: View Switch Preserves State', () => {
 
     await page.locator('#tab-table').click();
 
-    await expect(page.locator('#table-body tr')).toHaveCount(2);
+    await expect(page.locator('#table-body tr')).toHaveCount(3);
 
     await page.locator('#tab-graph').click();
 
@@ -68,7 +68,7 @@ test.describe('TC-5.6: View Switch Preserves State', () => {
 
     await page.locator('#tab-table').click();
 
-    await expect(page.locator('#table-body tr')).toHaveCount(2);
+    await expect(page.locator('#table-body tr')).toHaveCount(3);
   });
 
   test('TC-5.6.3: Switching to table view preserves search input and sort order', async ({

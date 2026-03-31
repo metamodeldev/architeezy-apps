@@ -224,5 +224,18 @@ export function buildCyStyles() {
         'curve-style': 'bezier',
       },
     },
+    {
+      selector: 'node.faded',
+      style: {
+        opacity: 0.35,
+        'text-outline-width': 0,
+      },
+    },
+    {
+      selector: 'edge.faded',
+      style: {
+        opacity: 0.15,
+      },
+    },
   ];
 }

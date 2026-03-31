@@ -20,11 +20,11 @@ test.describe('TC-5.3: Table Search and Row Count', () => {
 
     await page.locator('#table-search').clear();
 
-    await expect(page.locator('#table-body tr')).toHaveCount(3);
+    await expect(page.locator('#table-body tr')).toHaveCount(4);
   });
 
   test('TC-5.3.2: Table count badge reflects current visible rows', async ({ page }) => {
-    await expect(page.locator('#table-count')).toContainText('3');
+    await expect(page.locator('#table-count')).toContainText('4');
 
     await page.locator('#table-search').fill('Service');
 
@@ -32,6 +32,6 @@ test.describe('TC-5.3: Table Search and Row Count', () => {
 
     await page.locator('#table-search').clear();
 
-    await expect(page.locator('#table-count')).toContainText('3');
+    await expect(page.locator('#table-count')).toContainText('4');
   });
 });

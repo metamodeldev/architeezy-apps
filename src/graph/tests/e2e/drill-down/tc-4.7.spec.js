@@ -43,6 +43,6 @@ test.describe('TC-4.7: Exiting Drill Mode Restores Full Model View', () => {
     await expect(page).not.toHaveURL(/entity=/);
 
     const visibleCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
-    expect(visibleCount).toBe(3);
+    expect(visibleCount).toBe(4);
   });
 });

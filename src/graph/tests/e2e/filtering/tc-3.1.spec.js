@@ -11,15 +11,18 @@ test.describe('TC-3.1: Filter Panel Displays Types with Counts and Checkboxes', 
     await loadTestModelFromSelector(page);
   });
 
-  test('TC-3.1.1: Entities panel shows ApplicationComponent and ApplicationService types', async ({
+  test('TC-3.1.1: Entities panel shows ApplicationComponent, ApplicationService, and ApplicationFunction types', async ({
     page,
   }) => {
-    await expect(page.locator('#elem-filter-list .filter-item')).toHaveCount(2);
+    await expect(page.locator('#elem-filter-list .filter-item')).toHaveCount(3);
     await expect(
       page.locator('#elem-filter-list .filter-item').filter({ hasText: 'ApplicationComponent' }),
     ).toHaveCount(1);
     await expect(
       page.locator('#elem-filter-list .filter-item').filter({ hasText: 'ApplicationService' }),
+    ).toHaveCount(1);
+    await expect(
+      page.locator('#elem-filter-list .filter-item').filter({ hasText: 'ApplicationFunction' }),
     ).toHaveCount(1);
 
     await expect(
@@ -27,6 +30,9 @@ test.describe('TC-3.1: Filter Panel Displays Types with Counts and Checkboxes', 
     ).toBeChecked();
     await expect(
       page.locator('input[data-kind="elem"][data-type="ApplicationService"]'),
+    ).toBeChecked();
+    await expect(
+      page.locator('input[data-kind="elem"][data-type="ApplicationFunction"]'),
     ).toBeChecked();
   });
 

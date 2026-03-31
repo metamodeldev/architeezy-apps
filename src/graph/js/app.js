@@ -34,6 +34,7 @@ import {
   buildCytoscape,
   fitGraph,
   getContainmentMode,
+  getCy,
   hasGraphNode,
   isGraphLoaded,
   resizeCy,
@@ -41,6 +42,15 @@ import {
   zoomIn,
   zoomOut,
 } from './graph.js';
+import {
+  applyHighlight,
+  clearFadedClasses,
+  clearHighlightState,
+  getHighlightEnabled,
+  getHighlightNodeId,
+  setHighlightEnabled,
+  setHighlightNodeId,
+} from './highlight.js';
 import { applyLocale, t } from './i18n.js';
 import { exportGraphImage, getExportingState as getImageExportingState } from './image-export.js';
 import { initLegend, setLegendEnabled, updateLegend } from './legend.js';
@@ -94,14 +104,53 @@ function onSignOut() {
 
 /** Builds a new Cytoscape instance from current model state, wiring standard handlers. */
 function rebuildCytoscape() {
+  const wrappedOnNodeDrill = (id) => {
+    // Entering drill mode clears highlight state (TC-2.11.8)
+    if (getHighlightEnabled()) {
+      clearHighlightState();
+      // Remove fading classes immediately; drill will take over
+      const cy = getCy();
+      if (cy) {
+        clearFadedClasses(cy);
+      }
+    }
+    onNodeDrill(id);
+  };
+
+  // The debounced single-tap handler used for node selection (detail panel)
+  const debouncedNodeTap = (id) => {
+    showDetail(id, wrappedOnNodeDrill);
+  };
+
   buildCytoscape({
     elements: getAllElements(),
     relations: getAllRelations(),
-    onNodeTap: (id) => showDetail(id, onNodeDrill),
-    onNodeDblTap: onNodeDrill,
-    onCanvasTap: () => clearDetail(),
+    onNodeTap: debouncedNodeTap,
+    onNodeDblTap: wrappedOnNodeDrill,
+    onCanvasTap: () => {
+      clearDetail();
+      if (getHighlightEnabled()) {
+        clearHighlightState();
+        applyHighlight(); // Will revert to normal visibility
+      }
+    },
     getDrillNodeId,
   });
+
+  // Attach immediate highlight handlers (separate from debounced selection).
+  // Both 'tap' and 'select' are used: 'select' is more reliable in some Playwright/Cytoscape
+  // interaction sequences (e.g., after a preceding canvas click); 'tap' covers re-clicks on an
+  // already-selected node where 'select' wouldn't re-fire.
+  const cy = getCy();
+  const applyNodeHighlight = (nodeId) => {
+    if (!getHighlightEnabled() || getDrillNodeId()) {
+      return;
+    }
+    setHighlightNodeId(nodeId);
+    applyHighlight();
+  };
+  cy.on('tap', 'node', (e) => applyNodeHighlight(e.target.id()));
+  cy.on('select', 'node', (e) => applyNodeHighlight(e.target.id()));
 }
 
 // ── EXPORT IMAGE BUTTON STATE ──────────────────────────────────────────────────
@@ -161,7 +210,7 @@ function wireEvents() {
   // Refresh layout button (on main controls panel)
   const refreshLayoutBtn = document.getElementById('refresh-layout-btn');
   if (refreshLayoutBtn) {
-    refreshLayoutBtn.addEventListener('click', applyLayout);
+    refreshLayoutBtn.addEventListener('click', () => applyLayout({ preserveViewport: true }));
   }
 
   // Theme
@@ -327,6 +376,10 @@ function onContainmentChange(mode) {
     applyDrill();
   } else {
     applyVisibility();
+    // Also re-apply highlight if enabled and a node is selected
+    if (getHighlightEnabled() && getHighlightNodeId()) {
+      applyHighlight();
+    }
   }
   applyLayout();
 }
@@ -362,6 +415,7 @@ async function loadModel(url, modelId, afterLoad) {
 
     localStorage.setItem('architeezyGraphModelUrl', url);
     clearDrillState();
+    clearHighlightState();
     document.getElementById('crumb-entity-sep').classList.add('hidden');
     document.getElementById('drill-label').classList.add('hidden');
 
@@ -553,6 +607,48 @@ document.getElementById('tooltips-toggle').checked = isTooltipsEnabled();
 document.getElementById('tooltips-toggle').addEventListener('change', (e) => {
   setTooltipsEnabled(e.target.checked);
 });
+
+// Initialize highlight toggle state from localStorage
+const highlightToggle = document.getElementById('highlight-toggle');
+const savedHighlightEnabled = localStorage.getItem('architeezyGraphHighlightEnabled') === 'true';
+highlightToggle.checked = savedHighlightEnabled;
+setHighlightEnabled(savedHighlightEnabled);
+
+// Highlight toggle change handler
+highlightToggle.addEventListener('change', (e) => {
+  const enabled = e.target.checked;
+  setHighlightEnabled(enabled);
+  localStorage.setItem('architeezyGraphHighlightEnabled', enabled);
+  if (enabled) {
+    let currentHighlightId = getHighlightNodeId();
+    // If no stored highlight node, check whether Cytoscape already has a selected node
+    // (e.g., user clicked a node while highlight was off) — apply highlight immediately.
+    if (!currentHighlightId && !getDrillNodeId()) {
+      const cy = getCy();
+      if (cy) {
+        const selected = cy.$(':selected').filter('node').first();
+        if (selected && selected.length > 0) {
+          currentHighlightId = selected.id();
+          setHighlightNodeId(currentHighlightId);
+        }
+      }
+    }
+    if (currentHighlightId && !getDrillNodeId()) {
+      applyHighlight();
+    }
+  } else {
+    clearHighlightState();
+    // Revert to normal visibility based on filters
+    applyVisibility();
+    // Also clear any fading classes
+    const cy = getCy();
+    if (cy) {
+      clearFadedClasses(cy);
+    }
+  }
+  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
+});
+
 document.getElementById('legend-toggle').addEventListener('change', (e) => {
   const enabled = e.target.checked;
   setLegendEnabled(enabled);
@@ -561,6 +657,19 @@ document.getElementById('legend-toggle').addEventListener('change', (e) => {
     document.getElementById('graph-legend').classList.add('hidden');
   }
 });
+
+// Re-apply highlight when filters or depth change (if highlight enabled and not in drill)
+document.addEventListener('graph:applyVisibility', () => {
+  if (getHighlightEnabled() && getHighlightNodeId() && !getDrillNodeId()) {
+    applyHighlight();
+  }
+});
+document.addEventListener('graph:applyDrill', () => {
+  if (getHighlightEnabled() && getHighlightNodeId() && !getDrillNodeId()) {
+    applyHighlight();
+  }
+});
+
 restoreSidebarAndPanelState();
 initLegend();
 init();

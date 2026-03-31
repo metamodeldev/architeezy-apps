@@ -103,7 +103,7 @@ test.describe('TC-2.1: All Model Elements Render as Nodes and Relationships as E
       edges: globalThis.__cy.edges().length,
     }));
 
-    expect(counts.nodes).toBe(3);
+    expect(counts.nodes).toBe(4);
     expect(counts.edges).toBe(2);
   });
 

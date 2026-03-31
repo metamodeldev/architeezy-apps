@@ -274,6 +274,7 @@ Clickable labels (and other interactive elements) must provide clear visual feed
 
 - All `<label>` elements associated with form controls
 - Checkbox/radio button labels (both wrapped and `for` patterns)
+- **Checkbox/radio button input elements themselves** (`input[type="checkbox"]`, `input[type="radio"]`)
 - Filter list items (`.filter-item`, `.bl-drop-item`)
 - Settings labels (`.settings-label`)
 - Interactive headers and section toggles (`.sidebar-toggle-btn`)
@@ -283,6 +284,7 @@ Clickable labels (and other interactive elements) must provide clear visual feed
 **Example CSS:**
 
 ```css
+/* Labels and interactive text elements */
 .filter-item,
 .settings-label,
 .bl-drop-item,
@@ -291,6 +293,12 @@ th {
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none; /* Safari */
+}
+
+/* Checkbox and radio inputs */
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
 }
 ```
 

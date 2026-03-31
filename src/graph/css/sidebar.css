@@ -55,6 +55,7 @@ select.sidebar-ctrl {
 .settings-row > .sidebar-ctrl {
   flex: 1;
   min-width: 0;
+  cursor: pointer;
 }
 
 .sidebar-toggle {

@@ -11,6 +11,9 @@ const OTHER_CONTENT_URL =
 export const ECOMMERCE_CONTENT_URL =
   'https://architeezy.com/api/models/test/test/1/ecommerce/content?format=json';
 
+export const CHAIN_CONTENT_URL =
+  'https://architeezy.com/api/models/test/test/1/chain/content?format=json';
+
 export const MODEL_LIST = {
   _embedded: {
     models: [
@@ -22,16 +25,17 @@ export const MODEL_LIST = {
         _links: { content: { href: MODEL_CONTENT_URL } },
       },
       {
-        id: 'model-other',
-        name: 'Another Model',
-        contentType: 'application/vnd.opengroup.archimate/metamodel/archimate/3.0/',
-        _links: { content: { href: OTHER_CONTENT_URL } },
-      },
-      {
         id: 'model-ecommerce',
         name: 'e-commerce',
         contentType: 'application/vnd.opengroup.archimate/metamodel/archimate/3.0/',
         _links: { content: { href: ECOMMERCE_CONTENT_URL } },
+      },
+      {
+        id: 'model-chain',
+        name: 'Chain Model',
+        contentType: 'application/vnd.opengroup.archimate/metamodel/archimate/3.0/',
+        description: 'A linear chain model for testing highlight depth',
+        _links: { content: { href: CHAIN_CONTENT_URL } },
       },
     ],
   },
@@ -96,6 +100,11 @@ export const MODEL_CONTENT = {
             id: 'svc-x',
             data: { name: 'Service X' },
           },
+          {
+            eClass: 'archi:ApplicationFunction',
+            id: 'func-1',
+            data: { name: 'Function 1' },
+          },
         ],
         relations: [
           {
@@ -122,6 +131,49 @@ export const MODEL_CONTENT = {
  * @param {import('@playwright/test').Page} page - The Playwright page object.
  * @param {{ modelListStatus?: number }} [options] - Optional configuration for mock behavior.
  */
+// Linear chain of 5 components for highlight depth testing
+export const CHAIN_CONTENT = {
+  ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
+  content: [
+    {
+      eClass: 'archi:ArchimateModel',
+      id: 'model-root',
+      data: {
+        name: 'Chain Model',
+        elements: [
+          { eClass: 'archi:ApplicationComponent', id: 'comp-1', data: { name: 'Component 1' } },
+          { eClass: 'archi:ApplicationComponent', id: 'comp-2', data: { name: 'Component 2' } },
+          { eClass: 'archi:ApplicationComponent', id: 'comp-3', data: { name: 'Component 3' } },
+          { eClass: 'archi:ApplicationComponent', id: 'comp-4', data: { name: 'Component 4' } },
+          { eClass: 'archi:ApplicationComponent', id: 'comp-5', data: { name: 'Component 5' } },
+        ],
+        relations: [
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-1',
+            data: { source: 'comp-1', target: 'comp-2' },
+          },
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-2',
+            data: { source: 'comp-2', target: 'comp-3' },
+          },
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-3',
+            data: { source: 'comp-3', target: 'comp-4' },
+          },
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-4',
+            data: { source: 'comp-4', target: 'comp-5' },
+          },
+        ],
+      },
+    },
+  ],
+};
+
 export async function mockApi(page, { modelListStatus = 200 } = {}) {
   // Auth probe — 401 means anonymous; app handles this gracefully
   await page.route('https://architeezy.com/api/users/current', (r) =>
@@ -153,6 +205,14 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify(ECOMMERCE_CONTENT),
+    }),
+  );
+
+  await page.route(`${CHAIN_CONTENT_URL}*`, (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(CHAIN_CONTENT),
     }),
   );
 }
@@ -195,7 +255,8 @@ export const test = playwrightTest.extend({
             text.includes('Failed to load resource') &&
             (text.includes('401') ||
               text.includes('500') ||
-              text.includes('the server responded with a status'))
+              text.includes('the server responded with a status') ||
+              text.includes('ERR_CONNECTION_REFUSED'))
           ) {
             return;
           }

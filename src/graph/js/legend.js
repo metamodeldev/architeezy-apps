@@ -178,6 +178,27 @@ export function updateLegend() {
   el.innerHTML = html;
 }
 
+/**
+ * Adds or removes the `.faded` class on legend rows based on which element/relationship types have
+ * ALL their visible nodes/edges faded. Call after applying highlight fading; pass empty sets to
+ * clear all darkening.
+ *
+ * @param {Set<string>} fadedElemTypes - Element type names where every visible node is faded.
+ * @param {Set<string>} fadedRelTypes - Relationship type names where every visible edge is faded.
+ */
+export function updateLegendHighlight(fadedElemTypes, fadedRelTypes) {
+  const el = document.getElementById('graph-legend');
+  if (!el || !_enabled) {
+    return;
+  }
+  for (const row of el.querySelectorAll('.legend-row')) {
+    const type = row.dataset.type;
+    const kind = row.dataset.kind;
+    const isFaded = kind === 'elem' ? fadedElemTypes.has(type) : fadedRelTypes.has(type);
+    row.classList.toggle('faded', isFaded);
+  }
+}
+
 // ── VISIBILITY ────────────────────────────────────────────────────────────────
 
 /**

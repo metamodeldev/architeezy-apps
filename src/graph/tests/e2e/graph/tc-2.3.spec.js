@@ -73,13 +73,13 @@ test.describe('TC-2.3: Multiple Layout Algorithms', () => {
     await waitForCyNode(page, 'comp-a');
 
     const nodeCountAfterDagre = await page.evaluate(() => globalThis.__cy.nodes().length);
-    expect(nodeCountAfterDagre).toBe(3);
+    expect(nodeCountAfterDagre).toBe(4);
 
     await page.locator('#layout-select').selectOption('grid');
     // Layout applies automatically on change
     await waitForCyNode(page, 'comp-a');
 
     const nodeCountAfterGrid = await page.evaluate(() => globalThis.__cy.nodes().length);
-    expect(nodeCountAfterGrid).toBe(3);
+    expect(nodeCountAfterGrid).toBe(4);
   });
 });

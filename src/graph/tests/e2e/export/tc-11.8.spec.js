@@ -14,7 +14,7 @@ test.describe('TC-11.8: Export Respects Active Filters', () => {
     await page.locator('#tab-table').click();
 
     await page.locator('input[data-kind="elem"][data-type="ApplicationService"]').uncheck();
-    await expect(page.locator('#table-body tr')).toHaveCount(2);
+    await expect(page.locator('#table-body tr')).toHaveCount(3);
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),

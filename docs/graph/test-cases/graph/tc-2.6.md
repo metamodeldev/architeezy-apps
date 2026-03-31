@@ -1,44 +1,226 @@
-# TC-2.6: Drill-Down Mode Activation
+# TC-2.6: Highlight Mode
 
-**System Requirement**: [SR-2.6](../../system-requirements/graph.md)
+**System Requirement**: [SR-2.6](../../system-requirements/graph.md#sr-26-highlight-mode)
 
-## TC-2.6.1: Double-click on a node triggers drill-down mode
-
-**Functional Requirements**: [FR-4.1](../../functional-requirements.md#fr-4-drill-down-analysis)
+## TC-2.6.1: Enable Highlight mode via toggle
 
 ### Preconditions
 
-- Model **e-commerce** is loaded; the graph contains nodes **Payment Service**
-  (ApplicationComponent) and **Order Database** (DataObject)
-- The Graph view is active and both nodes are visible on the canvas
-- No node is currently selected
+- Graph view active
+- Highlight mode is currently off
 
 ### Test Steps
 
-1. **Trigger drill mode**
-   - Single-click on **Payment Service** and immediately double-click it before the selection delay
-     expires
-   - **Expected**: The single-click action is cancelled; the details panel does not open via the
-     single-click handler
-2. **Verify drill mode activation**
-   - Observe the graph
-   - **Expected**: Drill mode activates for **Payment Service**; the URL contains `entity=pay-svc`;
-     the drill bar appears with an exit option and the label **Payment Service**; the node receives
-     drill-root highlighting; the details panel shows **Payment Service** details (opened by drill
-     mode)
-3. **Exit drill mode**
-   - Click the exit option in the drill bar
-   - **Expected**: Drill mode exits; the drill bar and separator are hidden; the graph returns to
-     the full model view
+1. Locate the "Highlight" toggle in visualization settings or toolbar
+2. Turn it ON
+   - **Expected**: Toggle changes to active state (e.g., colored/pressed)
+   - No visible change until a node is selected, but the mode is now active
 
 ### Post-conditions
 
-- Drill mode is inactive
-- The graph displays the full **e-commerce** model
+- Highlight mode is enabled; subsequent selections will trigger dimming
 
 ### Test Data
 
-| Field       | Value                                  |
-| ----------- | -------------------------------------- |
-| Model       | e-commerce                             |
-| Target node | Payment Service (ApplicationComponent) |
+| Action          | Highlight toggle state |
+| --------------- | ---------------------- |
+| toggle ON       | on                     |
+| toggle OFF      | off                    |
+
+## TC-2.6.2: Selected node's neighborhood remains visible; others dim
+
+### Preconditions
+
+- Highlight mode is ON
+- A node is selected (from TC-2.5)
+
+### Test Steps
+
+1. With a node selected, observe the graph
+   - **Expected**:
+     - Selected node: 100% opacity (fully opaque)
+     - Neighbors (nodes directly connected by an edge): 100% opacity
+     - All other nodes: 35% opacity (dimmed)
+     - Edges:
+       - Edges connecting selected node to neighbors: 100% opacity
+       - Edges between neighbors: 100% opacity (if direct connections)
+       - All other edges: 15% opacity (more dimmed)
+2. Deselect
+   - **Expected**: All elements return to 100% opacity (unless other filters cause dimming)
+
+### Post-conditions
+
+- Spotlight effect on selected subgraph
+- Opacity values match specification (nodes 35%, edges 15% for dimmed)
+
+### Test Data
+
+| Element type                | Opacity (dimmed state) |
+| --------------------------- | ---------------------- |
+| non-neighbor nodes          | 35%                    |
+| non-neighbor edges          | 15%                    |
+| selected node + neighbors   | 100%                   |
+| edges among neighbors       | 100%                   |
+
+## TC-2.6.3: Adjust exploration depth while Highlight is active
+
+### Preconditions
+
+- Highlight mode is ON
+- A node is selected (depth=1 by default)
+
+### Test Steps
+
+1. Locate depth control (e.g., slider, "+"/"-" buttons, or input field labeled "Depth")
+2. Increase depth to 2
+   - **Expected**: The highlight region expands to include:
+     - Selected node (depth 0)
+     - Its immediate neighbors (depth 1) - already visible
+     - Neighbors of neighbors (depth 2) - now showing at 100% opacity
+     - Nodes at depth >2 become dimmed (35%)
+3. Decrease depth to 1
+   - **Expected**: Region shrinks; depth 2 nodes become dimmed again
+4. Increase depth to 3, then 4, up to maximum 5
+   - **Expected**: Region expands stepwise; at depth 5, all nodes within distance 5 are fully opaque
+
+### Post-conditions
+
+- Depth control adjusts highlight scope dynamically
+- Maximum depth is 5 levels
+
+### Test Data
+
+| Depth | Nodes with 100% opacity                           |
+| ----- | ------------------------------------------------- |
+| 1     | selected + direct neighbors                     |
+| 2     | selected + neighbors + neighbors-of-neighbors  |
+| 3     | ... up to distance 3                            |
+| 5     | max allowed depth                               |
+
+## TC-2.6.4: Depth change does not trigger layout recalculation
+
+**Related to**: Business rule: "Highlight Exception: Changes in the Highlight scope (including depth) do not trigger a relayout."
+
+### Preconditions
+
+- Highlight mode ON
+- Node selected, depth=1
+- Layout algorithm: Force-Directed (nodes in certain positions)
+
+### Test Steps
+
+1. While watching for any node movement, increase Highlight depth to 2
+   - **Expected**: Oppacity changes, but node positions remain exactly the same; no animation for layout
+2. Change depth to 3, 4
+   - **Expected**: Same: visual dimming changes, but layout preserved
+
+### Post-conditions
+
+- Node positions static during depth changes
+- Performance: no expensive layout ops
+
+### Test Data
+
+| Depth change | Layout recalculated? |
+| ------------ | ------------------- |
+| 1 → 3        | no                  |
+
+## TC-2.6.5: Maximum depth is 5 levels
+
+### Preconditions
+
+- Highlight mode ON, node selected
+- Depth control available
+
+### Test Steps
+
+1. Attempt to increase depth beyond 5 (e.g., try setting to 6 or using + when at 5)
+   - **Expected**: Depth stops at 5; UI either disables the increase control or shows maximum reached
+2. Verify depth=5 includes all nodes within 5 hops
+   - **Expected**: Nodes up to 5 edges away from selected node are fully opaque
+
+### Post-conditions
+
+- Depth limit enforced at 5
+
+### Test Data
+
+| Max depth allowed | Allowed? |
+| ----------------- | -------- |
+| 5                 | yes      |
+| 6                 | no       |
+
+## TC-2.6.6: Highlight respects drill-down scope? (Edge case)
+
+### Preconditions
+
+- Drill-down mode is active (different scope)
+- Highlight mode also ON
+
+### Test Steps
+
+1. Set Highlight depth to 1 while in drill-down
+   - **Expected**: Behavior: maybe Highlight is disabled during drill-down? Or it operates within the drill-down subgraph only?
+   - Document whichever is implemented: if Highlight adds to drill-down, the combined scope = drill-down scope + highlight neighbors within it
+2. Exit drill-down, return to full graph, keep Highlight on
+   - **Expected**: Highlight operates on full graph scope again
+
+### Post-conditions
+
+- Interaction between Highlight and Drill-down is clear
+
+### Test Data
+
+| Scenario               | Expected highlight behavior            |
+| ---------------------- | -------------------------------------- |
+| Drill-down + Highlight | defined by implementation (see notes) |
+
+## TC-2.6.7: Toggle Highlight OFF restores normal view
+
+### Preconditions
+
+- Highlight mode is ON
+- A node is selected, showing dimming effect
+
+### Test Steps
+
+1. Turn Highlight toggle OFF
+   - **Expected**: All nodes return to 100% opacity immediately
+   - Selection highlight may remain on the node (if separate from highlight dimming), or selection may also be cleared
+2. Verify no dimming persists
+   - **Expected**: Graph returns to pre-highlight appearance (except any active filters)
+
+### Post-conditions
+
+- Highlight can be disabled at any time
+
+### Test Data
+
+| Action                | Dimming persists? |
+| --------------------- | ----------------- |
+| Highlight toggle OFF | no                |
+
+## TC-2.6.8: Highlight mode works with filter changes
+
+### Preconditions
+
+- Highlight mode ON
+- Node A selected
+
+### Test Steps
+
+1. While highlight active, uncheck an entity type that includes some highlighted nodes
+   - **Expected**: Those nodes disappear (due to filter), highlight region recalculates among remaining visible nodes
+2. Re-check that entity type
+   - **Expected**: Nodes reappear and are dimmed or highlighted based on their distance from selected node
+
+### Post-conditions
+
+- Highlight scope respects filter-driven visibility changes
+
+### Test Data
+
+| Filter change during highlight | Effect on highlight region |
+| ------------------------------ | ------------------------- |
+| hide some neighbor nodes       | region shrinks to visible neighbors |
+| show hidden nodes              | nodes added, opacity determined by depth |

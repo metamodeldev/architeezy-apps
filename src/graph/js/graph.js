@@ -23,6 +23,9 @@ let _cy;
 // Tracks whether a layout is currently running
 let _isLayoutRunning = false;
 
+// Current layout instance — kept so callers can stop it early (e.g., on drill exit)
+let _currentLayoutInst;
+
 // Debounce timer for single-tap detection (owned here, not in global state).
 let _tapTimer;
 
@@ -170,17 +173,33 @@ function buildEdges(elements, relations, elemIds) {
  * @param {function(): string | undefined} getDrillNodeId - Returns the current drill-root node ID.
  */
 function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap, getDrillNodeId) {
+  // Prevent spurious dbltap when a canvas tap is followed quickly by a node tap.
+  // Cytoscape's dbltap detector is position-based and can fire even when tap-1 was on the canvas.
+  // _awaitingFirstNodeTap: set true on canvas tap, consumed (→ _prevTapWasCanvas) on next node tap.
+  // _prevTapWasCanvas: true when the tap that Cytoscape counts as "tap-1" of the dblclick was
+  // actually a canvas tap — in that case we suppress the resulting dbltap.
+  let _awaitingFirstNodeTap = false;
+  let _prevTapWasCanvas = false;
+
   // Single-tap is delayed to let double-tap cancel it first.
   cy.on('tap', 'node', (e) => {
+    _prevTapWasCanvas = _awaitingFirstNodeTap;
+    _awaitingFirstNodeTap = false;
     clearTimeout(_tapTimer);
     _tapTimer = setTimeout(() => onNodeTap(e.target.id()), TAP_DELAY_MS);
   });
   cy.on('dbltap', 'node', (e) => {
+    // Suppress dbltap whose first tap was a canvas tap (not a real double-click on the node).
+    if (_prevTapWasCanvas) {
+      _prevTapWasCanvas = false;
+      return;
+    }
     clearTimeout(_tapTimer);
     onNodeDblTap(e.target.id());
   });
   cy.on('tap', (e) => {
     if (e.target === cy) {
+      _awaitingFirstNodeTap = true;
       onCanvasTap();
     }
   });
@@ -312,6 +331,7 @@ export function buildCytoscape({
     userZoomingEnabled: true,
     minZoom: 0.04,
     maxZoom: 6,
+    autoResize: false, // Prevent auto-fit on container resize; we manage manually
   });
 
   bindCyEvents(_cy, onNodeTap, onNodeDblTap, onCanvasTap, getDrillNodeId);
@@ -326,9 +346,13 @@ export function buildCytoscape({
  * when the visible node count is below `LAYOUT_ANIM_THRESHOLD`. After layout, updates compound node
  * label widths to match their rendered size.
  */
-export function applyLayout() {
+export function applyLayout(options = {}) {
   if (!_cy) {
     return;
+  }
+  // Stop any currently running layout to avoid interference
+  if (_isLayoutRunning) {
+    stopLayout();
   }
   const name = document.getElementById('layout-select').value;
   // Run layout only on visible elements — on large models hidden nodes would
@@ -417,12 +441,29 @@ export function applyLayout() {
   };
 
   _isLayoutRunning = true;
+  globalThis.__layoutRunning = true;
   globalThis.updateExportButtonState?.();
 
-  const layoutInst = eles.layout(cfgMap[name] ?? { name, fit: true, padding: 30 });
+  let cfg = cfgMap[name] ?? { name, fit: true, padding: 30 };
+  let savedViewport = null;
+  if (options.preserveViewport) {
+    cfg = { ...cfg, fit: false };
+    const zoom = _cy.zoom();
+    const pan = _cy.pan();
+    savedViewport = { zoom, pan };
+  }
+  console.log('[applyLayout] layout config: name', name, 'fit', cfg.fit, 'animate', cfg.animate);
+  _currentLayoutInst = eles.layout(cfg);
+  const layoutInst = _currentLayoutInst;
   layoutInst.on('layoutstop', () => {
     _isLayoutRunning = false;
+    globalThis.__layoutRunning = false;
     globalThis.updateExportButtonState?.();
+    // Restore viewport if it was saved (pan first, then zoom to avoid zoom adjusting pan)
+    if (savedViewport) {
+      _cy.pan(savedViewport.pan);
+      _cy.zoom(savedViewport.zoom);
+    }
     // After layout, set text-max-width on compound nodes to match their actual rendered width
     // So long labels wrap correctly rather than overflowing the container box.
     for (const n of _cy.nodes(':parent:visible')) {
@@ -435,6 +476,16 @@ export function applyLayout() {
 /** Fits the graph to the viewport with the standard padding. */
 export function fitGraph() {
   _cy?.fit(undefined, FIT_PADDING);
+}
+
+/**
+ * Stops any running layout animation and snaps all nodes to their final positions immediately.
+ * Call before fitGraph() when you need stable node positions without waiting for animation.
+ */
+export function stopLayout() {
+  if (_isLayoutRunning && _cy) {
+    _cy.stop(false, true);
+  }
 }
 
 /** Notifies Cytoscape that the container size may have changed; call after un-hiding #cy. */

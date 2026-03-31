@@ -14,7 +14,7 @@ test.describe('TC-5.2: Elements and Relationships Table Tabs', () => {
 
   test('TC-5.2.1: Elements tab lists all model elements with correct columns', async ({ page }) => {
     const rows = page.locator('#table-body tr');
-    await expect(rows).toHaveCount(3);
+    await expect(rows).toHaveCount(4);
     await expect(rows.filter({ hasText: 'Component A' })).toBeVisible();
     await expect(rows.filter({ hasText: 'Component B' })).toBeVisible();
     await expect(rows.filter({ hasText: 'Service X' })).toBeVisible();

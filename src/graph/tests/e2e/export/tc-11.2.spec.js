@@ -16,7 +16,7 @@ test.describe('TC-11.2: CSV Export Includes Visible Rows', () => {
     page,
   }) => {
     await page.locator('input[data-kind="elem"][data-type="ApplicationService"]').uncheck();
-    await expect(page.locator('#table-body tr')).toHaveCount(2);
+    await expect(page.locator('#table-body tr')).toHaveCount(3);
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),
@@ -41,7 +41,7 @@ test.describe('TC-11.2: CSV Export Includes Visible Rows', () => {
   test('TC-11.2.2: CSV export with no filters includes all elements in the model', async ({
     page,
   }) => {
-    await expect(page.locator('#table-body tr')).toHaveCount(3);
+    await expect(page.locator('#table-body tr')).toHaveCount(4);
 
     const [download] = await Promise.all([
       page.waitForEvent('download'),

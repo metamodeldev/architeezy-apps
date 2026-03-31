@@ -2,86 +2,49 @@
 
 ## Overview
 
-This document provides a high-level inventory of functional requirements for Architeezy Graph.
-Detailed specifications, user scenarios, and acceptance criteria are maintained in separate feature
-documentation.
+This document outlines the high-level functional requirements for Architeezy Graph.
 
-## FR-1: Model Management
+## FR-1: Models
 
-- FR-1.1: Load model from repository via selector modal
-- FR-1.2: Load model from URL parameters (deep linking)
-- FR-1.3: Persist and recall last-viewed model across sessions
+- FR-1.1: Load models from the repository via a selection interface.
+- FR-1.2: Synchronize application state with URL parameters for deep linking and sharing.
+- FR-1.3: Persist and restore the last-active session state.
+- FR-1.4: Provide navigation history to move between previously viewed states.
+- FR-1.5: Manage anonymous and authenticated access to model repositories.
+- FR-1.6: Provide session management and user identity display.
 
-## FR-2: Graph Visualization
+## FR-2: Graph
 
-- FR-2.1: Render elements as nodes and relationships as edges
-- FR-2.2: Provide multiple layout algorithms
-- FR-2.3: Support zoom and pan navigation
-- FR-2.4: Select nodes and display details
-- FR-2.5: Display a legend explaining node and edge type visual encodings
+- FR-2.1: Render entities as nodes and relationships as edges.
+- FR-2.2: Provide multiple automated layout algorithms.
+- FR-2.3: Enable interactive panning and zooming.
+- FR-2.4: Display entity and relationship properties in a dedicated panel.
+- FR-2.5: Support focus modes to highlight local neighborhoods.
+- FR-2.6: Enable neighborhood drill-down with configurable relationship depth.
+- FR-2.7: Support alternative containment visualizations (e.g., nested nodes vs. edges).
+- FR-2.8: Provide a legend for entity and relationship types.
 
-## FR-3: Filtering System
+## FR-3: Table
 
-- FR-3.1: Filter element types
-- FR-3.2: Filter relationship types
-- FR-3.3: Search within filter lists
-- FR-3.4: Encode filters in URL for sharing
+- FR-3.1: Provide a tabular representation of entities and relationships.
+- FR-3.2: Support multi-column sorting and filtering within the table.
+- FR-3.3: Enable navigation from table records to corresponding graph nodes.
 
-## FR-4: Drill-Down Analysis
+## FR-4: Filtering
 
-- FR-4.1: Enter drill mode by double-clicking a node
-- FR-4.2: Control drill depth (1-5 levels)
-- FR-4.3: Exit drill mode to return to full model
-- FR-4.4: Apply filters within drill mode
+- FR-4.1: Filter model visibility by entity and relationship types.
+- FR-4.2: Search for specific entities and relationships within the model data.
+- FR-4.3: Maintain consistent filtering and search results across graph and table views.
 
-## FR-5: Table View
+## FR-5: Export
 
-- FR-5.1: Switch between graph and table views
-- FR-5.2: Display elements in sortable, filterable table
-- FR-5.3: Display relationships in table
-- FR-5.4: Show row count statistics
-
-## FR-6: Theme Management
-
-- FR-6.1: Switch between dark, light, and system themes
-- FR-6.2: Persist theme selection across sessions
-
-## FR-7: Sidebar and UI Controls
-
-- FR-7.1: Collapse/expand sidebar
-- FR-7.2: Toggle sidebar section visibility
-- FR-7.3: Configure visualization settings (layout, containment, depth, node tooltips)
-
-## FR-8: Internationalization (i18n)
-
-- FR-8.1: Detect and switch UI language
-- FR-8.2: Translate UI strings without affecting model data
-
-## FR-9: Shareable Views via URL
-
-- FR-9.1: The application automatically encodes the current view state (including active filters,
-  drill-down context, and visualization settings) in the URL
-- FR-9.2: Users can bookmark or share URLs that restore the exact same view
-
-## FR-10: Authentication
-
-- FR-10.1: Optional authentication — the app works fully in anonymous mode; signing in may provide
-  access to additional private models or content
-- FR-10.2: The header displays a sign-in button when not authenticated, and shows the current user's
-  name with a sign-out option when authenticated
-- FR-10.3: Sign-out returns the app to anonymous mode without affecting the current model view
-
-## FR-11: Data Export
-
-- FR-11.1: Export table view to CSV
-- FR-11.2: Export graph as image (PNG/SVG)
+- FR-5.1: Export the table view to CSV format.
+- FR-5.2: Export graph visualizations as image files.
 
 ## Out of Scope
 
-- Model editing (create/update/delete elements/relationships)
-- Version comparison
-- User management (teams, roles, permissions)
-- Custom layouts (user-defined node positioning)
-- Advanced analytics (metrics, KPIs, trends)
-- Offline mode
-- Native mobile applications
+- **Model Authoring:** Creating, updating, or deleting entities and relationships.
+- **Version Control:** Side-by-side model comparison or diffing.
+- **User Management:** Role management or team workspaces.
+- **Custom Graphics:** Manual node positioning or user-defined visual styles.
+- **Offline Support:** Local-first storage or offline model exploration.

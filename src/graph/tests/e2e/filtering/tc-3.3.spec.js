@@ -25,7 +25,7 @@ test.describe('TC-3.3: Select All and Select None Bulk Controls', () => {
     await expect(page.locator('#table-body tr')).toHaveCount(0);
 
     await elemSection.getByTitle('Select all').click();
-    await expect(page.locator('#table-body tr')).toHaveCount(3);
+    await expect(page.locator('#table-body tr')).toHaveCount(4);
   });
 
   test('TC-3.3.3: "Select none" unchecks all relationship types and hides all edges', async ({

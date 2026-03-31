@@ -16,7 +16,7 @@ test.describe('TC-3.4: Filter Changes Apply Immediately', () => {
     await page.locator('input[data-kind="elem"][data-type="ApplicationService"]').uncheck();
 
     await expect(page.locator('#table-body tr').filter({ hasText: 'Service X' })).toHaveCount(0);
-    await expect(page.locator('#table-body tr')).toHaveCount(2);
+    await expect(page.locator('#table-body tr')).toHaveCount(3);
 
     await page.locator('#tab-graph').click();
     await expect(page.locator('#cy')).toBeVisible();
