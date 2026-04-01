@@ -13,7 +13,8 @@ import {
   addDrillRootClass,
   applyLayout,
   clearDrillRootNodes,
-  fitGraph,
+  restoreLayoutState,
+  saveLayoutState,
   setDrillRootNode,
   stopLayout,
 } from './graph.js';
@@ -21,17 +22,43 @@ import { getElemMap } from './model.js';
 
 // ── DRILL STATE ──────────────────────────────────────────────────────────────
 
+/**
+ * When true, the next call to onNodeDrill will skip saving layout state. Used for drill-down
+ * entered via URL (deep link) where there is no previous state.
+ *
+ * @type {boolean}
+ */
+let _skipLayoutSave = false;
+
+/**
+ * Sets the skip flag to control whether layout state is saved on the next drill entry.
+ *
+ * @param {boolean} flag - True to skip saving layout state.
+ */
+export function setSkipLayoutSave(flag) {
+  _skipLayoutSave = flag;
+}
+
 /** @type {string | undefined} ID of the drill-root node; undefined when not in drill mode */
 let _drillNodeId;
 
 /** @type {number} BFS depth for drill-down (1–5) */
 let _drillDepth = 2;
 
-/** @type {number | undefined} Depth saved before entering drill; restored on exit so highlight is unaffected */
+/**
+ * @type {number | undefined} Depth saved before entering drill; restored on exit so highlight is
+ *   unaffected
+ */
 let _savedDepthBeforeDrill;
 
 /** @type {Set<string> | undefined} node IDs visible in drill scope; undefined = full model shown */
 let _drillVisibleIds;
+
+/**
+ * @type {Set<string> | undefined} node IDs within drill spatial scope (ignoring entity filters);
+ *   undefined = full model
+ */
+let _drillScopeIds;
 
 export function getDrillNodeId() {
   return _drillNodeId;
@@ -43,6 +70,10 @@ export function getDrillDepth() {
 
 export function getDrillVisibleIds() {
   return _drillVisibleIds;
+}
+
+export function getDrillScopeIds() {
+  return _drillScopeIds;
 }
 
 /** @param {string | undefined} id ID of the drill-root node, or undefined to exit drill mode */
@@ -60,10 +91,22 @@ export function setDrillVisibleIds(ids) {
   _drillVisibleIds = ids;
 }
 
-/** Resets drillNodeId and drillVisibleIds to undefined. Call on model load or exitDrill. */
+/**
+ * @param {Set<string> | undefined} ids Node IDs within drill spatial scope (ignoring entity
+ *   filters)
+ */
+export function setDrillScopeIds(ids) {
+  _drillScopeIds = ids;
+}
+
+/**
+ * Resets drillNodeId, drillVisibleIds, and drillScopeIds to undefined. Call on model load or
+ * exitDrill.
+ */
 export function clearDrillState() {
   _drillNodeId = undefined;
   _drillVisibleIds = undefined;
+  _drillScopeIds = undefined;
 }
 
 // ── DRILL UI ─────────────────────────────────────────────────────────────────
@@ -105,7 +148,10 @@ export function initDrillEvents() {
     buildDepthPicker(getDrillDepth());
     document.dispatchEvent(new CustomEvent('graph:applyDrill'));
     document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
-    applyLayout();
+    // Only re-layout when in drill-down mode; highlight mode does not require relayout
+    if (getDrillNodeId()) {
+      applyLayout();
+    }
     document.dispatchEvent(new CustomEvent('graph:syncUrl'));
   });
 }
@@ -116,8 +162,17 @@ export function initDrillEvents() {
  * root.
  *
  * @param {string} nodeId - ID of the node to drill into.
+ * @param {{ skipUrlSync?: boolean }} [options] - Optional. Set `skipUrlSync: true` to prevent
+ *   pushing a new URL state (used during history navigation restoration).
  */
-export function onNodeDrill(nodeId) {
+export function onNodeDrill(nodeId, options = {}) {
+  // Save current layout state before entering drill mode (only if not already in drill and not skipping)
+  if (!_drillNodeId && !_skipLayoutSave) {
+    saveLayoutState();
+  }
+  // Reset skip flag for future entries
+  _skipLayoutSave = false;
+
   // Save current depth so highlight depth is unaffected by depth changes during drill
   _savedDepthBeforeDrill = _drillDepth;
   setDrillNodeId(nodeId);
@@ -134,14 +189,20 @@ export function onNodeDrill(nodeId) {
 
   applyLayout();
   showDetail(nodeId, (targetId) => onNodeDrill(targetId));
-  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
+  if (!options.skipUrlSync) {
+    document.dispatchEvent(new CustomEvent('graph:syncUrl', { detail: { push: true } }));
+  }
 }
 
 /**
  * Exits drill-down mode and restores the full-model view. Hides the drill bar, clears drill state,
- * reapplies full visibility, fits the graph, and re-renders the table if it is active.
+ * reapplies full visibility, restores the previous layout state if available, or applies a fresh
+ * layout if no state was saved (e.g., deep link).
+ *
+ * @param {{ skipUrlSync?: boolean }} [options] - Optional. Set `skipUrlSync: true` to prevent
+ *   updating the URL (used during history navigation restoration).
  */
-export function exitDrill() {
+export function exitDrill(options = {}) {
   // Restore the depth that was active before drill mode so highlight uses the pre-drill depth
   if (_savedDepthBeforeDrill !== undefined) {
     _drillDepth = _savedDepthBeforeDrill;
@@ -154,6 +215,14 @@ export function exitDrill() {
   document.getElementById('drill-label').classList.add('hidden');
   document.dispatchEvent(new CustomEvent('graph:applyVisibility'));
   stopLayout();
-  fitGraph();
-  document.dispatchEvent(new CustomEvent('graph:syncUrl'));
+  // Try to restore the saved layout state; if none, apply a fresh layout
+  const restored = restoreLayoutState();
+  // Expose for debugging/tests
+  globalThis.__lastRestoreSuccess = restored;
+  if (!restored) {
+    applyLayout();
+  }
+  if (!options.skipUrlSync) {
+    document.dispatchEvent(new CustomEvent('graph:syncUrl'));
+  }
 }

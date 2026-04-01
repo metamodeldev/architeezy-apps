@@ -7,6 +7,8 @@ import { focusCyNode } from './graph.js';
 import { t } from './i18n.js';
 import { getAllElements, getAllRelations, getElemMap } from './model.js';
 import { elemColor, relColor } from './palette.js';
+import { syncUrl } from './routing.js';
+import { searchState } from './search.js';
 import { switchView, showToast, getCurrentView } from './ui.js';
 import { escHtml } from './utils.js';
 
@@ -26,16 +28,15 @@ export function switchTableTab(tab) {
   _sortCol = undefined;
   document.getElementById('ttab-elements').classList.toggle('active', tab === 'elements');
   document.getElementById('ttab-rels').classList.toggle('active', tab === 'relationships');
-  document.getElementById('table-search').value = '';
   renderTable();
 }
 
 /**
- * Renders the table for the currently active tab, applying the search query from `#table-search`
- * and the current sort state.
+ * Renders the table for the currently active tab, applying the global search query and the current
+ * sort state.
  */
 export function renderTable() {
-  const q = document.getElementById('table-search').value.toLowerCase();
+  const q = searchState.query.toLowerCase();
   const head = document.getElementById('table-head');
   const body = document.getElementById('table-body');
   if (_currentTTab === 'elements') {
@@ -44,6 +45,13 @@ export function renderTable() {
     renderRelsTable(q, head, body);
   }
   updateExportButtonState();
+
+  // Show/hide no-results message
+  const noResultsEl = document.getElementById('no-results');
+  const hasRows = body.children.length > 0;
+  if (noResultsEl) {
+    noResultsEl.classList.toggle('hidden', hasRows);
+  }
 }
 
 // ── SHARED HELPERS ──────────────────────────────────────────────────────────
@@ -112,17 +120,6 @@ function sortRows(rows, getKey, sortCol, sortAsc) {
   });
 }
 
-/**
- * Updates the `#table-count` element with "visible / total" text.
- *
- * @param {number} visible - Number of rows currently shown.
- * @param {number} total - Total row count before filtering.
- */
-function updateTableCount(visible, total) {
-  document.getElementById('table-count').textContent =
-    visible === total ? `${visible}` : `${visible} / ${total}`;
-}
-
 // ── ELEMENT TABLE ───────────────────────────────────────────────────────────
 
 /**
@@ -134,9 +131,13 @@ function updateTableCount(visible, total) {
  * @param {HTMLElement} body - The `<tbody>` element.
  */
 function renderElemsTable(q, head, body) {
-  head.innerHTML = thHtml([t('colName'), t('colType'), t('colDoc')], _sortCol, _sortAsc);
+  head.innerHTML = thHtml(
+    [t('colName'), t('colType'), t('colStatus'), t('colOwner')],
+    _sortCol,
+    _sortAsc,
+  );
 
-  const colKeys = ['name', 'type', 'doc'];
+  const colKeys = ['name', 'type', 'status', 'owner'];
 
   const activeElemTypes = getActiveElemTypes();
   const drillVisibleIds = getDrillVisibleIds();
@@ -145,11 +146,10 @@ function renderElemsTable(q, head, body) {
     (e) =>
       activeElemTypes.has(e.type) &&
       (!drillVisibleIds || drillVisibleIds.has(e.id)) &&
-      (!q || [e.name, e.type, e.ns, e.doc].some((v) => v?.toLowerCase().includes(q))),
+      (!q || [e.name, e.type, e.status, e.owner, e.ns].some((v) => v?.toLowerCase().includes(q))),
   );
 
   rows = sortRows(rows, (e) => e[colKeys[_sortCol]] ?? '', _sortCol, _sortAsc);
-  updateTableCount(rows.length, allElements.length);
 
   body.innerHTML = rows
     .map((e) => {
@@ -157,7 +157,8 @@ function renderElemsTable(q, head, body) {
       return `<tr data-id="${e.id}">
       <td>${escHtml(e.name)}</td>
       <td><span class="type-badge" style="--type-bg:${c}33;--type-color:${c}">${escHtml(e.type)}</span></td>
-      <td class="wrap">${escHtml(e.doc) || '—'}</td>
+      <td>${escHtml(e.status) || '—'}</td>
+      <td>${escHtml(e.owner) || '—'}</td>
     </tr>`;
     })
     .join('');
@@ -223,8 +224,6 @@ function renderRelsTable(q, head, body) {
     _sortAsc,
   );
 
-  updateTableCount(rows.length, allRelations.length);
-
   body.innerHTML = rows
     .map((r) => {
       const src = elemMap[r.source]?.name ?? r.source;
@@ -250,6 +249,8 @@ function renderRelsTable(q, head, body) {
  */
 export function focusNode(id) {
   switchView('graph');
+  // Sync URL to reflect new view (remove view=table parameter)
+  syncUrl({ push: true });
   requestAnimationFrame(() => {
     if (focusCyNode(id)) {
       showDetail(id);
@@ -306,8 +307,12 @@ function buildAndDownloadCsv(headers, rows, type) {
   const modelName =
     document.getElementById('current-model-name').textContent.replaceAll(/[^\w\s-]/g, '') ||
     'model';
-  const timestamp = new Date().toISOString().replaceAll(/[:]/g, '-').slice(0, 19);
-  a.download = `architeezy-${modelName}-${type}-${timestamp}.csv`;
+  // Format timestamp as YYYYMMDD-HHMMSS
+  const now = new Date();
+  const datePart = now.toISOString().slice(0, 10).replaceAll('-', '');
+  const timePart = now.toTimeString().slice(0, 8).replaceAll(':', '');
+  const timestamp = `${datePart}-${timePart}`;
+  a.download = `${modelName}-${type}-${timestamp}.csv`;
   document.body.append(a);
   a.click();
   a.remove();
@@ -318,36 +323,43 @@ function buildAndDownloadCsv(headers, rows, type) {
 export async function exportCSV() {
   const btn = document.getElementById('export-csv-btn');
   if (btn) {
+    btn.classList.add('loading');
+    // Let browser render loading state before disabling
+    // eslint-disable-next-line promise/avoid-new
+    await new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
     btn.disabled = true;
+    // Another frame to ensure both states are painted
+    // eslint-disable-next-line promise/avoid-new
+    await new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
   }
-
-  const loadingEl = document.getElementById('export-loading');
-  if (loadingEl) {
-    loadingEl.classList.remove('hidden');
-  }
-
-  // Yield to the event loop to allow UI to reflect the disabled state
-  // Slightly longer delay to ensure the loading indicator is detectable in tests
-  // oxlint-disable-next-line promise/avoid-new
-  await new Promise((resolve) => {
-    setTimeout(resolve, 200);
-  });
 
   try {
     // Verify we are in table view
     if (getCurrentView() !== 'table') {
-      showToast('Switch to table view to export');
+      showToast(t('switchToTableView'));
       return;
     }
 
     // Determine active tab (elements or relationships) for filename
     const activeTabBtn = document.querySelector('.table-tab-btn.active');
     const activeTab = activeTabBtn?.dataset.tab || 'elements';
-    const type = activeTab === 'elements' ? 'elements' : 'relationships';
+    const type = activeTab === 'elements' ? 'entities' : 'relationships';
 
-    // Get headers from table head
+    // Get headers from table head (exclude sort icons)
     const headerCells = document.querySelectorAll('#table-head th');
-    const headers = [...headerCells].map((th) => th.textContent.trim());
+    const headers = [...headerCells].map((th) => {
+      // Clone the element to avoid mutating the DOM, then remove any sort icon
+      const clone = th.cloneNode(true);
+      const icon = clone.querySelector('.sort-icon');
+      if (icon) {
+        icon.remove();
+      }
+      return clone.textContent.trim();
+    });
 
     // Get data rows from table body
     const rows = [];
@@ -359,16 +371,18 @@ export async function exportCSV() {
     }
 
     buildAndDownloadCsv(headers, rows, type);
-    showToast('CSV exported successfully');
   } catch (error) {
     console.error('Export failed', error);
-    showToast('Export failed: ' + error.message);
+    showToast(t('exportFailed') + ': ' + error.message);
   } finally {
-    if (loadingEl) {
-      loadingEl.classList.add('hidden');
-    }
     if (btn) {
       btn.disabled = false;
+      btn.classList.remove('loading');
     }
   }
+}
+
+// Register event listener for search-triggered table re-renders (browser only)
+if (typeof document !== 'undefined') {
+  document.addEventListener('search:renderTable', renderTable);
 }

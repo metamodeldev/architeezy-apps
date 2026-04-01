@@ -1,230 +1,180 @@
-# TC-3.4: Filtering (Local table search)
+# TC-3.4: Filtering (Global search in table view)
 
 **System Requirement**: [SR-3.4](../../system-requirements/table.md#sr-34-filtering)
 
-## TC-3.4.1: Table search filters rows by matching any cell
+## TC-3.4.1: Global search filters table rows by matching any cell
 
 ### Preconditions
 
 - Table view active, Entities tab
-- Table displays 50 rows with columns: Name, Type, Owner, Status
+- Table displays rows with columns: Name, Type, Owner, Status
 
-### Test Steps
+### Steps
 
-1. Enter query "john" into the table's search field
-   - **Expected**: Table updates in real-time (after 300ms debounce)
-   - Only rows where any cell contains "john" (case-insensitive?) remain visible
-   - Row count updates to show X matching rows (e.g., "Showing 5 of 50")
-2. Clear search
-   - **Expected**: All 50 rows return
-
-### Post-conditions
-
-- Local table search works as expected
+1. Enter query "john" into the global search field in the header
+   - Table updates in real-time (after 300ms debounce)
+   - Only rows where any cell contains "john" (case-insensitive) remain visible
+   - Other rows are hidden (display: none)
+2. Switch to Graph view and back
+   - The same search query persists and continues to filter the table
+3. Clear the global search (click × button)
+   - All rows (that match global filters) return
+   - Search uses the same mechanism as in Graph view
 
 ### Test Data
 
 | Query  | Matching rows | Non-matching rows hidden? |
-| ------ | ------------- | ------------------------ |
-| "john" | 5             | yes                      |
+| ------ | ------------- | ------------------------- |
+| "john" | at least 1    | yes                       |
 
-## TC-3.4.2: Search is isolated to table (does not affect Graph)
+## TC-3.4.2: Search respects current global filters and drill-down
 
 ### Preconditions
 
-- Split view or ability to quickly switch? Actually, Graph not visible while Table is active. But the key is: table search is local and does not modify global filters.
+- Global filter: only `Microservice` entities visible
+- Table search cleared initially
 
-### Test Steps
+### Steps
 
-1. In Table view, apply local search "active"
-   - **Expected**: Table shows filtered rows
-2. Switch to Graph view
-   - **Expected**: Graph shows all entities matching global filters and drill-down (local table search is NOT applied)
-3. Switch back to Table
-   - **Expected**: Local search is still active (persisted in table view state) and rows remain filtered
-
-### Post-conditions
-
-- Table search does not impact global filtering
+1. Enter global search "api"
+   - Search is applied to the currently visible Microservices only
+   - Results are subset of those visible entities
+   - Entities not of type Microservice cannot appear (already hidden by global filter)
+   - Search scope = (Active global filters + Drill scope) ∩ (Query)
 
 ### Test Data
 
-| Table search | Graph view effect | Back to Table |
-| ------------ | ----------------- | ------------- |
-| "active"     | none (global unchanged) | search still applied |
+| Global filter     | Global search | Expected matches                           |
+| ----------------- | ------------- | ------------------------------------------ |
+| Microservice only | "api"         | Microservices with "api" in any cell/field |
 
-## TC-3.4.3: Clear button resets search
+## TC-3.4.3: Clear button in global search resets table filtering
 
 ### Preconditions
 
-- Table search field contains text "microservice"
+- Global search field contains text "payment"
 
-### Test Steps
+### Steps
 
-1. Click the "Clear" (×) button inside the search input
-   - **Expected**: Text clears immediately
+1. Click the "Clear" (×) button inside the global search input
+   - Text clears immediately
    - Table restores all rows (that match global filters)
-   - Row count returns to pre-search total
-
-### Post-conditions
-
-- Quick reset works
+   - Clear button is part of global search, not table-specific
 
 ### Test Data
 
-| Action    | Search field | Rows shown |
-| --------- | ------------ | ---------- |
-| Click ×   | empty        | all        |
+| Action  | Global search | Table rows shown       |
+| ------- | ------------- | ---------------------- |
+| Click × | empty         | all (matching filters) |
 
 ## TC-3.4.4: Search debounced by 300ms
 
 ### Preconditions
 
-- Table with 1000 rows (could be slow to filter)
-- Search field
+- Table with many rows
+- Global search field
 
-### Test Steps
+### Steps
 
-1. Type quickly: "a", "b", "c" (each within <100ms)
-   - **Expected**: No intermediate filtering occurs immediately after each keystroke
+1. Type quickly: "a", "ab", "abc"
+   - No intermediate filtering after each keystroke
 2. Wait 300ms after last keystroke
-   - **Expected**: Single filter operation runs with final query "abc"
-3. Observe network or CPU if needed
-   - **Expected**: Only one filter cycle, not three
-
-### Post-conditions
-
-- Debounce prevents excessive re-renders
+   - Single filter operation runs with final query "abc"
+3. Observe
+   - Only one filter cycle occurred
+   - Debounce prevents excessive re-renders
 
 ### Test Data
 
-| Typing speed       | Filter triggered count |
-| ------------------ | ---------------------- |
-| fast "abc"         | 1 (after 300ms delay) |
+| Typing pattern | Filter triggered? |
+| -------------- | ----------------- |
+| fast "abc"     | once after 300ms  |
 
-## TC-3.4.5: Search matches any cell (full-text across visible columns)
+## TC-3.4.5: Search matches any cell (full-text across all columns)
 
 ### Preconditions
 
-- Table rows with varied data:
-  - Row1: Name="Payment Service", Type="Microservice", Owner="john.doe"
-  - Row2: Name="User API", Type="API", Owner="alice"
+- Table rows with varied data in different columns
 
-### Test Steps
+### Steps
 
-1. Search "Microservice"
-   - **Expected**: Row1 appears (matches Type)
-2. Search "john"
-   - **Expected**: Row1 appears (matches Owner)
-3. Search "Payment"
-   - **Expected**: Row1 appears (matches Name)
-
-### Post-conditions
-
-- Search is across all displayed columns
+1. Search a value that matches the "Type" column
+   - Row appears
+2. Search a value that matches the "Owner" column
+   - Row appears
+3. Search a value that matches the "Name" column
+   - Row appears
+   - Search is across all displayed columns (Name, Type, Status, Owner for entities; Source, Type,
+     Target, Name for relationships)
 
 ### Test Data
 
-| Query        | Matching column(s) | Row(s) visible |
-| ------------ | ----------------- | -------------- |
-| Microservice | Type              | Row1           |
-| john         | Owner             | Row1           |
-| Payment      | Name              | Row1           |
+| Query        | Matching column(s) | Row visible? |
+| ------------ | ------------------ | ------------ |
+| Microservice | Type               | yes          |
+| john         | Owner              | yes          |
+| Payment      | Name               | yes          |
 
-## TC-3.4.6: Search respects current global filters
+## TC-3.4.6: No results message shown when nothing matches
 
 ### Preconditions
 
-- Global filter: only `Microservice` entities visible (25 rows)
-- Table search cleared initially
+- Current global filters produce some visible entities
+- None contain the string "xyz123" in any cell
 
-### Test Steps
+### Steps
 
-1. Search "api" within Table
-   - **Expected**: Search is applied to the 25 visible Microservices only
-   - Results are subset of those 25
-   - Entities not of type Microservice cannot appear because they're already hidden by global filter
-
-### Post-conditions
-
-- Search scope = (Global Filter Results) ∩ (Query)
+1. Enter "xyz123" into global search
+   - Table shows "No results found" message
+   - Hint may appear: "Check your filters"
+   - User understands why no results appeared
 
 ### Test Data
 
-| Global filter | Table search | Expected matches |
-| ------------- | ------------ | ---------------- |
-| Microservice only | "api"     | Microservices with "api" in any cell |
+| Query  | Expected outcome          |
+| ------ | ------------------------- |
+| xyz123 | no matches + hint message |
 
-## TC-3.4.7: No results message with hint
-
-### Preconditions
-
-- Current global filters produce 50 visible entities
-- None of them contain the string "xyz123" in any cell
-
-### Test Steps
-
-1. Search "xyz123"
-   - **Expected**: Table shows "No matching records" or "No results found"
-   - Additional hint: "Check your filters" or similar suggestion
-   - Row count shows "0 of 50"
-
-### Post-conditions
-
-- User guided why no results
-
-### Test Data
-
-| Query    | Expected message                    |
-| -------- | ----------------------------------- |
-| xyz123   | "No results. Check your filters."  |
-
-## TC-3.4.8: Search is case-insensitive? (based on implementation)
+## TC-3.4.7: Search is case-insensitive
 
 ### Preconditions
 
-- Entity with Name="PaymentService" (capital P and S)
+- Entity with Name="PaymentService"
 
-### Test Steps
+### Steps
 
 1. Search "payment" (lowercase)
-   - **Expected**: If case-insensitive, row appears; if case-sensitive, no match
+   - Row appears (case-insensitive match)
 2. Search "PAYMENT" (uppercase)
-   - **Expected**: If case-insensitive, row appears; if case-sensitive, may appear if stored in uppercase? Usually case-insensitive search is UX best practice.
-
-### Post-conditions
-
-- Case sensitivity policy consistent
+   - Row appears
+   - Case-insensitive matching works consistently
 
 ### Test Data
 
-| Query case  | Match? (if case-insensitive) |
-| ----------- | ---------------------------- |
-| payment     | yes                          |
-| PAYMENT     | yes                          |
+| Query case | Expected match? |
+| ---------- | --------------- |
+| payment    | yes             |
+| PAYMENT    | yes             |
 
-## TC-3.4.9: Switching to Relationships tab resets local search (per business rule)
+## TC-3.4.8: Switching table tabs does NOT reset global search
 
 ### Preconditions
 
-- Entities tab active, local search "microservice" entered (rows filtered)
-- Table search field contains "microservice"
+- Table in Entities tab, global search "microservice" active
+- Global search field contains "microservice"
 
-### Test Steps
+### Steps
 
 1. Switch to Relationships tab
-   - **Expected**: Table shows relationships; local search field may be empty or cleared (reset)
-   - Because local search is isolated to the tab
+   - Table shows relationships; global search "microservice" is still active
+   - Same query applies to relationships table (filtered by relationship fields)
 2. Switch back to Entities tab
-   - **Expected**: Search field is empty (reset) or retains previous? Business rule says: "Switching tabs (Entities/Relationships) resets the sort order to default." It doesn't explicitly say about search, but typically search should also reset or be per-tab. Assume per-tab independence or reset.
-   - If design says search does not persist across tab switches, it should be cleared.
-
-### Post-conditions
-
-- Tab切换 clears local search context
+   - Search field still contains "microservice"
+   - Search persists across tab switches because it's global
+   - Only switching to Graph view and back does not clear search either
 
 ### Test Data
 
-| Entity search active | Switch to Relationships | Back to Entities | Search still "microservice"? |
-| -------------------- | ----------------------- | ---------------- | ---------------------------- |
-| yes                  | maybe cleared          | no (reset)       | no                          |
+| Search active  | Switch to Relationships | Back to Entities | Search persists? |
+| -------------- | ----------------------- | ---------------- | ---------------- |
+| "microservice" | filter applies to rels  | filter applies   | yes              |

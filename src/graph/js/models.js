@@ -111,7 +111,7 @@ export async function openModelSelector() {
       _models = await fetchModelList();
     } catch (error) {
       document.getElementById('model-list').innerHTML =
-        `<div class="model-list-loading">${escHtml(error.message)}</div>`;
+        `<div class="empty-model-message">${escHtml(error.message)}</div>`;
       return;
     }
   }
@@ -142,15 +142,17 @@ export function renderModelList(models, query) {
     const url = modelContentUrl(model);
     if (
       q &&
-      !model.name.toLowerCase().includes(q) &&
-      !typeLabel.toLowerCase().includes(q) &&
-      !(model.description ?? '').toLowerCase().includes(q)
+      !model.name.toLowerCase().startsWith(q) &&
+      !typeLabel.toLowerCase().startsWith(q) &&
+      !(model.description ?? '').toLowerCase().startsWith(q)
     ) {
       continue;
     }
 
     const item = document.createElement('div');
     item.className = `model-item${url === currentUrl ? ' active' : ''}`;
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
     item.innerHTML = `
       <div class="model-item-icon">📐</div>
       <div class="model-item-info">
@@ -165,6 +167,11 @@ export function renderModelList(models, query) {
       item.addEventListener('click', () => {
         closeModelSelector();
         setCurrentModelName(model.name);
+        // Push a new history entry for model switch (major transition)
+        const newUrl = new URL(location.href);
+        newUrl.searchParams.set('model', model.id ?? undefined);
+        // oxlint-disable-next-line unicorn/no-null
+        history.pushState(null, '', newUrl);
         // LoadModel is in app.js; use a custom event to avoid circular dependency
         document.dispatchEvent(
           new CustomEvent('loadModel', {

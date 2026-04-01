@@ -74,6 +74,7 @@ export function clearHighlightState() {
  *
  * When highlight mode is disabled or no node is selected, reverts to normal visibility.
  */
+// eslint-disable-next-line max-statements
 export function applyHighlight() {
   if (!isGraphLoaded() || !_highlightEnabled) {
     return;

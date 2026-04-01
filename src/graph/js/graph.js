@@ -33,6 +33,17 @@ let _tapTimer;
 // That stale listeners are removed before a new set is attached on each rebuild.
 let _pointerController;
 
+// ── LAYOUT STATE PRESERVATION ───────────────────────────────────────────────────
+
+/**
+ * @type {{
+ *   positions: Record<string, { x: number; y: number }>;
+ *   viewport: { zoom: number; pan: { x: number; y: number } };
+ * } | null}
+ *   Saved layout state before entering drill-down. Contains node positions and viewport.
+ */
+let _savedLayoutState;
+
 // ── CONTAINMENT MODE ─────────────────────────────────────────────────────────
 
 /** @type {'none' | 'edge' | 'compound'} How parent–child relationships are displayed */
@@ -177,7 +188,7 @@ function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap, getDrillNodeId) 
   // Cytoscape's dbltap detector is position-based and can fire even when tap-1 was on the canvas.
   // _awaitingFirstNodeTap: set true on canvas tap, consumed (→ _prevTapWasCanvas) on next node tap.
   // _prevTapWasCanvas: true when the tap that Cytoscape counts as "tap-1" of the dblclick was
-  // actually a canvas tap — in that case we suppress the resulting dbltap.
+  // Actually a canvas tap — in that case we suppress the resulting dbltap.
   let _awaitingFirstNodeTap = false;
   let _prevTapWasCanvas = false;
 
@@ -312,8 +323,11 @@ export function buildCytoscape({
 }) {
   if (_cy) {
     _cy.destroy();
+    globalThis.cy = undefined;
     _cy = undefined;
   }
+  // Clear any saved layout state from previous graph
+  clearSavedLayoutState();
 
   document.getElementById('cy').classList.remove('hidden');
 
@@ -339,12 +353,17 @@ export function buildCytoscape({
   bindTooltipEvents(_cy);
   updateStats(elements, relations);
   globalThis.updateExportButtonState?.();
+
+  // Expose Cytoscape instance for testing
+  globalThis.cy = _cy;
 }
 
 /**
  * Runs the layout selected in `#layout-select` on all currently visible elements. Animates only
  * when the visible node count is below `LAYOUT_ANIM_THRESHOLD`. After layout, updates compound node
  * label widths to match their rendered size.
+ *
+ * @param {object} options - Layout options.
  */
 export function applyLayout(options = {}) {
   if (!_cy) {
@@ -445,14 +464,13 @@ export function applyLayout(options = {}) {
   globalThis.updateExportButtonState?.();
 
   let cfg = cfgMap[name] ?? { name, fit: true, padding: 30 };
-  let savedViewport = null;
+  let savedViewport;
   if (options.preserveViewport) {
     cfg = { ...cfg, fit: false };
     const zoom = _cy.zoom();
     const pan = _cy.pan();
     savedViewport = { zoom, pan };
   }
-  console.log('[applyLayout] layout config: name', name, 'fit', cfg.fit, 'animate', cfg.animate);
   _currentLayoutInst = eles.layout(cfg);
   const layoutInst = _currentLayoutInst;
   layoutInst.on('layoutstop', () => {
@@ -479,8 +497,8 @@ export function fitGraph() {
 }
 
 /**
- * Stops any running layout animation and snaps all nodes to their final positions immediately.
- * Call before fitGraph() when you need stable node positions without waiting for animation.
+ * Stops any running layout animation and snaps all nodes to their final positions immediately. Call
+ * before fitGraph() when you need stable node positions without waiting for animation.
  */
 export function stopLayout() {
   if (_isLayoutRunning && _cy) {
@@ -748,6 +766,12 @@ export function focusCyNode(id) {
   if (!_cy) {
     return false;
   }
+  // Ensure container has up-to-date dimensions before resizing
+  const cyEl = document.getElementById('cy');
+  if (cyEl) {
+    // Force reflow to get accurate container size
+    const _ = cyEl.offsetHeight;
+  }
   _cy.resize();
   const node = _cy.$id(id);
   if (!node?.length) {
@@ -773,4 +797,57 @@ export function refreshEdgeLabelBg(getBg) {
   requestAnimationFrame(() =>
     _cy.style().selector('edge').style('text-background-color', getBg()).update(),
   );
+}
+
+// ── LAYOUT STATE PRESERVATION ───────────────────────────────────────────────────
+
+/**
+ * Saves the current node positions and viewport state. Call before entering drill-down. The saved
+ * state can be restored later via restoreLayoutState().
+ */
+export function saveLayoutState() {
+  if (!_cy) {
+    _savedLayoutState = undefined;
+    return;
+  }
+  const positions = {};
+  for (const n of _cy.nodes()) {
+    positions[n.id()] = { x: n.position('x'), y: n.position('y') };
+  }
+  _savedLayoutState = {
+    positions,
+    viewport: {
+      zoom: _cy.zoom(),
+      pan: { ..._cy.pan() }, // Copy pan object to avoid mutation
+    },
+  };
+}
+
+/**
+ * Restores a previously saved layout state (node positions and viewport).
+ *
+ * @returns {boolean} True if a saved state existed and was restored, false otherwise.
+ */
+export function restoreLayoutState() {
+  if (!_cy || !_savedLayoutState) {
+    return false;
+  }
+  const { positions, viewport } = _savedLayoutState;
+  _cy.batch(() => {
+    for (const n of _cy.nodes()) {
+      if (positions[n.id()]) {
+        n.position(positions[n.id()]);
+      }
+    }
+  });
+  // Restore viewport: pan first, then zoom to avoid zoom adjusting pan
+  _cy.pan(viewport.pan);
+  _cy.zoom(viewport.zoom);
+  _savedLayoutState = undefined; // Consume
+  return true;
+}
+
+/** Clears any saved layout state. Call on model load or when state should be discarded. */
+export function clearSavedLayoutState() {
+  _savedLayoutState = undefined;
 }

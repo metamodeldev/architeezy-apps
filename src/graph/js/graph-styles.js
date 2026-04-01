@@ -227,12 +227,25 @@ export function buildCyStyles() {
     {
       selector: 'node.faded',
       style: {
-        opacity: 0.35,
+        'opacity': 0.35,
         'text-outline-width': 0,
       },
     },
     {
       selector: 'edge.faded',
+      style: {
+        opacity: 0.15,
+      },
+    },
+    {
+      selector: 'node.search-dimmed',
+      style: {
+        'opacity': 0.35,
+        'text-outline-width': 0,
+      },
+    },
+    {
+      selector: 'edge.search-dimmed',
       style: {
         opacity: 0.15,
       },

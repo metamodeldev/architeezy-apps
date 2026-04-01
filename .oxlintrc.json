@@ -10,6 +10,7 @@
     "nursery": "error"
   },
   "rules": {
+    "eslint/default-case": "off",
     "eslint/eqeqeq": "error",
     "eslint/func-style": ["error", "declaration"],
     "eslint/id-length": "off",
@@ -27,6 +28,7 @@
     "eslint/no-empty": "error",
     "eslint/no-fallthrough": "error",
     "eslint/no-inline-comments": "off",
+    "eslint/no-lonely-if": "off",
     "eslint/no-magic-numbers": "off",
     "eslint/no-negated-condition": "off",
     "eslint/no-nested-ternary": "off",
@@ -60,6 +62,7 @@
     "oxc/no-rest-spread-properties": "off",
     "unicorn/consistent-existence-index-check": "off",
     "unicorn/explicit-length-check": "off",
+    "unicorn/no-lonely-if": "off",
     "unicorn/no-nested-ternary": "off",
     "unicorn/number-literal-case": "off",
     "unicorn/prefer-at": "off",

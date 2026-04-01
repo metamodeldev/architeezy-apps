@@ -50,13 +50,33 @@
     </div>
 
     <!-- ── TOAST (non-fatal, dismissible) ───────────────────────── -->
-    <div id="toast">
+    <div id="toast" class="error-toast notification access-denied login-required">
       <span id="toast-msg"></span>
       <button id="toast-close">✕</button>
     </div>
 
+    <!-- ── NO RESULTS HINT ─────────────────────────────────────────────── -->
+    <div
+      class="no-results-hint hidden"
+      data-i18n="noResultsHint"
+      style="
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #fff;
+        border: 1px solid #ccc;
+        padding: 10px 16px;
+        border-radius: 4px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        font-size: 0.9rem;
+        color: #666;
+      "
+    ></div>
+
     <!-- ── MODEL SELECTOR MODAL ─────────────────────────────────── -->
-    <div id="model-modal" class="modal-overlay hidden">
+    <div id="model-modal" class="modal-overlay hidden" tabindex="-1">
       <div class="modal">
         <div class="modal-header">
           <span class="modal-title" data-i18n="modalTitle">Select Model</span>
@@ -94,6 +114,29 @@
       </nav>
 
       <div class="header-right">
+        <!-- Global Search -->
+        <div
+          class="search-wrapper"
+          style="position: relative; display: inline-block; margin-right: 12px"
+        >
+          <input
+            type="text"
+            id="global-search"
+            class="global-search"
+            data-i18n-ph="globalSearchPh"
+            data-i18n-label="globalSearchLabel"
+          />
+          <button
+            id="global-search-clear"
+            class="global-search-clear"
+            type="button"
+            data-i18n-tt="globalSearchClear"
+            data-i18n-label="globalSearchClear"
+          >
+            ×
+          </button>
+        </div>
+
         <div class="tab-group">
           <button class="tab-btn active" id="tab-graph" data-view="graph" data-i18n="tabGraph">
             Graph
@@ -194,6 +237,12 @@
                 aria-label="Search entities"
                 placeholder="Search…"
               />
+              <div class="filter-show-all-wrap">
+                <label class="filter-show-all-label">
+                  <input type="checkbox" id="elem-show-all" class="filter-show-all" />
+                  <span data-i18n="showAll">Show all</span>
+                </label>
+              </div>
               <div class="filter-list" id="elem-filter-list"></div>
             </div>
           </div>
@@ -236,6 +285,12 @@
                 aria-label="Search relationships"
                 placeholder="Search…"
               />
+              <div class="filter-show-all-wrap">
+                <label class="filter-show-all-label">
+                  <input type="checkbox" id="rel-show-all" class="filter-show-all" />
+                  <span data-i18n="showAll">Show all</span>
+                </label>
+              </div>
               <div class="filter-list" id="rel-filter-list"></div>
             </div>
           </div>
@@ -315,45 +370,49 @@
       <main>
         <div id="cy" class="hidden"></div>
         <div id="graph-legend" class="hidden"></div>
+        <div id="empty-state-message" class="empty-state-message hidden" data-i18n="noElements">
+          <p>This model contains no elements.</p>
+        </div>
 
         <div id="table-view">
-          <div class="table-tabs">
-            <button
-              class="table-tab-btn active"
-              id="ttab-elements"
-              data-tab="elements"
-              data-i18n="ttabElements"
-            >
-              Elements
-            </button>
-            <button
-              class="table-tab-btn"
-              id="ttab-rels"
-              data-tab="relationships"
-              data-i18n="ttabRelations"
-            >
-              Relationships
-            </button>
-          </div>
-          <div class="table-toolbar">
-            <input
-              class="table-search"
-              type="text"
-              id="table-search"
-              data-i18n-ph="tableSearchPh"
-              data-i18n-label="tableSearchLabel"
-              aria-label="Search table"
-              placeholder="Search table…"
-            />
-            <button id="export-csv-btn" class="ctrl" disabled>Export CSV</button>
-            <span id="export-loading" class="hidden">Exporting…</span>
-            <span class="table-count" id="table-count"></span>
+          <div class="table-header">
+            <div class="table-tabs">
+              <button
+                class="table-tab-btn active"
+                id="ttab-elements"
+                data-tab="elements"
+                data-i18n="ttabElements"
+              >
+                Elements
+              </button>
+              <button
+                class="table-tab-btn"
+                id="ttab-rels"
+                data-tab="relationships"
+                data-i18n="ttabRelations"
+              >
+                Relationships
+              </button>
+            </div>
+            <div class="table-toolbar">
+              <button id="export-csv-btn" class="ctrl" disabled>CSV</button>
+            </div>
           </div>
           <div class="table-container">
             <table>
               <thead id="table-head"></thead>
               <tbody id="table-body"></tbody>
             </table>
+            <div
+              id="no-results"
+              class="no-results-message hidden"
+              style="text-align: center; padding: 40px 20px; color: var(--text-muted)"
+            >
+              <p style="font-size: 1rem; margin: 0 0 8px 0">No results found</p>
+              <p style="font-size: 0.85rem; margin: 0; opacity: 0.8">
+                Try adjusting your search or filters
+              </p>
+            </div>
           </div>
         </div>
 
@@ -367,12 +426,11 @@
 
           <!-- Export Image Controls -->
           <div id="export-controls" class="export-controls">
-            <button id="export-image-btn" class="ctrl" title="Export graph image">📤</button>
+            <button id="export-image-btn" class="ctrl" data-i18n-tt="export">📤</button>
             <div id="export-dropdown" class="dropdown hidden">
-              <button id="export-png-btn" class="dropdown-item">Export as PNG</button>
-              <button id="export-svg-btn" class="dropdown-item">Export as SVG</button>
+              <button id="export-png-btn" class="dropdown-item">PNG</button>
+              <button id="export-svg-btn" class="dropdown-item">SVG</button>
             </div>
-            <span id="export-loading" class="hidden">Exporting…</span>
           </div>
         </div>
       </main>

@@ -139,7 +139,9 @@ def load_sr_mapping(docs_dir):
     return sr_to_frs, sr_titles, sr_file_map, sr_anchors
 
 def get_implemented_test_cases(tests_e2e_dir):
-    """Scan the e2e test directory and return a set of implemented TC codes (e.g., 'TC-2.1.1')."""
+    """Scan the e2e test directory and return a set of implemented TC codes (e.g., 'TC-2.1.1').
+    Excludes tests that are marked as skipped (test.skip, xit, xdescribe, describe.skip).
+    """
     implemented = set()
     e2e_path = Path(tests_e2e_dir)
 
@@ -147,18 +149,62 @@ def get_implemented_test_cases(tests_e2e_dir):
         print(f"⚠️  Warning: e2e test directory '{tests_e2e_dir}' does not exist")
         return implemented
 
-    # Pattern to find TC codes in test files: TC-2.1, TC-2.1.1, possibly followed by : or space or end of string
-    # Looks for: 'TC-2.1:', "TC-2.1.1:", `TC-2.1.1`, etc.
-    tc_pattern = re.compile(r'[\'"]\s*(TC-\d+(?:\.\d+)+)(?:\s*:|)')
+    # Pattern to find active test declarations: test('TC-...') or it('TC-...')
+    # Captures the TC code in group 1. Excludes test.skip, xit, xdescribe, describe.skip.
+    active_test_pattern = re.compile(
+        r'(?<!\.)\b(?:test|it)\s*\(\s*[\'"](TC-\d+(?:\.\d+)+)',  # test('TC-...' or it('TC-...
+        re.MULTILINE
+    )
 
-    # Scan all .spec.js files
+    # Pattern to detect skip modifiers before test: test.skip, xit, xdescribe
+    skip_pattern = re.compile(r'\b(test\.skip|xit|xdescribe)\s*\(', re.MULTILINE)
+
+    # Pattern to detect block-level skips: describe.skip or xdescribe
+    skip_block_start_pattern = re.compile(r'^\s*(describe\.skip|xdescribe)\s*\(', re.MULTILINE)
+
+    # Track if we're inside a describe.skip block
+    inside_skipped_describe = False
+
     for spec_file in e2e_path.rglob("*.spec.js"):
         try:
             content = spec_file.read_text(encoding='utf-8')
-            # Find all TC codes in the file
-            matches = tc_pattern.findall(content)
-            for tc_code in matches:
-                implemented.add(tc_code)
+            lines = content.splitlines()
+
+            # Reset for each file
+            inside_skipped_describe = False
+            describe_indentation = 0
+
+            # We need to process line by line to track describe.skip blocks
+            for line in lines:
+                stripped = line.strip()
+
+                # Check for describe.skip or xdescribe at the beginning of a block
+                if skip_block_start_pattern.match(line):
+                    inside_skipped_describe = True
+                    # Track indentation level to know when block ends
+                    describe_indentation = len(line) - len(line.lstrip())
+                    continue
+
+                # Check if we're exiting a describe block (closing brace at the same or less indentation)
+                if inside_skipped_describe and re.match(r'^\s*}', line):
+                    current_indent = len(line) - len(line.lstrip())
+                    if current_indent <= describe_indentation:
+                        inside_skipped_describe = False
+                    continue
+
+                # If we're inside a skipped describe block, skip this line
+                if inside_skipped_describe:
+                    continue
+
+                # Check for skip modifiers in this line (test.skip, xit, xdescribe)
+                if skip_pattern.search(line):
+                    continue
+
+                # Check for active test declarations
+                matches = active_test_pattern.findall(line)
+                for tc_code in matches:
+                    implemented.add(tc_code)
+
         except Exception as e:
             print(f"⚠️  Error reading {spec_file}: {e}")
 
@@ -178,12 +224,11 @@ def parse_test_file(filepath, rel_path):
 
     # Extract SR link at file level (only one per file)
     sr_code = None
-    sr_pattern = re.compile(r'\*\*System Requirement\*\*:\s*\[(SR-\d+\.\d+)\]')
-    for line in lines:
-        sr_match = sr_pattern.search(line)
-        if sr_match:
-            sr_code = sr_match.group(1)
-            break
+    # Use DOTALL to allow newlines between colon and bracket
+    sr_pattern = re.compile(r'\*\*System Requirement\*\*:\s*\[(SR-\d+\.\d+)\]', re.DOTALL)
+    sr_match = sr_pattern.search(content)
+    if sr_match:
+        sr_code = sr_match.group(1)
 
     if not sr_code:
         return [], {}, {}
@@ -222,16 +267,22 @@ def parse_test_file(filepath, rel_path):
 
 def build_mapping(docs_dir, sr_to_frs):
     """Build mapping: FR -> set(SR). Also return fr_group_tcs and fr_scenarios for statistics.
+    Only includes SR and TC that are properly linked (SR must have FR mapping).
     Args:
         sr_to_frs: dict mapping SR code -> set of FR codes (from system-requirements)
     Returns:
         mapping: dict FR -> set of SR codes
         fr_group_tcs: dict FR group -> set of base TC codes (for backward compatibility)
         fr_scenarios: dict FR -> set of full TC scenario codes (e.g., TC-2.1.1)
+        bound_scenarios: set of all scenario codes that are linked through SR->FR
+        orphan_sr_codes: set of SR codes that exist but have no FR mapping
+        orphan_tc_codes: set of TC codes whose SR has no FR mapping
     """
     mapping = defaultdict(set)  # FR -> set of SR codes
     fr_group_tcs = defaultdict(set)  # FR group -> set of base TC codes
     fr_scenarios = defaultdict(set)  # FR -> set of full TC scenario codes
+    bound_scenarios = set()  # scenarios linked through SR->FR
+    orphan_tc_codes = set()  # scenarios whose SR has no FR mapping
     test_cases_dir = Path(docs_dir) / "test-cases"
 
     for test_file in sorted(test_cases_dir.rglob("*.md")):
@@ -249,9 +300,11 @@ def build_mapping(docs_dir, sr_to_frs):
         # Each test file has one SR link (at file level)
         sr_code = list(sr_links.keys())[0]
 
-        # Find all FRs that this SR maps to
-        if sr_code not in sr_to_frs:
-            # SR not found in system-requirements, skip
+        # Check if this SR has any FR mapping
+        if sr_code not in sr_to_frs or not sr_to_frs[sr_code]:
+            # SR exists but has no FR mapping - TC is orphan
+            for scenario in scenarios:
+                orphan_tc_codes.add(scenario['code'])
             continue
 
         fr_codes = sr_to_frs[sr_code]
@@ -262,14 +315,22 @@ def build_mapping(docs_dir, sr_to_frs):
 
             # Track scenarios by FR
             for scenario in scenarios:
-                # Track full scenario code (e.g., TC-2.1.1)
-                fr_scenarios[fr_code].add(scenario['code'])
+                code = scenario['code']
+                fr_scenarios[fr_code].add(code)
+                bound_scenarios.add(code)
                 # Also track by FR group for compatibility (base TC codes like TC-2.1)
                 group_num = fr_code.split('-')[1].split('.')[0]
                 fr_group = f"FR-{group_num}"
                 fr_group_tcs[fr_group].add(scenario['base_tc_code'])
 
-    return mapping, fr_group_tcs, fr_scenarios
+    # Find orphan SR codes: SR that exist in system-requirements but have no FR mapping
+    all_sr_codes = set(sr_to_frs.keys())
+    bound_sr_codes = set()
+    for sr_set in mapping.values():
+        bound_sr_codes.update(sr_set)
+    orphan_sr_codes = all_sr_codes - bound_sr_codes
+
+    return mapping, fr_group_tcs, fr_scenarios, bound_scenarios, orphan_sr_codes, orphan_tc_codes
 
 def group_frs_by_prefix(fr_titles):
     """Group FR codes by their main number (FR-1 -> [FR-1.1, FR-1.2, ...])."""
@@ -279,7 +340,7 @@ def group_frs_by_prefix(fr_titles):
         groups[f"FR-{group_num}"].append(fr_code)
     return groups
 
-def generate_requirements_map(mapping, sr_titles, sr_file_map, sr_anchors, fr_titles, fr_group_names, fr_scenarios, implemented_tcs, app_name, docs_dir):
+def generate_requirements_map(mapping, sr_titles, sr_file_map, sr_anchors, fr_titles, fr_group_names, fr_scenarios, implemented_tcs, app_name, docs_dir, bound_scenarios):
     """Generate the markdown content."""
     lines = []
     lines.append(f"# Traceability Matrix: {app_name}")
@@ -295,8 +356,8 @@ def generate_requirements_map(mapping, sr_titles, sr_file_map, sr_anchors, fr_ti
     groups = group_frs_by_prefix(fr_titles)
 
     # Build summary statistics for each FR group
-    lines.append("| Requirement Domain | FR | SR | TC | Implemented |")
-    lines.append("|--------------------|:--:|:--:|:--:|:-----------:|")
+    lines.append("| Functional Domain | FR | SR | TC | Done |")
+    lines.append("|-------------------|:--:|:--:|:--:|:----:|")
 
     def group_sort_key(group):
         m = re.match(r'FR-(\d+)', group)
@@ -345,13 +406,17 @@ def generate_requirements_map(mapping, sr_titles, sr_file_map, sr_anchors, fr_ti
         group_link = f"[{group_num}: {group_name}](#{anchor})"
         lines.append(f"| {group_link} | {fr_count} | {sr_count} | {tc_count} | {group_implemented} |")
 
-    # Add total row with unique counts
-    total_srs_unique = len(all_srs_unique)
-    total_scenarios_unique = len(all_scenarios_unique)
-    total_implemented_unique = len(all_scenarios_implemented)
+    # Add total row: only count SR and TC that are bound (linked to FR via SR)
+    # Count bound SRs: those that appear in mapping (i.e., have at least one FR)
+    bound_sr_codes = set()
+    for sr_set in mapping.values():
+        bound_sr_codes.update(sr_set)
+    total_sr = len(bound_sr_codes)
+    total_tc = len(bound_scenarios)
+    total_implemented = len(bound_scenarios & implemented_tcs)
 
     lines.append("| **Total** | **{}** | **{}** | **{}** | **{}** |".format(
-        total_fr_count, total_srs_unique, total_scenarios_unique, total_implemented_unique
+        total_fr_count, total_sr, total_tc, total_implemented
     ))
     lines.append("")
 
@@ -446,37 +511,50 @@ def main():
     print(f"   Loaded {len(sr_titles)} SR titles, {len(sr_to_frs)} SR->FR mappings")
 
     print("🔍 Building FR -> SR mapping...")
-    mapping, fr_group_tcs, fr_scenarios = build_mapping(docs_dir, sr_to_frs)
+    mapping, fr_group_tcs, fr_scenarios, bound_scenarios, orphan_sr_codes, orphan_tc_codes = build_mapping(docs_dir, sr_to_frs)
 
     print("🔍 Scanning e2e test directory for implemented tests...")
     implemented_tcs = get_implemented_test_cases(tests_e2e_dir)
     print(f"   Found {len(implemented_tcs)} implemented test case groups:")
-    for tc in sorted(implemented_tcs):
-        print(f"     - {tc}")
 
     print("📝 Generating requirements map...")
-    content = generate_requirements_map(mapping, sr_titles, sr_file_map, sr_anchors, fr_titles, fr_group_names, fr_scenarios, implemented_tcs, app_name, docs_dir)
+    content = generate_requirements_map(mapping, sr_titles, sr_file_map, sr_anchors, fr_titles, fr_group_names, fr_scenarios, implemented_tcs, app_name, docs_dir, bound_scenarios)
 
     output_file.write_text(content, encoding='utf-8')
     print(f"✅ Generated {output_file}")
 
-    # Calculate statistics
+    # Report orphan SRs (SR without any FR mapping)
+    if orphan_sr_codes:
+        print(f"\n❌ Error: {len(orphan_sr_codes)} SR(s) have no FR mapping:")
+        for sr_code in sorted(orphan_sr_codes):
+            print(f"   - {sr_code}")
+    else:
+        print(f"\n✅ All SRs are linked to at least one FR")
+
+    # Report orphan TCs (TC whose SR has no FR mapping)
+    if orphan_tc_codes:
+        print(f"\n❌ Error: {len(orphan_tc_codes)} TC(s) are not bound to any FR (their SR has no FR mapping):")
+        for tc_code in sorted(orphan_tc_codes):
+            print(f"   - {tc_code}")
+    else:
+        print(f"✅ All TCs are bound to FRs through their SR")
+
+    # Calculate statistics for bound items only
     total_sr_links = sum(len(srs) for srs in mapping.values())
+    total_sr = len(bound_sr_codes) if 'bound_sr_codes' in locals() else len(sr_titles)  # We'll compute bound_sr below
+    bound_sr_codes = set()
+    for sr_set in mapping.values():
+        bound_sr_codes.update(sr_set)
+    total_sr = len(bound_sr_codes)
+    total_tc = len(bound_scenarios)
+    total_implemented = len(bound_scenarios & implemented_tcs)
 
-    # Count unique total scenarios across all FRs (avoid double-counting when TC links to multiple FRs)
-    all_scenarios_global = set()
-    for scenarios in fr_scenarios.values():
-        all_scenarios_global.update(scenarios)
-    total_scenarios = len(all_scenarios_global)
-
-    # Count implemented unique scenarios
-    implemented_scenario_count = len(all_scenarios_global & implemented_tcs)
-
-    print(f"   Total FR-SR links: {total_sr_links}")
+    print(f"\n   Total FR-SR links: {total_sr_links}")
     print(f"   FRs covered: {len(mapping)}")
-    print(f"   Total test scenarios: {total_scenarios}")
-    print(f"   Implemented test scenarios: {implemented_scenario_count}")
-    print(f"   Coverage: {implemented_scenario_count}/{total_scenarios} ({implemented_scenario_count/total_scenarios*100:.1f}%)" if total_scenarios > 0 else "   Coverage: N/A")
+    print(f"   Bound SRs: {total_sr}")
+    print(f"   Bound TCs: {total_tc}")
+    print(f"   Implemented bound TCs: {total_implemented}")
+    print(f"   Coverage: {total_implemented}/{total_tc} ({total_implemented/total_tc*100:.1f}%)" if total_tc > 0 else "   Coverage: N/A")
 
     return 0
 

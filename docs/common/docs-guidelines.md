@@ -279,9 +279,8 @@ and verification status ("What is built").
   - At file level: `**System Requirement**: [SR-X](../../system-requirements/<app>.md#sr-id)`
   - For each test scenario subsection (`##`):
     - `### Preconditions` (heading, not bold)
-    - `### Test Steps` (heading with numbered list; steps requiring verification followed by
-      indented `**Expected**:` lines)
-    - `### Post-conditions` (optional; heading)
+    - `### Steps` (heading with numbered list; steps followed by indented outcome bullets without
+      `Expected:` label)
     - `### Test Data` (optional; heading with table)
 - **Principles**:
   - **Verifiability**: Every step must have a clear, objective expected result.

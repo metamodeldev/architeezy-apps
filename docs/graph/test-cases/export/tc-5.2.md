@@ -1,6 +1,7 @@
 # TC-5.2: Relationship table export
 
-**System Requirement**: [SR-5.2](../../system-requirements/export.md#sr-52-relationship-table-export)
+**System Requirement**:
+[SR-5.2](../../system-requirements/export.md#sr-52-relationship-table-export)
 
 ## TC-5.2.1: Export relationships table to CSV
 
@@ -10,24 +11,21 @@
 - "Relationships" tab is selected
 - Table displays relationships with columns: Source, Type, Target, Name
 
-### Test Steps
+### Steps
 
 1. Open export menu in table toolbar
-   - **Expected**: Dropdown shows "Export to CSV"
+   - Dropdown shows "Export to CSV"
 2. Select "Export to CSV"
-   - **Expected**: File downloads with name: `{modelName}-relationships-{timestamp}.csv`
+   - File downloads with name: `{modelName}-relationships-{timestamp}.csv`
 3. Open the CSV file
-   - **Expected**: Contains columns: Source, Type, Target, Name
+   - Contains columns: Source, Type, Target, Name
    - All visible relationship rows are included
-
-### Post-conditions
-
-- Relationships exported successfully
+   - Relationships exported successfully
 
 ### Test Data
 
-| Columns          | Source, Type, Target, Name |
-| ---------------- | -------------------------- |
+| Columns          | Source, Type, Target, Name       |
+| ---------------- | -------------------------------- |
 | Filename pattern | `{model}-relationships-{ts}.csv` |
 
 ## TC-5.2.2: Export respects current filters
@@ -37,22 +35,19 @@
 - Global filter active: only entities of type "API" are visible
 - Relationships table shows only relationships where both source and target are "API" entities
 
-### Test Steps
+### Steps
 
 1. Export relationships to CSV
-   - **Expected**: CSV contains only relationships that match the current visibility (both endpoints visible)
+   - CSV contains only relationships that match the current visibility (both endpoints visible)
 2. Count rows
-   - **Expected**: Row count matches table display count
-
-### Post-conditions
-
-- Filtered relationships only
+   - Row count matches table display count
+   - Filtered relationships only
 
 ### Test Data
 
 | Filter condition | Visible relationships |
 | ---------------- | --------------------- |
-| type:API        | only API→API edges   |
+| type:API         | only API→API edges    |
 
 ## TC-5.2.3: Empty relationships export
 
@@ -61,20 +56,17 @@
 - No relationships match current filters (e.g., filter hides all relationship types)
 - Relationships tab shows empty state
 
-### Test Steps
+### Steps
 
 1. Export to CSV
-   - **Expected**: File downloads with headers only, no data rows
-
-### Post-conditions
-
-- Empty export succeeds
+   - File downloads with headers only, no data rows
+   - Empty export succeeds
 
 ### Test Data
 
-| State           | Expected rows |
-| --------------- | ------------- |
-| No relationships| 0             |
+| State            | Expected rows |
+| ---------------- | ------------- |
+| No relationships | 0             |
 
 ## TC-5.2.4: Special characters in relationship names
 
@@ -85,23 +77,20 @@
   - Type: `"↔"` (unicode symbol)
   - Source/Target names with quotes
 
-### Test Steps
+### Steps
 
 1. Export to CSV
-   - **Expected**: File downloads without errors
+   - File downloads without errors
 2. Open in spreadsheet
-   - **Expected**: Special characters preserved correctly; fields properly escaped
-
-### Post-conditions
-
-- Unicode and special chars handled per RFC 4180
+   - Special characters preserved correctly; fields properly escaped
+   - Unicode and special chars handled per RFC 4180
 
 ### Test Data
 
-| Field    | Test value               |
-| -------- | ------------------------ |
-| Name     | `"Uses, Depends On"`     |
-| Type     | `↔` (unicode)            |
+| Field | Test value           |
+| ----- | -------------------- |
+| Name  | `"Uses, Depends On"` |
+| Type  | `↔` (unicode)        |
 
 ## TC-5.2.5: Export respects table sorting
 
@@ -110,14 +99,11 @@
 - Relationships table sorted by Type (asc)
 - Multiple relationships visible
 
-### Test Steps
+### Steps
 
 1. Export to CSV
-   - **Expected**: Rows in CSV match UI sort order
-
-### Post-conditions
-
-- Sorting preserved
+   - Rows in CSV match UI sort order
+   - Sorting preserved
 
 ### Test Data
 
@@ -132,20 +118,17 @@
 - Model name: "e-commerce"
 - Current timestamp
 
-### Test Steps
+### Steps
 
 1. Export relationships
-   - **Expected**: Filename matches pattern: `e-commerce-relationships-YYYYMMDD-HHMMSS.csv`
+   - Filename matches pattern: `e-commerce-relationships-YYYYMMDD-HHMMSS.csv`
 2. Verify filename
-   - **Expected**: Model name is sanitized (special chars removed/replaced); timestamp is in correct format
-
-### Post-conditions
-
-- Naming convention followed
+   - Model name is sanitized (special chars removed/replaced); timestamp is in correct format
+   - Naming convention followed
 
 ### Test Data
 
-| Model name    | Expected filename fragment        |
-| ------------- | ---------------------------------- |
-| e-commerce    | `e-commerce-relationships-`       |
-| my-app v2.0   | sanitized → `my-app-v2-0-...`     |
+| Model name  | Expected filename fragment    |
+| ----------- | ----------------------------- |
+| e-commerce  | `e-commerce-relationships-`   |
+| my-app v2.0 | sanitized → `my-app-v2-0-...` |

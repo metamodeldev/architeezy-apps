@@ -63,9 +63,9 @@ export function buildStateQuery({
     parts.push(`relationships=${activeR.map((r) => encodeURIComponent(r)).join(',')}`);
   }
 
-  // View — only when table is active
-  if (currentView === 'table') {
-    parts.push('view=table');
+  // View — omit when 'graph' (default), include for other views like 'table'
+  if (currentView !== 'graph') {
+    parts.push(`view=${currentView}`);
   }
 
   return parts.join('&');
@@ -98,9 +98,14 @@ export function readUrlParams() {
 
 /**
  * Serialises the current application state into the URL query string and updates the address bar
- * via `history.replaceState`. Called whenever any URL-reflected state changes.
+ * via `history.replaceState` or `history.pushState` depending on options. Called whenever any
+ * URL-reflected state changes.
+ *
+ * @param {{ push?: boolean }} [options] - Optional. Set `push: true` to use `pushState` instead of
+ *   `replaceState`.
  */
-export function syncUrl() {
+export function syncUrl(options = {}) {
+  const { push = false } = options;
   const q = buildStateQuery({
     currentModelId: getCurrentModelId(),
     drillNodeId: getDrillNodeId(),
@@ -111,6 +116,12 @@ export function syncUrl() {
     activeRelTypes: getActiveRelTypes(),
     currentView: getCurrentView(),
   });
-  // eslint-disable-next-line unicorn/no-null
-  history.replaceState(null, '', location.pathname + (q ? '?' + q : ''));
+  const url = location.pathname + (q ? '?' + q : '');
+  if (push) {
+    // oxlint-disable-next-line unicorn/no-null
+    history.pushState(null, '', url);
+  } else {
+    // oxlint-disable-next-line unicorn/no-null
+    history.replaceState(null, '', url);
+  }
 }

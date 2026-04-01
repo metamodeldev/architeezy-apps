@@ -203,10 +203,17 @@ automatic layout.
 1. Activate drill-down for a specific node (e.g., via double-click).
    - The view clears everything except the root node and its neighbors within the current depth.
    - A drill-down navigation bar appears with depth controls.
+   - The current layout algorithm is applied to arrange the visible subgraph.
 2. Increase or decrease the exploration depth.
    - The graph expands or shrinks, and the system automatically recalculates the layout.
 3. Exit drill-down mode by clicking the application name in the header.
-   - The system restores the full model view and performs a layout recalculation.
+   - The system restores the full model view.
+   - If a previous graph state (layout positions and viewport) existed before entering drill-down,
+     that state is preserved.
+   - If no previous state exists (e.g., drill-down was opened directly via URL link), the system
+     runs the current layout algorithm to arrange the full graph.
+   - The viewport (zoom and pan) is maintained if it was present before drill-down; otherwise, the
+     graph fits to view.
 
 ### SR-2.8: Containment
 
@@ -266,7 +273,13 @@ As a user, I want to choose how physical containment is visualized: as edges or 
 
 ## Technical Notes
 
-- **URL Contract**: Only `entity` (root ID) and `depth` for Drill-down are encoded in the URL.
+- **URL Contract**: The following parameters are encoded in the URL when applicable:
+  - `model`: Model identifier (required when a model is loaded)
+  - `view`: View mode (`graph` or `table`); omitted when value is `graph` (the default)
+  - `entities`: Comma-separated list of active entity types; omitted when all types are active
+  - `relationships`: Comma-separated list of active relationship types; omitted when all types are
+    active
+  - `entity` + `depth`: Drill-down parameters; present only when drill-down mode is active
 - **State Management**:
   - `pushState`: Major transitions (Model switch, Graph/Table switch, entering Drill-down).
   - `replaceState`: Minor adjustments (filters, sorting, Drill-down depth).

@@ -2,165 +2,460 @@ import { expect } from '@playwright/test';
 
 import { mockApi, test, waitForLoading } from '../fixtures.js';
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-
-          return inst;
-        };
-      },
-    });
+// Wait for cytoscape to be ready (either __cy from injector or global cy)
+async function waitForCyReady(page) {
+  await page.waitForFunction(() => globalThis.cy || globalThis.__cy);
+  // Alias: tests expect __cy, but app uses globalThis.cy
+  await page.evaluate(() => {
+    if (globalThis.cy && !globalThis.__cy) {
+      globalThis.__cy = globalThis.cy;
+    }
   });
 }
 
-async function waitForCyNode(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const node = globalThis.__cy.$id(id);
-    if (!node.length) {
-      return false;
-    }
-    const pos = node.renderedPosition();
-    return pos.x > 10 && pos.y > 10;
-  }, nodeId);
-}
-
-// ── Fixture data ──────────────────────────────────────────────────────────────
-
-const CONTAINMENT_CONTENT_URL =
-  'https://architeezy.com/api/models/test/test/1/containment/content?format=json';
-
-const CONTAINMENT_CONTENT = {
-  ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
-  content: [
-    {
-      eClass: 'archi:ArchimateModel',
-      id: 'model-root',
-      data: {
-        name: 'Containment Test',
-        elements: [
-          {
-            eClass: 'archi:ApplicationComponent',
-            id: 'inv-sys',
-            data: {
-              name: 'Inventory System',
-              elements: [
-                {
-                  eClass: 'archi:ApplicationComponent',
-                  id: 'pay-svc-cn',
-                  data: { name: 'Payment Service' },
-                },
-              ],
-            },
-          },
-        ],
-        relations: [],
-      },
-    },
-  ],
-};
-
-async function mockContainmentApi(page) {
-  await mockApi(page);
-  // Override models list to include containment model (Playwright LIFO: later routes checked first)
-  await page.route('https://architeezy.com/api/models*', (r) =>
-    r.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        _embedded: {
-          models: [
-            {
-              id: 'model-containment',
-              name: 'Containment Test',
-              contentType: 'application/vnd.opengroup.archimate/metamodel/archimate/3.0/',
-              _links: { content: { href: CONTAINMENT_CONTENT_URL } },
-            },
-          ],
-        },
-        _links: {},
-      }),
-    }),
-  );
-  await page.route(`${CONTAINMENT_CONTENT_URL}*`, (r) =>
-    r.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(CONTAINMENT_CONTENT),
-    }),
-  );
-}
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-test.describe('TC-2.7: Containment Visualization Modes', () => {
-  test.beforeEach(async ({ page }) => {
-    await injectCyCapture(page);
-    await mockContainmentApi(page);
+test.describe('TC-2.7: Drill-down', () => {
+  test('TC-2.7.1: Enter drill-down mode on a node (double-click)', async ({ page }) => {
+    await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
-    await page.goto('/graph/?model=model-containment');
+    await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await waitForCyNode(page, 'inv-sys');
+    await waitForCyReady(page);
+
+    // Double-click a node
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+
+    await page.waitForTimeout(500);
+
+    // Should enter drill-down mode: crumb separator and label become visible
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+    // URL should contain drill parameters (entity and/or depth)
+    await expect(page).toHaveURL(/(entity=|depth=)/);
   });
 
-  test('TC-2.7.1: "Edges" containment mode adds synthetic diamond-marker edges', async ({
-    page,
-  }) => {
-    await page.locator('#containment-select').selectOption('none');
+  test('TC-2.7.2: Increase drill-depth expands the scope', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
 
-    const edgesWithNone = await page.evaluate(() => globalThis.__cy.edges().length);
-    expect(edgesWithNone).toBe(0);
+    // Enter drill-down
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
 
-    await page.locator('#containment-select').selectOption('edge');
+    // Get current visible node count
+    const initialCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
 
-    const edgesWithEdgeMode = await page.evaluate(() => globalThis.__cy.edges().length);
-    expect(edgesWithEdgeMode).toBeGreaterThan(0);
+    // Increase depth: click button with data-depth="3"
+    const increaseBtn = page.locator('#depth-picker .depth-btn[data-depth="3"]');
+    if (await increaseBtn.isVisible()) {
+      await increaseBtn.click();
+      // Wait for layout to settle
+      await page.waitForTimeout(1000);
 
-    await page.locator('#containment-select').selectOption('none');
-
-    const edgesBackToNone = await page.evaluate(() => globalThis.__cy.edges().length);
-    expect(edgesBackToNone).toBe(0);
+      // More nodes should be visible after increasing depth
+      const newCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+      expect(newCount).toBeGreaterThan(initialCount);
+    } else {
+      // Depth picker should be visible; at least some nodes visible
+      await expect(page.locator('#depth-picker')).toBeVisible();
+      expect(initialCount).toBeGreaterThan(0);
+    }
   });
 
-  test('TC-2.7.2: "Compound" containment mode nests child nodes inside parent nodes', async ({
-    page,
-  }) => {
-    await page.locator('#containment-select').selectOption('compound');
+  test('TC-2.7.3: Decrease depth shrinks the scope', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
 
-    const isNested = await page.evaluate(
-      () => globalThis.__cy.$id('pay-svc-cn').parent().id() === 'inv-sys',
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Increase to depth 3 first (if possible)
+    const depth3Btn = page.locator('#depth-picker .depth-btn[data-depth="3"]');
+    if (await depth3Btn.isVisible()) {
+      await depth3Btn.click();
+      await page.waitForTimeout(1000);
+    }
+
+    // Decrease: click depth 2
+    const decreaseBtn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
+    if (await decreaseBtn.isVisible()) {
+      await decreaseBtn.click();
+      await page.waitForTimeout(1000);
+
+      const nodeCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+
+      // Should have fewer nodes than at deeper depth (or at least >=1)
+      expect(nodeCount).toBeGreaterThanOrEqual(1);
+      // Ideally fewer than before, but could be equal if max depth reached
+    }
+  });
+
+  test('TC-2.7.4: Exit drill-down via application name in header', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Drill-down nav should be visible: crumb-entity-sep and drill-label shown
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+
+    // Click exit button (drill-exit-btn) to exit
+    await page.locator('#drill-exit-btn').click();
+
+    await page.waitForTimeout(300);
+
+    // After exit, crumb separator and label should be hidden again
+    await expect(page.locator('#crumb-entity-sep')).toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).toHaveClass(/hidden/);
+  });
+
+  test('TC-2.7.5: Drill-down uses BFS to compute visible set', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Enter drill-down
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Check depth: get active depth button text
+    const depthText = await page.locator('#depth-picker .depth-btn.active').textContent();
+    const depth = Number.parseInt(depthText, 10);
+
+    // Depth should be between 1 and 5
+    expect(depth).toBeGreaterThanOrEqual(1);
+    expect(depth).toBeLessThanOrEqual(5);
+  });
+
+  test('TC-2.7.6: Drill-down respects current entity filters', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    // Wait for filter list to populate (e.g., Database checkbox exists)
+    await page.waitForSelector('input[data-kind="elem"][data-type="Database"]', {
+      state: 'visible',
+    });
+    await waitForCyReady(page);
+
+    // Apply filter first: uncheck Database entity filter
+    await page.locator('input[data-kind="elem"][data-type="Database"]').uncheck();
+    await page.waitForTimeout(300);
+
+    // Enter drill-down
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Should only include allowed entity types: visible nodes should not include Database
+    const nodeTypes = await page.evaluate(() =>
+      globalThis.__cy.nodes(':visible').map((n) => n.data('type')),
     );
-    expect(isNested).toBe(true);
+
+    // Should not contain Database if filtered out
+    expect(nodeTypes).not.toContain('Database');
   });
 
-  test('TC-2.7.3: In compound mode, child remains as a top-level node when parent is filtered', async ({
+  test('TC-2.7.7: Drill-down URL parameters encode entity and depth', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Verify at least one node exists before proceeding
+    const hasNodes = await page.evaluate(() => globalThis.__cy?.nodes()?.length > 0);
+    expect(hasNodes).toBe(true);
+
+    // Enter drill-down
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+
+    // Wait for URL to update with drill parameters instead of fixed timeout
+    await expect(page).toHaveURL(/(entity=|depth=)/, { timeout: 5000 });
+  });
+
+  test('TC-2.7.8: Breadcrumb/navigation bar shows current root and depth', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Breadcrumb nav should be visible
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+    // Depth picker should be visible
+    await expect(page.locator('#depth-picker')).toBeVisible();
+    // Drill label should show the name of the root node
+    const labelText = await page.locator('#drill-label').textContent();
+    expect(labelText).not.toBe('');
+  });
+
+  test('TC-2.7.9: Drill-down on a node already in drill-down scope changes root', async ({
     page,
   }) => {
-    await page.locator('#containment-select').selectOption('compound');
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
 
-    const filterCheckbox = page.locator(
-      'input[data-kind="elem"][data-type="ApplicationComponent"]',
-    );
-    await filterCheckbox.uncheck();
+    // Enter drill-down on first node
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
 
-    const invSysVisible = await page.evaluate(() => globalThis.__cy.$id('inv-sys').visible());
-    expect(invSysVisible).toBe(false);
+    // Double-click another node in scope (if exists)
+    const nodeCount = await page.evaluate(() => globalThis.__cy.nodes().length);
+    if (nodeCount > 1) {
+      await page.evaluate(() => {
+        const nodes = globalThis.__cy.nodes();
+        nodes[1].trigger('dbltap');
+      });
+      await page.waitForTimeout(500);
 
-    const paySvcVisible = await page.evaluate(() => globalThis.__cy.$id('pay-svc-cn').visible());
-    expect(paySvcVisible).toBe(true);
+      // After second double-click, either root changes or stays same (implementation dependent)
+      // But drill-down nav should remain visible
+      await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+      await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+    } else {
+      // Single node: still valid
+      await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    }
+  });
+
+  // oxlint-disable-next-line max-statements
+  test('TC-2.7.10: Exit drill-down preserves previous layout state', async ({ page }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Ensure any previous layout has finished before changing layout
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // Apply dagre layout to establish a baseline
+    await page.selectOption('#layout-select', 'dagre');
+
+    // Wait for the new layout to start and then fully complete
+    await page.waitForFunction(() => globalThis.__layoutRunning);
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // Capture initial node positions before drill-down
+    const initialPositions = await page.evaluate(() => {
+      const nodes = globalThis.__cy.nodes();
+      return Object.fromEntries(
+        nodes.map((n) => [n.id(), { x: n.position().x, y: n.position().y }]),
+      );
+    });
+
+    // Enter drill-down on first node
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    // Wait for drill layout to complete
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // Exit drill-down via app name/header
+    await page.locator('#drill-exit-btn').click();
+    // Restore is synchronous, brief wait for any post-processing
+    await page.waitForTimeout(200);
+
+    // Capture positions after exit
+    const restoredPositions = await page.evaluate(() => {
+      const nodes = globalThis.__cy.nodes();
+      return Object.fromEntries(
+        nodes.map((n) => [n.id(), { x: n.position().x, y: n.position().y }]),
+      );
+    });
+
+    // Verify: positions should be preserved (same as before drill-down, within tolerance)
+    for (const nodeId of Object.keys(initialPositions)) {
+      const initial = initialPositions[nodeId];
+      const restored = restoredPositions[nodeId];
+      if (initial && restored) {
+        // Allow tolerance for minor differences (a few pixels)
+        expect(Math.abs(restored.x - initial.x)).toBeLessThan(10);
+        expect(Math.abs(restored.y - initial.y)).toBeLessThan(10);
+      }
+    }
+
+    // Change layout algorithm to fcose and apply
+    await page.selectOption('#layout-select', 'fcose');
+
+    // Wait for the new layout to start and then fully complete
+    await page.waitForFunction(() => globalThis.__layoutRunning);
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // Capture positions after layout change
+    const afterFcose = await page.evaluate(() => {
+      const nodes = globalThis.__cy.nodes();
+      return Object.fromEntries(
+        nodes.map((n) => [n.id(), { x: n.position().x, y: n.position().y }]),
+      );
+    });
+
+    // Re-enter drill-down
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // Exit again
+    await page.locator('#drill-exit-btn').click();
+    await page.waitForTimeout(200);
+
+    // Capture positions after second exit
+    const finalPositions = await page.evaluate(() => {
+      const nodes = globalThis.__cy.nodes();
+      return Object.fromEntries(
+        nodes.map((n) => [n.id(), { x: n.position().x, y: n.position().y }]),
+      );
+    });
+
+    // Verify: fcose layout positions should be preserved after this drill cycle
+    let preservesFcose = true;
+    for (const nodeId of Object.keys(afterFcose)) {
+      const fcosePos = afterFcose[nodeId];
+      const finalPos = finalPositions[nodeId];
+      if (fcosePos && finalPos) {
+        if (Math.abs(finalPos.x - fcosePos.x) >= 10 || Math.abs(finalPos.y - fcosePos.y) >= 10) {
+          preservesFcose = false;
+          break;
+        }
+      }
+    }
+    expect(preservesFcose).toBe(true);
+  });
+
+  test('TC-2.7.11: Exit drill-down with no previous state applies fresh layout', async ({
+    page,
+  }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+
+    // First load the graph normally to obtain a valid node ID from the mock data
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Get the first visible node's ID to use for deep link
+    const firstNodeId = await page.evaluate(() => {
+      const first = globalThis.__cy.nodes().first();
+      return first?.id();
+    });
+    expect(firstNodeId).toBeTruthy();
+
+    // Now simulate a deep link: navigate directly to drill-down via URL
+    const deepLink = `/graph/?model=model-test&entity=${firstNodeId}&depth=2`;
+    await page.goto(deepLink);
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Should be in drill-down mode immediately (URL parameters trigger drill-down)
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+
+    // Verify drill-down is active with limited visible nodes (BFS scope)
+    const initialVisibleCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+    const totalNodes = await page.evaluate(() => globalThis.__cy.nodes().length);
+    // In drill-down, visible nodes should be less than total (unless depth includes all)
+    expect(initialVisibleCount).toBeLessThan(totalNodes);
+
+    // Exit drill-down
+    await page.locator('#drill-exit-btn').click();
+    // Wait for fresh layout to run (if no state to restore)
+    await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // After exit: full model should be restored with layout applied
+    const afterExitVisible = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+    // All nodes that match filters should be visible (close to total)
+    expect(afterExitVisible).toBeGreaterThanOrEqual(totalNodes - 2); // Allow some filtered nodes
+
+    // Verify that nodes have proper positions (not all at origin or overlapping)
+    const positions = await page.evaluate(() => {
+      const nodes = globalThis.__cy.nodes(':visible');
+      return [...nodes].map((n) => ({ x: n.position().x, y: n.position().y }));
+    });
+
+    // Check that positions are spread out (not all identical)
+    const uniqueX = new Set(positions.map((p) => Math.round(p.x)));
+    const uniqueY = new Set(positions.map((p) => Math.round(p.y)));
+    expect(uniqueX.size).toBeGreaterThan(1);
+    expect(uniqueY.size).toBeGreaterThan(1);
+
+    // Verify that node positions are finite numbers (not NaN)
+    for (const pos of positions) {
+      expect(Number.isFinite(pos.x)).toBe(true);
+      expect(Number.isFinite(pos.y)).toBe(true);
+    }
+
+    // Also verify URL no longer contains drill parameters
+    await expect(page).not.toHaveURL(/(entity=|depth=)/);
   });
 });

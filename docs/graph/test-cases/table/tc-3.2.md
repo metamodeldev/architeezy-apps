@@ -9,29 +9,24 @@
 - Table view active
 - "Entities" tab is selected (default)
 
-### Test Steps
+### Steps
 
 1. Observe the table header
-   - **Expected**: Columns displayed (at minimum):
+   - Columns displayed (at minimum):
      - Name
      - Type
      - Additional properties (depending on configuration, e.g., Status, Owner, Layer)
    - Column headers have sorting arrows (clickable)
 2. Observe table rows
-   - **Expected**: Each row represents an entity that matches current global filters and drill-down scope
+   - Each row represents an entity that matches current global filters and drill-down scope
    - Cells show entity data: name, type, etc.
-3. Check row count indicator (if present)
-   - **Expected**: Header or footer shows count like "Showing X of Y entities" where Y = total after filters, X = all (since no local table filter applied yet)
-
-### Post-conditions
-
-- Entities tab displays entity data correctly
+   - Entities tab displays entity data correctly
 
 ### Test Data
 
-| Columns shown (default) | Rows count = | Filtered entities |
-| ----------------------- | ------------ | ----------------- |
-| Name, Type, ...         | N            | current scope     |
+| Columns shown (default) | Filtered entities |
+| ----------------------- | ----------------- |
+| Name, Type, ...         | current scope     |
 
 ## TC-3.2.2: Relationships tab shows relationship list
 
@@ -40,30 +35,26 @@
 - Table view active
 - "Entities" tab is currently selected
 
-### Test Steps
+### Steps
 
 1. Click on "Relationships" tab
-   - **Expected**: Table content switches to show relationships
+   - Table content switches to show relationships
    - Columns displayed:
      - Source (entity name or ID)
      - Type (relationship type)
      - Target (entity name or ID)
      - Name (relationship name, if any)
 2. Verify rows
-   - **Expected**: Each row represents a relationship whose both endpoints are visible according to current filters and drill-down scope
-3. Check row count
-   - **Expected**: Count reflects number of visible relationships
-
-### Post-conditions
-
-- Relationships tab active
-- Relationship data displayed
+   - Each row represents a relationship whose both endpoints are visible according to current
+     filters and drill-down scope
+   - Relationships tab active
+   - Relationship data displayed
 
 ### Test Data
 
-| Columns (Relationships)   | Source, Type, Target, Name |
-| ------------------------- | -------------------------- |
-| Row count                 | matches visible relationships |
+| Columns (Relationships)    |
+| -------------------------- |
+| Source, Type, Target, Name |
 
 ## TC-3.2.3: Default tab is Entities on first switch from Graph
 
@@ -72,16 +63,14 @@
 - Graph view active
 - User has never switched to Table in this session (or session reset)
 
-### Test Steps
+### Steps
 
 1. Switch from Graph to Table (first time in session)
-   - **Expected**: "Entities" tab is automatically selected
+   - "Entities" tab is automatically selected
 2. Switch to Graph, then back to Table again (subsequent)
-   - **Expected**: Last active tab may be remembered (Entities or Relationships), depending on persistence. The first-switch default is Entities.
-
-### Post-conditions
-
-- Entities is default on initial view switch
+   - Last active tab may be remembered (Entities or Relationships), depending on persistence. The
+     first-switch default is Entities.
+   - Entities is default on initial view switch
 
 ### Test Data
 
@@ -96,23 +85,18 @@
 - Global filters hide all entities (or drill-down scope is empty)
 - Table view active, Entities tab
 
-### Test Steps
+### Steps
 
 1. Observe the table
-   - **Expected**: Message "No data available" or similar is displayed
+   - Message "No data available" or similar is displayed
    - Table body is empty (no rows)
-   - Row count shows "0 of 0"
-   - Search and sorting controls may be disabled
-
-### Post-conditions
-
-- User is informed that there is no data
+   - User is informed that there is no data
 
 ### Test Data
 
-| Filter condition | Expected table state |
-| ---------------- | -------------------- |
-| hide all entities| empty message       |
+| Filter condition  | Expected table state |
+| ----------------- | -------------------- |
+| hide all entities | empty message        |
 
 ## TC-3.2.5: Empty relationships state
 
@@ -121,20 +105,17 @@
 - No relationships match current filters/scope
 - Table view active, Relationships tab
 
-### Test Steps
+### Steps
 
 1. Observe the table
-   - **Expected**: "No data available" message; empty rows
-
-### Post-conditions
-
-- Empty state for relationships clear
+   - "No data available" message; empty rows
+   - Empty state for relationships clear
 
 ### Test Data
 
-| Condition                  | Expected |
-| -------------------------- | -------- |
-| no relationships visible   | empty    |
+| Condition                | Expected |
+| ------------------------ | -------- |
+| no relationships visible | empty    |
 
 ## TC-3.2.6: Table respects global filters
 
@@ -143,22 +124,18 @@
 - Global filter: only entities of type `Microservice` are visible
 - There are 100 total entities, but only 25 are Microservices
 
-### Test Steps
+### Steps
 
 1. Switch to Table view (Entities tab)
-   - **Expected**: Table shows exactly 25 rows (only Microservices)
-   - Row count: "Showing 25 of 25"
+   - Table shows exactly 25 rows (only Microservices)
 2. Switch to Relationships tab
-   - **Expected**: Only relationships where both source and target are Microservices are shown
-
-### Post-conditions
-
-- Filter-driven visibility respected in table
+   - Only relationships where both source and target are Microservices are shown
+   - Filter-driven visibility respected in table
 
 ### Test Data
 
-| Filter: type=Microservice | Expected entity rows | Expected relationships |
-| ------------------------- | -------------------- | ---------------------- |
+| Filter: type=Microservice | Expected entity rows | Expected relationships               |
+| ------------------------- | -------------------- | ------------------------------------ |
 |                           | 25                   | only Microservice→Microservice edges |
 
 ## TC-3.2.7: Table respects drill-down scope
@@ -169,67 +146,38 @@
 - Drill-down scope includes: OrderService, PaymentService, Database (3 nodes)
 - Relationships: Calls(Order→Payment), DependsOn(Order→Database)
 
-### Test Steps
+### Steps
 
 1. Go to Table view, Entities tab
-   - **Expected**: Only the 3 drill-down scope entities are visible
+   - Only the 3 drill-down scope entities are visible
 2. Relationships tab
-   - **Expected**: Only relationships where both endpoints are in scope (the 2 mentioned)
-
-### Post-conditions
-
-- Drill-down scope enforced in table
+   - Only relationships where both endpoints are in scope (the 2 mentioned)
+   - Drill-down scope enforced in table
 
 ### Test Data
 
-| Drill-down scope | Entities visible | Relationships visible |
-| ---------------- | ---------------- | --------------------- |
+| Drill-down scope | Entities visible | Relationships visible           |
+| ---------------- | ---------------- | ------------------------------- |
 | 3 nodes          | 3 rows           | 2 rows (endpoint both in scope) |
 
-## TC-3.2.8: Row count format: Visible / Total
-
-### Preconditions
-
-- Global filters + drill-down result in 15 visible entities out of 100 total in model
-
-### Test Steps
-
-1. Look at table header or footer
-   - **Expected**: Count displayed as: "Showing 15 of 100 entities" or "15 / 100"
-   - "Total" = total number of entities that match global filters+drill-down (ignoring local table search)
-   - "Visible" = after applying local table search (if any)
-
-### Post-conditions
-
-- Count format is clear
-
-### Test Data
-
-| Filtered total | Local search matches | Display |
-| -------------- | -------------------- | ------- |
-| 100            | 15                   | "15 of 100" |
-
-## TC-3.2.9: Switching tabs (Entities ↔ Relationships) does not refetch data
+## TC-3.2.8: Switching tabs (Entities ↔ Relationships) does not refetch data
 
 ### Preconditions
 
 - Model data already loaded in memory
 
-### Test Steps
+### Steps
 
 1. In Table view, Entities tab is active
 2. Click Relationships tab
-   - **Expected**: Relationships data appears immediately (from in-memory relationships list)
+   - Relationships data appears immediately (from in-memory relationships list)
    - No network loading spinner
 3. Switch back to Entities
-   - **Expected**: Data immediate
-
-### Post-conditions
-
-- Tabs share same cached model data
+   - Data immediate
+   - Tabs share same cached model data
 
 ### Test Data
 
-| Precondition   | Tab switch | API call? |
-| -------------- | ---------- | -------- |
-| data in memory | Entities → Relationships | no  |
+| Precondition   | Tab switch               | API call? |
+| -------------- | ------------------------ | --------- |
+| data in memory | Entities → Relationships | no        |

@@ -121,8 +121,10 @@ documentation.
 
 ## UI/UX Functional Details
 
-- **Feedback**: A loading indicator is displayed for any export exceeding 200ms. A toast
-  notification confirms a successful download.
+- **Table Export Button Placement**: The CSV export button is positioned in the top-right corner of
+  the table view, aligned horizontally with the Entities/Relationships tab switcher on the same
+  toolbar line.
+- **Feedback**: A loading indicator is displayed for any export exceeding 200ms.
 - **Export Interruption**: If an export operation lasts longer than 5 seconds, a "Cancel" button is
   provided.
 - **Legend Positioning**: Users are responsible for positioning the legend to avoid overlapping

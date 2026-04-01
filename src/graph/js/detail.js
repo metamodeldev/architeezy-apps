@@ -21,6 +21,20 @@ export function showDetail(id, drillCallback) {
     return;
   }
 
+  // Ensure the details section is expanded when showing a detail
+  const section = document.getElementById('sec-detail');
+  if (section && section.classList.contains('collapsed')) {
+    section.classList.remove('collapsed');
+    const toggleBtn = document.querySelector('.sidebar-toggle-btn[data-section="sec-detail"]');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'true');
+    }
+    const icon = document.getElementById('icon-sec-detail');
+    if (icon) {
+      icon.classList.remove('rotated');
+    }
+  }
+
   const conns = getAllRelations().filter((r) => r.source === id || r.target === id);
   const connItems = conns
     .map((r) => {

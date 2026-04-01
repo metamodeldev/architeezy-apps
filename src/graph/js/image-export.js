@@ -4,6 +4,7 @@
 // Follows the same pattern as table.js for CSV export.
 
 import { getCy, getVisibleElements } from './graph.js';
+import { t } from './i18n.js';
 import { elemColor, relColor } from './palette.js';
 import { showToast } from './ui.js';
 
@@ -19,6 +20,38 @@ export function getExportingState() {
 }
 
 /**
+ * Generates a sanitized export filename with timestamp.
+ *
+ * @param {string} rawName - Raw model name.
+ * @param {'png' | 'svg'} format - Image format.
+ * @returns {string} Export filename.
+ */
+function generateExportFilename(rawName, format) {
+  const sanitizedName = (rawName || 'model').replaceAll(/[^\w\s-]/g, '').trim() || 'model';
+  const timestamp = new Date().toISOString().replaceAll(/[:]/g, '-').slice(0, 19);
+  return `architeezy-${sanitizedName}-graph-${timestamp}.${format}`;
+}
+
+/**
+ * Performs the actual export based on format.
+ *
+ * @param {any} cy - Cytoscape instance.
+ * @param {any[]} visibleElements - Visible elements.
+ * @param {boolean} includeLegend - Whether to include legend.
+ * @param {string} filename - Output filename.
+ * @param {'png' | 'svg'} format - Export format.
+ */
+async function performExport(cy, visibleElements, includeLegend, filename, format) {
+  if (format === 'png') {
+    await exportPNG(cy, visibleElements, includeLegend, filename);
+  } else if (format === 'svg') {
+    exportSVG(cy, visibleElements, filename, includeLegend);
+  } else {
+    throw new Error(`Unsupported format: ${format}`);
+  }
+}
+
+/**
  * Main entry point for graph image export. Includes the legend overlay when the #graph-legend
  * element is currently visible on the canvas.
  *
@@ -31,38 +64,45 @@ export async function exportGraphImage(format) {
     return;
   }
   _isExporting = true;
-  globalThis.updateExportButtonState?.(); // Disable button immediately
-  document.getElementById('export-loading')?.classList.remove('hidden');
+
+  const btn = document.getElementById('export-image-btn');
+  if (btn) {
+    btn.classList.add('loading');
+    // Let browser render loading state before disabling
+    // eslint-disable-next-line promise/avoid-new
+    await new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
+    btn.disabled = true;
+    // Another frame to ensure both states are painted
+    // eslint-disable-next-line promise/avoid-new
+    await new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
+  }
+
+  globalThis.updateExportButtonState?.(); // Also disables via state update
 
   try {
     const cy = getCy();
     if (!cy) {
-      showToast('Graph not ready');
+      showToast(t('exportGraphNotReady'));
       return;
     }
 
     const visibleElements = getVisibleElements();
     const modelNameEl = document.getElementById('current-model-name');
     const rawName = modelNameEl?.textContent.trim() || 'model';
-    const sanitizedName = rawName.replaceAll(/[^\w\s-]/g, '').trim() || 'model';
-    const timestamp = new Date().toISOString().replaceAll(/[:]/g, '-').slice(0, 19);
-    const filename = `architeezy-${sanitizedName}-graph-${timestamp}.${format}`;
-
-    if (format === 'png') {
-      await exportPNG(cy, visibleElements, includeLegend, filename);
-    } else if (format === 'svg') {
-      exportSVG(cy, visibleElements, filename, includeLegend);
-    } else {
-      throw new Error(`Unsupported format: ${format}`);
-    }
-
-    showToast(`Graph exported as ${format.toUpperCase()}`);
+    const filename = generateExportFilename(rawName, format);
+    await performExport(cy, visibleElements, includeLegend, filename, format);
   } catch (error) {
     console.error('Export failed', error);
-    showToast('Export failed: ' + error.message);
+    showToast(t('exportFailed') + ': ' + error.message);
   } finally {
-    document.getElementById('export-loading')?.classList.add('hidden');
     _isExporting = false;
+    if (btn) {
+      btn.classList.remove('loading');
+    }
     globalThis.updateExportButtonState?.();
   }
 }

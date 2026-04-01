@@ -142,7 +142,10 @@ the current scope.
 ## Business Rules
 
 - **Available Count Definition**: The number of elements of a type that satisfy current spatial
-  (Drill-down) and dependency (endpoint visibility) constraints.
+  (Drill-down) and dependency (endpoint visibility) constraints, **regardless of whether the type is
+  currently enabled in the filter**. In Drill-down mode, the spatial scope includes all elements
+  reachable within the depth limit, following active relationship types and containment edges,
+  **ignoring entity type filters**.
 - **Dependency Rule**: The "Available Count" for a relationship type is 0 if any of its mandatory
   endpoint entity types are **unchecked** in the filter.
 - **Dynamic Hiding Rule**:
@@ -166,12 +169,15 @@ the current scope.
 ## UI/UX Functional Details
 
 - **Feedback**: A loading indicator appears if recalculation exceeds 200ms.
+- **Search Placement**: The global search field is positioned **before** the Graph/Table view toggle
+  buttons in the header.
 - **Search Interaction**: Filter list search is debounced by 300ms. All search fields include a
   "Clear" button.
 - **Highlight Opacity**: In the Graph view, dimmed nodes use 35% opacity and dimmed edges use 15%
   opacity.
 - **Empty States**: If global search returns no results, a hint suggesting a filter check is
   displayed.
+- **Results Count**: The global search does **not** display a count of found objects.
 
 ## Technical Notes
 

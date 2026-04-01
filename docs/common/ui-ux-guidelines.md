@@ -124,6 +124,106 @@ types, etc.):
 - All setting changes should take effect immediately or provide explicit Apply/Refresh button
 - User preferences should persist across sessions via storage
 
+### Button Loading States
+
+Async operations triggered by buttons must provide clear visual feedback to prevent duplicate
+actions and inform users that processing is occurring.
+
+#### Requirements
+
+- **Button Disabled State**: While an async operation is in progress, the button MUST be disabled
+  (`disabled` attribute) to prevent multiple simultaneous triggers.
+- **Loading Animation**: Apply a `.loading` CSS class to the button during the operation. This class
+  should:
+  - Show a **running border animation** around the button perimeter using `conic-gradient`
+  - Preserve the button's original background (no opacity changes)
+  - Change cursor to `not-allowed`
+  - Keep button text fully visible
+- **Running Border Styling**:
+  - Uses `::before` pseudo-element with `conic-gradient` for smooth color sweep
+  - Uses `::after` pseudo-element as a mask with `background: inherit` to preserve original button
+    background
+  - Border thickness: 2px (controlled by `inset` values)
+  - Animation: 1s linear infinite rotation (`@keyframes rotate-border`)
+  - Color: uses theme accent color `var(--accent)`
+- **Implementation Timing**:
+  - Add `.loading` class first
+  - Use `await requestAnimationFrame()` twice to ensure loading state renders before disabling
+  - Set `disabled = true` after the first RAF
+  - This guarantees the animation is visible immediately
+- **Accessibility**:
+  - While loading, set `aria-busy="true"` on the button
+  - The running border is purely decorative; button text remains readable
+  - Screen readers announce the disabled state automatically
+- **Avoid Double Indicators**: Do not show both a button animation AND a separate inline loading
+  message for the same operation.
+- **Error Recovery**: If the operation fails, remove loading state and show error via
+  toast/notification. Button should remain enabled for retry.
+
+#### Example CSS
+
+```css
+button.ctrl.loading {
+  position: relative;
+  pointer-events: none;
+  cursor: not-allowed;
+  z-index: 0; /* create stacking context */
+  border-color: transparent; /* hide original border */
+}
+
+/* Rotating gradient positioned behind the button, slightly larger */
+button.ctrl.loading::before {
+  content: '';
+  position: absolute;
+  inset: -2px; /* border thickness - extends beyond button */
+  border-radius: calc(6px + 2px); /* button radius + border thickness */
+  background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--accent) 360deg);
+  animation: rotate-border 1s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rotate-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+```
+
+**Note**: The `::before` element is positioned behind the button (`z-index: -1`). The button's own
+background (including hover states) covers the center of the gradient, leaving only a 2px border
+visible. This preserves the button's original visual appearance while adding the running-border
+effect.
+
+#### Example JavaScript
+
+```js
+async function handleAction() {
+  const btn = event.target;
+  btn.classList.add('loading');
+  // Ensure loading state is rendered before disabling
+  await new Promise((r) => requestAnimationFrame());
+  btn.disabled = true;
+  await new Promise((r) => requestAnimationFrame());
+
+  try {
+    await performAsyncOperation();
+  } catch (error) {
+    showError(error.message);
+  } finally {
+    btn.disabled = false;
+    btn.classList.remove('loading');
+  }
+}
+```
+
+#### Applied to Export Operations
+
+- **CSV Export** and **Image Export**: Button shows running border animation during the export
+  operation. The button is disabled until the operation completes.
+- Dropdown menu (for image format selection) closes immediately when user selects an option.
+- Animation starts immediately on click, giving instant visual feedback.
+- Export success/error is communicated via toast notifications only (no success message on button).
+
 ### Modals
 
 #### General Requirements
@@ -274,7 +374,8 @@ Clickable labels (and other interactive elements) must provide clear visual feed
 
 - All `<label>` elements associated with form controls
 - Checkbox/radio button labels (both wrapped and `for` patterns)
-- **Checkbox/radio button input elements themselves** (`input[type="checkbox"]`, `input[type="radio"]`)
+- **Checkbox/radio button input elements themselves** (`input[type="checkbox"]`,
+  `input[type="radio"]`)
 - Filter list items (`.filter-item`, `.bl-drop-item`)
 - Settings labels (`.settings-label`)
 - Interactive headers and section toggles (`.sidebar-toggle-btn`)
@@ -296,8 +397,8 @@ th {
 }
 
 /* Checkbox and radio inputs */
-input[type="checkbox"],
-input[type="radio"] {
+input[type='checkbox'],
+input[type='radio'] {
   cursor: pointer;
 }
 ```
@@ -391,6 +492,40 @@ repetitive navigation elements, jumping directly to the main content area. The s
 - **No autoplay**: All animations user-initiated only; respect `prefers-reduced-motion`
 - When `prefers-reduced-motion` is set, disable or significantly reduce animations (especially
   height/width transitions)
+
+## URL State & Browser History
+
+### URL State Preservation
+
+- Significant application state must be preserved in the URL to enable link sharing and bookmarking
+- The URL should represent the current view/state of the application in a way that allows someone to
+  return to exactly that state by opening the link
+- Examples of state that should be in URL: selected models, filters, graph layout mode, table
+  columns, visible layers, search queries
+- Examples of state that should NOT be in URL: temporary UI toggles (sidebar collapsed/expanded),
+  theme preference, scroll position, transient hover states
+
+### Browser History Management
+
+- Significant state changes must push a new entry to the browser history stack (via
+  `history.pushState()`)
+  - This enables back/forward button navigation to return to previous states
+- Minor, non-substantial changes should NOT create history entries
+  - Examples: transient UI feedback, animation triggers, temporary highlights, hover effects
+  - Creating history entries for minor changes makes back button behavior confusing
+
+### History Navigation Without Page Reload
+
+- When navigating through history (back/forward buttons), the application must restore state WITHOUT
+  full page reload whenever possible
+- Full page reload should only occur when navigating to a different page/application entirely
+- State restoration should:
+  - Reconstruct the exact view state from URL parameters
+  - Be instantaneous (no loading spinners) for smooth UX
+  - Preserve scroll position within the view when appropriate
+  - Not re-fetch data that is already cached (leveraging URL-based cache keys)
+- Use the `popstate` event listener to detect history navigation and update application state
+  reactively
 
 ## Testing Requirements
 

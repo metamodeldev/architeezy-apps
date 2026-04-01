@@ -19,8 +19,10 @@ with a different one.
 #### Steps
 
 1. Open the model selection interface.
-   - The system displays models available to the current session (public models plus private models
-     if authenticated).
+   - The system displays models available to the current session. The server returns only public
+     models for anonymous users; authenticated users receive all models they have access to.
+   - The client does not perform additional filtering based on model visibility; access control is
+     enforced server-side.
 2. Filter the list by entering a query in the search field.
    - The list updates in real-time to show matching results.
 3. Select a specific model.
@@ -150,9 +152,8 @@ As a user, I want to manage my login status and see which models are available t
 1. Observe the identity status in the header.
    - The header displays the user's name/avatar or a guest status.
 2. Sign out of the current session.
-   - If a private model was open, the system closes it, clears its data from memory, and opens the
-     selection interface.
-   - If a public model was open, it remains visible.
+   - The system clears all model data from memory and opens the selection interface. No model data
+     persists after logout, regardless of model type.
 
 ## Business Rules
 
@@ -196,7 +197,6 @@ As a user, I want to manage my login status and see which models are available t
 - **Storage**: `localStorage` is used for all persistent settings.
 - **Auth Redirect**: The system stores the target URL during the authentication flow to enable
   redirection back to the deep link.
-- **Security**: Upon Logout, all non-public model data must be explicitly purged from the
-  application memory.
+- **Security**: Upon Logout, all model data must be explicitly purged from the application memory.
 - **Concurrency**: Each fetch request uses a unique ID or abort controller to ignore outdated
   responses.

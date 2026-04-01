@@ -5,9 +5,6 @@ import { test as playwrightTest } from '@playwright/test';
 export const MODEL_CONTENT_URL =
   'https://architeezy.com/api/models/test/test/1/test-model/content?format=json';
 
-const OTHER_CONTENT_URL =
-  'https://architeezy.com/api/models/test/test/1/other-model/content?format=json';
-
 export const ECOMMERCE_CONTENT_URL =
   'https://architeezy.com/api/models/test/test/1/ecommerce/content?format=json';
 
@@ -75,7 +72,90 @@ export const ECOMMERCE_CONTENT = {
   ],
 };
 
-// 3 elements (2 × ApplicationComponent, 1 × ApplicationService), 2 relations
+// ── TEST MODEL CONTENT ────────────────────────────────────────────────────────
+// Contains a variety of element types and relationships.
+// Added Microservice type for filter tests, and many extra components for scroll tests.
+const baseElements = [
+  // Core test elements
+  {
+    eClass: 'archi:ApplicationComponent',
+    id: 'comp-a',
+    data: { name: 'Component A', documentation: 'First component' },
+  },
+  {
+    eClass: 'archi:ApplicationComponent',
+    id: 'comp-b',
+    data: { name: 'Component B' },
+  },
+  {
+    eClass: 'archi:ApplicationService',
+    id: 'svc-x',
+    data: { name: 'Service X' },
+  },
+  {
+    eClass: 'archi:ApplicationFunction',
+    id: 'func-1',
+    data: { name: 'Function 1' },
+  },
+  // Microservice element for TC-3.1.3 (filter persistence)
+  {
+    eClass: 'archi:Microservice',
+    id: 'microsvc-1',
+    data: { name: 'Microservice 1', documentation: 'A microservice for filtering tests' },
+  },
+  // Database element for TC-2.7.6 (filter test) and TC-4.x
+  {
+    eClass: 'archi:Database',
+    id: 'db-1',
+    data: { name: 'Database', documentation: 'Primary database' },
+  },
+  // Payment node for TC-4.4 global search (graph view)
+  {
+    eClass: 'archi:ApplicationComponent',
+    id: 'payment-svc',
+    data: { name: 'Payment Service', documentation: 'Handles payments' },
+  },
+  // John node for TC-4.4 global search (table view, owner field)
+  {
+    eClass: 'archi:ApplicationComponent',
+    id: 'comp-john',
+    data: { name: "John's Component", status: 'active', owner: 'john' },
+  },
+  // Chain elements for drill-down depth expansion test (TC-2.7.2)
+  // Comp-a -> chain-1 -> chain-2 -> chain-3 -> chain-4
+  ...Array.from({ length: 5 }, (_, i) => ({
+    eClass: 'archi:ApplicationComponent',
+    id: `chain-${i + 1}`,
+    data: { name: `Chain Component ${i + 1}` },
+  })),
+  // Parent-child containment for TC-2.4.8 (Orphaned children test)
+  {
+    eClass: 'archi:System',
+    id: 'sys-parent',
+    data: {
+      name: 'Parent System',
+      children: [
+        {
+          eClass: 'archi:ApplicationComponent',
+          id: 'child-1',
+          data: { name: 'Child 1' },
+        },
+        {
+          eClass: 'archi:ApplicationComponent',
+          id: 'child-2',
+          data: { name: 'Child 2' },
+        },
+      ],
+    },
+  },
+  // Extra elements to make the table scrollable for TC-3.1.4
+  ...Array.from({ length: 49 }, (_, i) => ({
+    eClass: 'archi:ApplicationComponent',
+    id: `comp-extra-${i + 2}`,
+    data: { name: `Component ${i + 2}` },
+  })),
+];
+
 export const MODEL_CONTENT = {
   ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
   content: [
@@ -84,28 +164,7 @@ export const MODEL_CONTENT = {
       id: 'model-root',
       data: {
         name: 'Test Architecture',
-        elements: [
-          {
-            eClass: 'archi:ApplicationComponent',
-            id: 'comp-a',
-            data: { name: 'Component A', documentation: 'First component' },
-          },
-          {
-            eClass: 'archi:ApplicationComponent',
-            id: 'comp-b',
-            data: { name: 'Component B' },
-          },
-          {
-            eClass: 'archi:ApplicationService',
-            id: 'svc-x',
-            data: { name: 'Service X' },
-          },
-          {
-            eClass: 'archi:ApplicationFunction',
-            id: 'func-1',
-            data: { name: 'Function 1' },
-          },
-        ],
+        elements: baseElements,
         relations: [
           {
             eClass: 'archi:AssociationRelationship',
@@ -116,6 +175,39 @@ export const MODEL_CONTENT = {
             eClass: 'archi:ServingRelationship',
             id: 'rel-2',
             data: { source: 'svc-x', target: 'comp-a' },
+          },
+          // Connect chain-1 to comp-a to extend depth
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-chain-1',
+            data: { source: 'comp-a', target: 'chain-1' },
+          },
+          // Chain sequence: 1->2->3->4->5
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-chain-2',
+            data: { source: 'chain-1', target: 'chain-2' },
+          },
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-chain-3',
+            data: { source: 'chain-2', target: 'chain-3' },
+          },
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-chain-4',
+            data: { source: 'chain-3', target: 'chain-4' },
+          },
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-chain-5',
+            data: { source: 'chain-4', target: 'chain-5' },
+          },
+          // Database connection (from comp-b)
+          {
+            eClass: 'archi:AssociationRelationship',
+            id: 'rel-db',
+            data: { source: 'comp-b', target: 'db-1', name: 'uses' },
           },
         ],
       },

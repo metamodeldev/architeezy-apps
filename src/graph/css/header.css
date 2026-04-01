@@ -132,6 +132,42 @@ button.ctrl:hover {
   color: #fff;
 }
 
+/* Loading state for buttons - conic-gradient border with mask */
+button.ctrl.loading {
+  position: relative;
+  pointer-events: none;
+  cursor: not-allowed;
+  overflow: hidden;
+  border-color: transparent; /* hide default border */
+  z-index: 0;
+}
+
+/* Large rotating gradient - positioned behind everything */
+button.ctrl.loading::before {
+  content: '';
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(from 0deg, transparent 0deg, transparent 270deg, var(--accent) 360deg);
+  animation: rotate-border 1s linear infinite;
+  z-index: -2;
+}
+
+/* Mask covering center - uses button's original background color */
+button.ctrl.loading::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: inherit;
+  border-radius: inherit;
+  z-index: -1;
+}
+
+@keyframes rotate-border {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 #auth-area {
   display: flex;
   align-items: center;
@@ -217,4 +253,58 @@ button.ctrl:hover {
   border-color: var(--accent);
   color: #fff;
   box-shadow: 0 0 0 2px rgb(233 69 96 / 35%);
+}
+
+/* ── GLOBAL SEARCH ────────────────────────────────────────────── */
+.global-search {
+  height: 28px;
+  padding: 4px 8px;
+  padding-right: 2rem; /* Space for clear button */
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  min-width: 180px;
+  transition:
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+.global-search:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(233 69 96 / 15%);
+}
+
+.global-search::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.global-search-clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  transition:
+    color 0.12s,
+    background 0.12s;
+  width: 18px;
+  height: 18px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.global-search-clear:hover {
+  color: var(--text);
+  background: var(--border);
 }

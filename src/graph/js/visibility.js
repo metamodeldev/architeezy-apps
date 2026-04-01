@@ -6,12 +6,21 @@
 // (one-way). drill.js and filters.js trigger updates via CustomEvents wired
 // In app.js — no reverse import.
 
-import { getDrillDepth, getDrillNodeId, getDrillVisibleIds, setDrillVisibleIds } from './drill.js';
+import {
+  getDrillDepth,
+  getDrillNodeId,
+  getDrillVisibleIds,
+  setDrillVisibleIds,
+  getDrillScopeIds,
+  setDrillScopeIds,
+} from './drill.js';
 import {
   getActiveElemTypes,
   getActiveRelTypes,
   getElemTypeTotals,
   getRelTypeTotals,
+  getShowAllElem,
+  getShowAllRel,
 } from './filters.js';
 import {
   applyDisplayState,
@@ -175,6 +184,81 @@ export function computeDrillBfs({
 }
 
 /**
+ * Pure: BFS from a drill-root node returning the set of node IDs that are within the drill spatial
+ * scope, **ignoring entity type filters**. This is used to compute "Available" counts for entity
+ * types in the filter list while in drill-down mode.
+ *
+ * Traversal rules similar to computeDrillBfs, but **does not filter nodes by entity type** — all
+ * nodes reachable within depth limit are included, regardless of their type.
+ *
+ * @param {{
+ *   rootId: string;
+ *   drillDepth: number;
+ *   nodes: { id: string; type: string; parent?: string }[];
+ *   edges: {
+ *     id: string;
+ *     type: string;
+ *     source: string;
+ *     target: string;
+ *     isContainment?: boolean;
+ *   }[];
+ *   activeRelTypes: Set<string>;
+ *   containmentMode: string;
+ * }} params
+ *   - Configuration object for drill scope computation.
+ * @returns {Set<string>} Set of node IDs within the drill scope.
+ */
+function computeDrillScopeIds({
+  rootId,
+  drillDepth,
+  nodes,
+  edges,
+  activeRelTypes,
+  containmentMode,
+}) {
+  const adj = buildBfsAdjacencyList(edges);
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const childrenOf = buildChildrenIndex(nodes);
+
+  const visible = new Set([rootId]);
+  let frontier = [rootId];
+
+  for (let d = 0; d < drillDepth; d++) {
+    const next = [];
+    for (const nodeId of frontier) {
+      const reachable = new Set();
+      for (const { neighborId, type, isContainment } of adj.get(nodeId) ?? []) {
+        if (activeRelTypes.has(type) || isContainment) {
+          reachable.add(neighborId);
+        }
+      }
+      if (containmentMode === 'compound') {
+        // Add parent and children for compound nesting
+        const node = nodeById.get(nodeId);
+        if (node?.parent) {
+          reachable.add(node.parent);
+        }
+        for (const childId of childrenOf.get(nodeId) ?? []) {
+          reachable.add(childId);
+        }
+      }
+      for (const neighborId of reachable) {
+        if (!visible.has(neighborId)) {
+          visible.add(neighborId);
+          next.push(neighborId);
+        }
+      }
+    }
+    frontier = next;
+    if (!frontier.length) {
+      break;
+    }
+  }
+
+  return visible;
+}
+
+/**
  * Pure: counts elements in the drill scope per type.
  *
  * @param {Array} allElements - All model elements.
@@ -197,33 +281,53 @@ function computeDrillElemCounts(allElements, drillVisibleIds) {
  * Refreshes count badges and dim state for element-type filter rows. Dim reflects availability in
  * the current context (drill scope or full model). A type hidden by the user's checkbox is NOT
  * dimmed — it is available, just filtered.
+ *
+ * In drill-down mode, the "available" count for entity types is based on the **drill spatial
+ * scope** (all nodes reachable within depth, ignoring entity type filters), not on the currently
+ * visible nodes. This ensures that unchecking a type does not change its count.
  */
 export function updateElemFilterDim() {
-  const drillCounts = getDrillNodeId()
-    ? computeDrillElemCounts(getAllElements(), getDrillVisibleIds())
-    : undefined;
+  let elemCounts;
+  if (getDrillNodeId()) {
+    const scopeIds = getDrillScopeIds();
+    elemCounts = scopeIds ? computeDrillElemCounts(getAllElements(), scopeIds) : undefined;
+  } else {
+    elemCounts = undefined;
+  }
+  const showAll = getShowAllElem();
+  const searchInput = document.getElementById('elem-filter-search');
+  const searchActive = searchInput && searchInput.value.trim() !== '';
   for (const el of document.querySelectorAll('[data-kind="elem"]')) {
     const type = el.dataset.type;
     const total = getElemTypeTotals()[type] ?? 0;
-    const available = drillCounts ? (drillCounts[type] ?? 0) : total;
+    const available = elemCounts ? (elemCounts[type] ?? 0) : total;
     const item = el.closest('.filter-item');
     const countEl = item?.querySelector('.count');
     if (countEl) {
       countEl.textContent =
-        drillCounts && available !== total ? `${available} / ${total}` : `${total}`;
+        elemCounts && available !== total ? `${available} / ${total}` : `${total}`;
     }
+    const checked = el.checked;
     item?.classList.toggle('dim', available === 0);
+    // Only apply availability-based hiding when search is not active.
+    if (!searchActive) {
+      item?.classList.toggle('hidden', available === 0 && !checked && !showAll);
+    }
   }
 }
 
 /** Refreshes count badges (N / M) and dim state for relationship-type filter rows. */
 export function updateRelFilterCounts() {
+  const activeRelTypes = getActiveRelTypes();
   const visCounts = computeVisRelCounts({
     allRelations: getAllRelations(),
     elemMap: getElemMap(),
     activeElemTypes: getActiveElemTypes(),
     drillVisibleIds: getDrillVisibleIds(),
   });
+  const showAll = getShowAllRel();
+  const searchInput = document.getElementById('rel-filter-search');
+  const searchActive = searchInput && searchInput.value.trim() !== '';
   for (const el of document.querySelectorAll('[data-kind="rel"]')) {
     const type = el.dataset.type;
     const total = getRelTypeTotals()[type] ?? 0;
@@ -233,7 +337,12 @@ export function updateRelFilterCounts() {
     if (countEl) {
       countEl.textContent = vis === total ? `${total}` : `${vis} / ${total}`;
     }
-    item?.classList.toggle('dim', vis === 0);
+    const isActive = activeRelTypes.has(type);
+    item?.classList.toggle('dim', vis === 0 && isActive);
+    // Only apply availability-based hiding when search is not active.
+    if (!searchActive) {
+      item?.classList.toggle('hidden', vis === 0 && !isActive && !showAll);
+    }
   }
 }
 
@@ -315,6 +424,9 @@ export function applyDrill() {
 
   const { nodes, edges } = getGraphSnapshot();
   const activeRelTypes = getActiveRelTypes();
+  const containmentMode = getContainmentMode();
+
+  // Compute visible nodes considering entity type filters
   const { visibleIds: visible, nodeDepth } = computeDrillBfs({
     rootId: drillNodeId,
     drillDepth,
@@ -322,10 +434,22 @@ export function applyDrill() {
     edges,
     activeElemTypes: getActiveElemTypes(),
     activeRelTypes,
-    containmentMode: getContainmentMode(),
+    containmentMode,
   });
 
   setDrillVisibleIds(visible);
+
+  // Compute the full drill scope (spatial extent) ignoring entity type filters.
+  // This is used for accurate "Available" counts in the filter list.
+  const scopeIds = computeDrillScopeIds({
+    rootId: drillNodeId,
+    drillDepth,
+    nodes,
+    edges,
+    activeRelTypes,
+    containmentMode,
+  });
+  setDrillScopeIds(scopeIds);
 
   applyDisplayState({
     visibleNodeIds: visible,

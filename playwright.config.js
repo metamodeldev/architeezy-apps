@@ -4,7 +4,6 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testMatch: '**/tests/e2e/**/*.spec.js',
   timeout: 10_000,
-  retries: 1,
   use: {
     baseURL: 'http://localhost:4200',
   },

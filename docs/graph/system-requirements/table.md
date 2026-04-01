@@ -98,32 +98,33 @@ As a user, I want to sort the table by any column to group similar items or find
 
 ### SR-3.4: Filtering
 
-The system provides a local search to refine the table content.
+The table content is filtered using the global search field in the header.
 
 #### Functional Requirements
 
-- [FR-3.2](../functional-requirements.md#fr-3-table): Support multi-column sorting and filtering
-  within the table.
 - [FR-4.3](../functional-requirements.md#fr-4-filtering): Maintain consistent filtering and search
   results across graph and table views.
 
 #### User Story
 
-As a user, I want to search within the table to quickly find a specific row without changing the
-global model filters.
+As a user, I want to search within the table to quickly find a specific row using the same search
+field as in the graph view.
 
 #### Steps
 
-1. Enter a query into the table search field.
-   - The table updates in real-time to show only rows where any cell matches the query.
-   - The row count updates to reflect the results of the local search.
-2. Clear the search field.
+1. Enter a query into the global search field in the header.
+   - The table updates in real-time (debounced 300ms) to show only rows where any cell matches the
+     query.
+   - The filtering respects global entity filters and drill-down scope.
+2. Switch to Graph view and back.
+   - The same search query persists and continues to filter the table.
+3. Clear the global search field.
    - The table restores all rows that match the global filters.
 
 #### Edge Cases
 
 - **No results**: If the search query matches nothing, the table shows a "No matching records"
-  message and the row count shows zero.
+  message.
 
 ### SR-3.5: Graph navigation
 
@@ -157,10 +158,6 @@ graph.
 
 - **Global State Synchronization**: The Table view always respects global filters (FR-4) and the
   current Drill-down context (FR-2). If a node is hidden in the Graph, it is hidden in the Table.
-- **Search Isolation**: The search field within the Table view is a local filter. It does not affect
-  the Graph visualization or the global filtering state.
-- **Count Calculation**: The table header displays a count in the format "Visible / Total".
-  "Visible" accounts for global filters, drill-down scope, and the local table search.
 - **Default Tab**: The "Entities" tab is the default view when switching from Graph to Table for the
   first time in a session.
 - **Sorting Logic**: Only one column can be sorted at a time. Switching tabs
@@ -172,7 +169,6 @@ graph.
   200ms.
 - **Row Interaction**: Rows should change their visual state on hover to indicate they are
   clickable.
-- **Search Interaction**: The search input includes a "Clear" button and is debounced by 300ms.
 - **View Persistence**: Switching between Graph and Table must not reset the scroll position of the
   table or the transient UI state of the graph (zoom/pan).
 
@@ -180,7 +176,7 @@ graph.
 
 - **State Management**:
   - `pushState`: Used when switching between Graph and Table view modes.
-  - `replaceState`: Used for internal table adjustments (sorting, local search).
+  - `replaceState`: Used for table sorting adjustments.
 - **Navigation**: The smooth centering animation on the node uses the same camera logic as
   property-panel navigation in SR-2.
 - **Performance**: For very large tables, virtual scrolling or pagination should be used to maintain

@@ -10,11 +10,19 @@
   display: flex;
 }
 
-.table-tabs {
+.table-header {
   display: flex;
-  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
+  align-items: center;
   flex-shrink: 0;
   background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 12px;
+}
+
+.table-tabs {
+  display: flex;
+  flex-shrink: 0;
 }
 
 .table-tab-btn {
@@ -34,34 +42,11 @@
 }
 
 .table-toolbar {
-  padding: 7px 12px;
   display: flex;
   gap: 10px;
   align-items: center;
   flex-shrink: 0;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-}
-
-.table-search {
-  flex: 1;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--text);
-  padding: 5px 10px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-}
-
-.table-search:focus {
-  outline: none;
-  border-color: var(--accent);
-}
-
-.table-count {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-  white-space: nowrap;
+  padding: 7px 0;
 }
 
 .table-container {

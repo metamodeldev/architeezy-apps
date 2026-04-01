@@ -173,6 +173,7 @@ export function parseModel(raw) {
     }
   }
 
+  // eslint-disable-next-line complexity
   function walkNode(node, parentId) {
     const { ns, type, fullNs } = parseEClass(node.eClass, modelNsMap);
 
@@ -218,6 +219,8 @@ export function parseModel(raw) {
       name: d.name || d.label || d.title || type,
       doc: d.documentation || d.description || d.doc || '',
       parent: parentIsNode ? parentId : undefined,
+      status: d.status || '',
+      owner: d.owner || '',
     };
     allElements.push(elem);
     elemMap[id] = elem;
@@ -229,4 +232,14 @@ export function parseModel(raw) {
   }
 
   return { allElements, allRelations, elemMap, currentModelNs, modelNsMap };
+}
+
+// ── STATE CLEARANCE ────────────────────────────────────────────────────────────
+
+/** Clears all in-memory model data. Used when signing out or switching contexts. */
+export function clearModelData() {
+  _allElements = [];
+  _allRelations = [];
+  _elemMap = {};
+  setCurrentModel(undefined, '');
 }

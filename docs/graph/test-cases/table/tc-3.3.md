@@ -10,26 +10,22 @@
 - Table displays 20+ rows with columns: Name, Type, Owner
 - Current sort: none (default order, perhaps by ID)
 
-### Test Steps
+### Steps
 
 1. Click on the "Type" column header
-   - **Expected**:
-     - Table rows reorder
-     - Type column header shows an upward arrow (ascending indicator)
-     - Rows are sorted alphabetically A→Z by Type
-     - Secondary sort may be by Name or ID (if same Type)
+   - Table rows reorder
+   - Type column header shows an upward arrow (ascending indicator)
+   - Rows are sorted alphabetically A→Z by Type
+   - Secondary sort may be by Name or ID (if same Type)
 2. Verify order
-   - **Expected**: Scanning rows, Type values appear in ascending order
-
-### Post-conditions
-
-- Single column sorted ascending
+   - Scanning rows, Type values appear in ascending order
+   - Single column sorted ascending
 
 ### Test Data
 
-| Initial order | Sort column | Sort direction | Expected order by column |
-| ------------- | ----------- | -------------- | ----------------------- |
-| unsorted      | Type        | asc (↑)       | A, B, C... alphabetically |
+| Initial order | Sort column | Sort direction | Expected order by column  |
+| ------------- | ----------- | -------------- | ------------------------- |
+| unsorted      | Type        | asc (↑)        | A, B, C... alphabetically |
 
 ## TC-3.3.2: Click same header again to reverse sort direction
 
@@ -37,17 +33,13 @@
 
 - Table sorted by "Type" ascending (from TC-3.3.1)
 
-### Test Steps
+### Steps
 
 1. Click the "Type" header again
-   - **Expected**:
-     - Sort direction reverses to descending
-     - Header arrow points down
-     - Rows now sorted Z→A by Type
-
-### Post-conditions
-
-- Sort toggles between asc and desc on repeated clicks
+   - Sort direction reverses to descending
+   - Header arrow points down
+   - Rows now sorted Z→A by Type
+   - Sort toggles between asc and desc on repeated clicks
 
 ### Test Data
 
@@ -61,25 +53,21 @@
 
 - Table sorted by "Type" ascending
 
-### Test Steps
+### Steps
 
 1. Click on "Owner" column header
-   - **Expected**:
-     - Previous sort indicator (on Type) clears
-     - Owner header gets ascending arrow
-     - Rows reorder sorted by Owner A→Z
-     - Type order is no longer guaranteed (unless secondary sort)
-
-### Post-conditions
-
-- Sort column switches
-- Only one column sorted at a time
+   - Previous sort indicator (on Type) clears
+   - Owner header gets ascending arrow
+   - Rows reorder sorted by Owner A→Z
+   - Type order is no longer guaranteed (unless secondary sort)
+   - Sort column switches
+   - Only one column sorted at a time
 
 ### Test Data
 
 | From column | To column | Expected order by |
 | ----------- | --------- | ----------------- |
-| Type asc    | Owner asc | Owner A→Z        |
+| Type asc    | Owner asc | Owner A→Z         |
 
 ## TC-3.3.4: Sorting handles empty values (null/undefined) by placing them at the end
 
@@ -88,24 +76,20 @@
 - Table with entities, some have empty Owner field (null)
 - Column: Owner
 
-### Test Steps
+### Steps
 
 1. Sort by Owner ascending
-   - **Expected**:
-     - Rows with non-empty Owner appear first (A→Z)
-     - Rows with null/empty Owner appear at the very end (after Z)
+   - Rows with non-empty Owner appear first (A→Z)
+   - Rows with null/empty Owner appear at the very end (after Z)
 2. Sort by Owner descending
-   - **Expected**: Non-empty names Z→A first; nulls still at the end (regardless of asc/desc, nulls are last)
-
-### Post-conditions
-
-- Empty values consistently placed at end
+   - Non-empty names Z→A first; nulls still at the end (regardless of asc/desc, nulls are last)
+   - Empty values consistently placed at end
 
 ### Test Data
 
-| Owner values (some null) | Sort Owner asc | null position |
-| ------------------------ | -------------- | ------------- |
-| Alice, Bob, null, Carol | Alice, Bob, Carol, null | last |
+| Owner values (some null) | Sort Owner asc          | null position |
+| ------------------------ | ----------------------- | ------------- |
+| Alice, Bob, null, Carol  | Alice, Bob, Carol, null | last          |
 
 ## TC-3.3.5: Sorting respects filter Drives
 
@@ -114,23 +98,20 @@
 - Global filter active: only Microservice entities visible (25 rows)
 - Table sorted by Name asc
 
-### Test Steps
+### Steps
 
 1. Apply a change in sorting (e.g., click Type asc)
-   - **Expected**: Sorting operates only on the 25 visible rows
+   - Sorting operates only on the 25 visible rows
    - No hidden rows appear
 2. Verify order
-   - **Expected**: The 25 rows are sorted by Type
-
-### Post-conditions
-
-- Sort scope = visible rows after filters/drill-down
+   - The 25 rows are sorted by Type
+   - Sort scope = visible rows after filters/drill-down
 
 ### Test Data
 
-| Filtered count | Sort column | Sorted row count |
-| -------------- | ----------- | ---------------- |
-| 25            | Type        | 25               |
+| Sort column | Row count (unchanged) |
+| ----------- | --------------------- |
+| Type        | 25                    |
 
 ## TC-3.3.6: Sorting does not affect filter/drill-down state
 
@@ -139,17 +120,18 @@
 - Global filters active; drill-down active
 - Table currently sorted by one column
 
-### Test Steps
+### Steps
 
 1. Change sort order (different column or direction)
-   - **Expected**: Filters remain; drill-down scope unchanged
+   - Filters remain; drill-down scope unchanged
    - Only row order changes
 2. Switch to Graph and back
-   - **Expected**: Filters, drill-down still active; sort order should be preserved (per persistence spec: sorting may be local to table view and reset on tab switch? Check business rule: "Switching tabs (Entities/Relationships) resets the sort order to default." This is about switching between Entities and Relationships, not Graph/Table. Sorting in Entities should persist across Graph/Table switches, but switching tabs within Table resets sort.)
-
-### Post-conditions
-
-- Sorting isolated to table's current state
+   - Filters, drill-down still active; sort order should be preserved (per persistence spec: sorting
+     may be local to table view and reset on tab switch? Check business rule: "Switching tabs
+     (Entities/Relationships) resets the sort order to default." This is about switching between
+     Entities and Relationships, not Graph/Table. Sorting in Entities should persist across
+     Graph/Table switches, but switching tabs within Table resets sort.)
+   - Sorting isolated to table's current state
 
 ### Test Data
 
@@ -163,19 +145,16 @@
 
 - Table with sortable columns
 
-### Test Steps
+### Steps
 
 1. Sort by a column
-   - **Expected**: Column header displays an arrow:
+   - Column header displays an arrow:
      - Up arrow (▲) for ascending
      - Down arrow (▼) for descending
    - Arrow may be accompanied by "sorted" styling (bold, highlighted)
 2. Change to another column
-   - **Expected**: Previous column's arrow clears; new column gets arrow
-
-### Post-conditions
-
-- Clear visual feedback
+   - Previous column's arrow clears; new column gets arrow
+   - Clear visual feedback
 
 ### Test Data
 
@@ -194,23 +173,20 @@
   - "Version" (number as string or number)
 - Sample data
 
-### Test Steps
+### Steps
 
 1. Sort numeric column "Version"
-   - **Expected**: 1, 2, 10 (numeric order), not 1, 10, 2 (lexical)
+   - 1, 2, 10 (numeric order), not 1, 10, 2 (lexical)
 2. Sort date column "Created"
-   - **Expected**: chronological order (oldest→newest for asc)
+   - chronological order (oldest→newest for asc)
 3. Sort string column "Name"
-   - **Expected**: alphabetical A→Z
-
-### Post-conditions
-
-- Appropriate collation per data type
+   - alphabetical A→Z
+   - Appropriate collation per data type
 
 ### Test Data
 
-| Column     | Data types           | Sort order expected   |
-| ---------- | -------------------- | --------------------- |
-| Version    | 1, 2, 10            | 1, 2, 10 (numeric)   |
-| Created    | dates               | chronological        |
-| Name       | strings             | alphabetical         |
+| Column  | Data types | Sort order expected |
+| ------- | ---------- | ------------------- |
+| Version | 1, 2, 10   | 1, 2, 10 (numeric)  |
+| Created | dates      | chronological       |
+| Name    | strings    | alphabetical        |

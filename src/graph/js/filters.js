@@ -25,6 +25,12 @@ let _elemTypeTotals = {};
 /** @type {Object<string, number>} relationship type → total count */
 let _relTypeTotals = {};
 
+/** @type {boolean} Show all element types in the filter list (ignoring availability) */
+let _showAllElem = false;
+
+/** @type {boolean} Show all relationship types in the filter list (ignoring availability) */
+let _showAllRel = false;
+
 export function getActiveElemTypes() {
   return _activeElemTypes;
 }
@@ -49,6 +55,42 @@ export function setActiveElemTypes(s) {
 /** @param {Set<string>} s Set of relationship type names to show */
 export function setActiveRelTypes(s) {
   _activeRelTypes = s;
+}
+
+/**
+ * Returns whether all elements should be shown regardless of search filter.
+ *
+ * @returns {boolean} True if all elements are shown, false otherwise.
+ */
+export function getShowAllElem() {
+  return _showAllElem;
+}
+
+/**
+ * Returns whether all relationships should be shown regardless of search filter.
+ *
+ * @returns {boolean} True if all relationships are shown, false otherwise.
+ */
+export function getShowAllRel() {
+  return _showAllRel;
+}
+
+/**
+ * Sets whether all elements should be shown regardless of search filter.
+ *
+ * @param {boolean} b - True to show all elements, false to apply search filtering.
+ */
+export function setShowAllElem(b) {
+  _showAllElem = b;
+}
+
+/**
+ * Sets whether all relationships should be shown regardless of search filter.
+ *
+ * @param {boolean} b - True to show all relationships, false to apply search filtering.
+ */
+export function setShowAllRel(b) {
+  _showAllRel = b;
 }
 
 /**
@@ -202,16 +244,30 @@ export function applyUrlFilters(activeElemTypes, activeRelTypes) {
 
 /**
  * Hides filter items whose type name does not contain `query` (case-insensitive). Used by the
- * search input inside each filter section.
+ * search input inside each filter section. When showAll is active, also reveals types that would
+ * normally be hidden by availability rules.
  *
  * @param {'elem' | 'rel'} kind - Which filter list to search.
  * @param {string} query - Search string.
  */
 export function filterSearch(kind, query) {
   const q = query.toLowerCase();
-  for (const el of document.querySelectorAll(`[data-kind="${kind}"][data-type]`)) {
-    const visible = el.dataset.type.toLowerCase().includes(q);
-    el.closest('.filter-item').classList.toggle('hidden', !visible);
+  const showAll = kind === 'elem' ? getShowAllElem() : getShowAllRel();
+  for (const el of document.querySelectorAll(
+    `input[type="checkbox"][data-kind="${kind}"][data-type]`,
+  )) {
+    const type = el.dataset.type;
+    const matchesSearch = type.toLowerCase().includes(q);
+    const item = el.closest('.filter-item');
+    if (!item) {
+      continue;
+    }
+    // Show if:
+    // - matches search query, OR
+    // - showAll is active (show all types regardless of search)
+    // Otherwise hide
+    const shouldShow = matchesSearch || showAll;
+    item.classList.toggle('hidden', !shouldShow);
   }
 }
 
@@ -234,7 +290,12 @@ export function saveFilterState() {
   const hiddenEntityTypes = [...allETypes].filter((t) => !_activeElemTypes.has(t));
   const hiddenRelationshipTypes = [...allRTypes].filter((t) => !_activeRelTypes.has(t));
   const all = JSON.parse(localStorage.getItem(LS_KEY) ?? '{}');
-  all[ns] = { hiddenEntityTypes, hiddenRelationshipTypes };
+  all[ns] = {
+    hiddenEntityTypes,
+    hiddenRelationshipTypes,
+    showAllElem: _showAllElem,
+    showAllRel: _showAllRel,
+  };
   localStorage.setItem(LS_KEY, JSON.stringify(all));
 }
 
@@ -253,6 +314,8 @@ export function loadFilterState() {
   if (!saved) {
     return;
   }
+
+  // Restore hidden types
   const hiddenE = new Set(saved.hiddenEntityTypes);
   const hiddenR = new Set(saved.hiddenRelationshipTypes);
   for (const el of document.querySelectorAll('[data-kind="elem"]')) {
@@ -265,6 +328,22 @@ export function loadFilterState() {
     if (hiddenR.has(el.dataset.type)) {
       el.checked = false;
       _activeRelTypes.delete(el.dataset.type);
+    }
+  }
+
+  // Restore Show All flags
+  if (typeof saved.showAllElem === 'boolean') {
+    _showAllElem = saved.showAllElem;
+    const elemToggle = document.getElementById('elem-show-all');
+    if (elemToggle) {
+      elemToggle.checked = _showAllElem;
+    }
+  }
+  if (typeof saved.showAllRel === 'boolean') {
+    _showAllRel = saved.showAllRel;
+    const relToggle = document.getElementById('rel-show-all');
+    if (relToggle) {
+      relToggle.checked = _showAllRel;
     }
   }
 }

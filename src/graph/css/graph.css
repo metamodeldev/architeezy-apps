@@ -59,7 +59,7 @@ main {
   border-radius: 6px;
   box-shadow: 0 4px 12px rgb(0 0 0 / 30%);
   z-index: calc(var(--z-overlay) + 1);
-  min-width: 140px;
+  min-width: 70px;
   overflow: hidden;
 }
 

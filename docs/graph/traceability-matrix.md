@@ -6,14 +6,14 @@ This document provides a complete mapping between functional requirements (FR), 
 (SR), and test cases (TC). It acts as the authoritative index for tracking documentation coverage
 and validation status.
 
-| Requirement Domain                 |   FR   |   SR   |   TC    | Implemented |
-| ---------------------------------- | :----: | :----: | :-----: | :---------: |
-| [FR-1: Models](#fr-1-models)       |   6    |   5    |   40    |      8      |
-| [FR-2: Graph](#fr-2-graph)         |   8    |   8    |   63    |     14      |
-| [FR-3: Table](#fr-3-table)         |   3    |   5    |   42    |     13      |
-| [FR-4: Filtering](#fr-4-filtering) |   3    |   6    |   42    |      7      |
-| [FR-5: Export](#fr-5-export)       |   2    |   3    |   25    |      5      |
-| **Total**                          | **22** | **26** | **203** |   **45**    |
+| Functional Domain                  |   FR   |   SR   |   TC    |  Done   |
+| ---------------------------------- | :----: | :----: | :-----: | :-----: |
+| [FR-1: Models](#fr-1-models)       |   6    |   5    |   40    |   40    |
+| [FR-2: Graph](#fr-2-graph)         |   8    |   8    |   65    |   65    |
+| [FR-3: Table](#fr-3-table)         |   3    |   4    |   32    |   32    |
+| [FR-4: Filtering](#fr-4-filtering) |   3    |   6    |   42    |   42    |
+| [FR-5: Export](#fr-5-export)       |   2    |   3    |   25    |   22    |
+| **Total**                          | **22** | **26** | **204** | **201** |
 
 ## FR-1: Models
 
@@ -70,7 +70,6 @@ and validation status.
 - [FR-3.2](functional-requirements.md#fr-3-table): Support multi-column sorting and filtering within
   the table
   - [SR-3.3](system-requirements/table.md#sr-33-sorting): Sorting
-  - [SR-3.4](system-requirements/table.md#sr-34-filtering): Filtering
 - [FR-3.3](functional-requirements.md#fr-3-table): Enable navigation from table records to
   corresponding graph nodes
   - [SR-3.5](system-requirements/table.md#sr-35-graph-navigation): Graph navigation
