@@ -10,6 +10,8 @@ const STRINGS = {
     themeDark: 'Dark',
     themeLight: 'Light',
     themeSystem: 'System',
+    introText:
+      '<strong>Architeezy Application Gallery</strong> is a collection of applications that extend Architeezy. Each one demonstrates a different way to work with architectural models: graph visualizations, tables, and more.<br><br>Build your own extensions using the Architeezy REST API. All source code is available on <a href="https://github.com/metamodeldev/architeezy-apps" target="_blank" rel="noopener">GitHub</a>.',
     apps: {
       graph: {
         name: 'Architeezy Graph',
@@ -26,6 +28,8 @@ const STRINGS = {
     themeDark: 'Тёмная',
     themeLight: 'Светлая',
     themeSystem: 'Системная',
+    introText:
+      '<strong>Галерея приложений Architeezy</strong> — это коллекция приложений, расширяющих Architeezy. Каждое демонстрирует свой подход к работе с архитектурными моделями: визуализация графов, таблицы и другие возможности.<br><br>Создавайте свои расширения, используя REST API Architeezy. Весь исходный код доступен на <a href="https://github.com/metamodeldev/architeezy-apps" target="_blank" rel="noopener">GitHub</a>.',
     apps: {
       graph: {
         name: 'Architeezy Graph',
@@ -60,12 +64,16 @@ const APPS = [
 // ── Apply locale ─────────────────────────────────────────────────────
 document.documentElement.lang = LANG;
 document.title = t('pageTitle');
-document.getElementById('page-title').textContent = t('pageTitle');
 document.getElementById('nav-about').textContent = t('navAbout');
 document.getElementById('nav-docs').textContent = t('navDocs');
 document.getElementById('theme-btn-dark').title = t('themeDark');
 document.getElementById('theme-btn-light').title = t('themeLight');
 document.getElementById('theme-btn-system').title = t('themeSystem');
+
+const introEl = document.getElementById('intro-text');
+if (introEl) {
+  introEl.innerHTML = t('introText');
+}
 
 // ── Render cards ─────────────────────────────────────────────────────
 const grid = document.getElementById('app-grid');

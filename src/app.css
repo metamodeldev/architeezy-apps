@@ -150,6 +150,37 @@ nav {
   letter-spacing: -0.02em;
 }
 
+/* ── Intro text ───────────────────────────────────────────────────────── */
+.intro-text {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.intro-text p {
+  margin-bottom: 12px;
+}
+
+.intro-text p:last-child {
+  margin-bottom: 0;
+}
+
+.intro-text strong {
+  color: var(--accent);
+}
+
+.intro-text a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.intro-text a:hover {
+  text-decoration: underline;
+}
+
 /* ── Grid ───────────────────────────────────────────────────────────── */
 .app-grid {
   display: grid;

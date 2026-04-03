@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architeezy Table</title>
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <!-- ── LOADING ──────────────────────────────────────────────── -->
+    <div id="loading">
+      <div class="spinner"></div>
+      <div id="loading-text" data-i18n="loadingModels">Loading model list…</div>
+    </div>
+
+    <!-- ── ERROR ────────────────────────────────────────────────── -->
+    <div id="error-msg">
+      <h2 data-i18n="errorTitle">Error</h2>
+      <p id="error-detail"></p>
+      <button onclick="init()" data-i18n="retryBtn">Retry</button>
+    </div>
+
+    <!-- ── TOAST ────────────────────────────────────────────────── -->
+    <div id="toast">
+      <span id="toast-msg"></span>
+      <button id="toast-close" onclick="hideToast()">✕</button>
+    </div>
+
+    <!-- ── CELL DETAIL POPOVER (injected by table.js) ───────────── -->
+
+    <!-- ── MODEL SELECTOR MODAL ─────────────────────────────────── -->
+    <div id="model-modal" class="modal-overlay hidden">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title" data-i18n="modalTitle">Select Model</span>
+          <button class="modal-close" onclick="closeModelSelector()">✕</button>
+        </div>
+        <div class="modal-search-wrap">
+          <input
+            id="model-search"
+            class="modal-search"
+            type="text"
+            data-i18n-ph="modalSearchPh"
+            placeholder="Search by name or type…"
+            oninput="filterModelList(this.value)"
+          />
+        </div>
+        <div class="modal-body" id="model-list">
+          <div class="model-list-loading" data-i18n="modalLoading">Loading list…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HEADER ───────────────────────────────────────────────── -->
+    <header>
+      <a class="back-link" href="../" data-i18n="backToGallery">← Gallery</a>
+      <h1>Architeezy <span>Table</span></h1>
+
+      <button class="ctrl model-btn" id="current-model-btn" onclick="openModelSelector()">
+        ⊞
+        <span id="current-model-name" data-i18n="selectModel">Select model…</span>
+      </button>
+
+      <div id="auth-area">
+        <button class="ctrl" id="auth-btn" onclick="startAuth()" data-i18n="signIn">Sign in</button>
+        <div id="user-info" style="display: none">
+          <span id="user-name"></span>
+          <button class="ctrl" id="signout-btn" onclick="signOut()" data-i18n="signOut">
+            Sign out
+          </button>
+        </div>
+      </div>
+
+      <div class="ctrl-group">
+        <div class="theme-switcher">
+          <button
+            class="theme-btn"
+            id="theme-btn-dark"
+            onclick="setTheme('dark')"
+            data-i18n-tt="themeDark"
+            title="Dark"
+          >
+            🌙
+          </button>
+          <button
+            class="theme-btn"
+            id="theme-btn-light"
+            onclick="setTheme('light')"
+            data-i18n-tt="themeLight"
+            title="Light"
+          >
+            ☀️
+          </button>
+          <button
+            class="theme-btn"
+            id="theme-btn-system"
+            onclick="setTheme('system')"
+            data-i18n-tt="themeSystem"
+            title="System"
+          >
+            🖥
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── TOOLBAR ──────────────────────────────────────────────── -->
+    <div id="toolbar">
+      <!-- Matrix name -->
+      <input
+        id="matrix-name-input"
+        class="matrix-name-input"
+        type="text"
+        data-i18n-ph="namePh"
+        placeholder="Untitled matrix"
+      />
+
+      <!-- New -->
+      <button class="ctrl" onclick="doNewMatrix()" data-i18n="newMatrix">New</button>
+
+      <!-- Save -->
+      <button class="ctrl" id="save-btn" onclick="doSaveMatrix()" data-i18n="saveMatrix">
+        Save
+      </button>
+
+      <!-- Save as template -->
+      <button class="ctrl" onclick="doSaveTemplate()" data-i18n="saveAsTemplate">
+        Save as template
+      </button>
+
+      <!-- Saved dropdown -->
+      <div class="toolbar-btn-wrap">
+        <button class="ctrl" onclick="toggleDropdown('saved-dropdown')" data-i18n="savedMatrices">
+          Saved ▾
+        </button>
+        <div class="toolbar-dropdown" id="saved-dropdown"></div>
+      </div>
+
+      <!-- Templates dropdown -->
+      <div class="toolbar-btn-wrap">
+        <button class="ctrl" onclick="toggleDropdown('templates-dropdown')" data-i18n="templates">
+          Templates ▾
+        </button>
+        <div class="toolbar-dropdown" id="templates-dropdown"></div>
+      </div>
+
+      <div class="toolbar-sep"></div>
+
+      <!-- Export -->
+      <button class="ctrl" onclick="doExportCsv()" data-i18n="exportCsv">↓ CSV</button>
+      <button class="ctrl" onclick="doCopyClipboard()" data-i18n="copyClipboard">⧉ Copy</button>
+    </div>
+
+    <!-- ── BODY ─────────────────────────────────────────────────── -->
+    <div class="body">
+      <!-- ── BUILDER SIDEBAR ──────────────────────────────────── -->
+      <aside id="builder-sidebar">
+        <button
+          id="sidebar-toggle-btn"
+          class="sidebar-toggle"
+          onclick="toggleSidebar()"
+          title="Hide builder"
+        >
+          ‹
+        </button>
+
+        <div class="bl-scroll">
+          <!-- ROWS -->
+          <div class="bl-section">
+            <div class="bl-section-header" onclick="toggleSection('bl-rows-sec')">
+              <span data-i18n="sectionRows">Rows</span>
+              <span class="toggle-icon" id="icon-bl-rows-sec">▼</span>
+            </div>
+            <div class="bl-section-body" id="bl-rows-sec">
+              <div class="bl-levels-list"></div>
+              <button
+                class="bl-add-btn"
+                data-axis="row"
+                onclick="addLevel('row')"
+                data-i18n="addLevel"
+              >
+                + Add level
+              </button>
+            </div>
+          </div>
+
+          <!-- COLUMNS -->
+          <div class="bl-section">
+            <div class="bl-section-header" onclick="toggleSection('bl-cols-sec')">
+              <span data-i18n="sectionCols">Columns</span>
+              <span class="toggle-icon" id="icon-bl-cols-sec">▼</span>
+            </div>
+            <div class="bl-section-body" id="bl-cols-sec">
+              <div class="bl-levels-list"></div>
+              <button
+                class="bl-add-btn"
+                data-axis="col"
+                onclick="addLevel('col')"
+                data-i18n="addLevel"
+              >
+                + Add level
+              </button>
+            </div>
+          </div>
+
+          <!-- DATA -->
+          <div class="bl-section">
+            <div class="bl-section-header" onclick="toggleSection('bl-data-sec')">
+              <span data-i18n="sectionData">Data</span>
+              <span class="toggle-icon" id="icon-bl-data-sec">▼</span>
+            </div>
+            <div class="bl-section-body" id="bl-data-sec">
+              <div class="bl-levels-list" id="bl-data-list"></div>
+              <button
+                class="bl-add-btn"
+                data-action="addDataItem"
+                onclick="addDataItem()"
+                data-i18n="addDataItem"
+              >
+                + Data
+              </button>
+            </div>
+          </div>
+
+          <!-- SETTINGS -->
+          <div class="bl-section">
+            <div class="bl-section-header" onclick="toggleSection('bl-settings-body')">
+              <span data-i18n="sectionSettings">Настройки</span>
+              <span class="toggle-icon" id="icon-bl-settings-body">▼</span>
+            </div>
+            <div class="bl-section-body" id="bl-settings-body">
+              <div class="bl-settings-list" id="bl-settings-list"></div>
+            </div>
+          </div>
+        </div>
+        <!-- /bl-scroll -->
+      </aside>
+
+      <!-- ── MAIN AREA ─────────────────────────────────────────── -->
+      <main>
+        <div id="table-scroll">
+          <div id="table-wrap"></div>
+        </div>
+        <div id="stats-bar"></div>
+      </main>
+    </div>
+    <!-- /body -->
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>
