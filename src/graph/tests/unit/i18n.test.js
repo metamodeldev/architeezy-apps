@@ -1,4 +1,5 @@
-// In the test environment there is no browser navigator, so LANG defaults to 'en'.
+import { describe, expect, it } from 'bun:test';
+
 import { LANG, t } from '../../js/i18n.js';
 
 // ── LANG ──────────────────────────────────────────────────────────────────────

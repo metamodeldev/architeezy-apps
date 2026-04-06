@@ -3,7 +3,7 @@
     "dev": "bunx http-server src -p 3000",
     "format": "oxfmt",
     "lint": "oxlint && stylelint '**/*.css' && markdownlint-cli2",
-    "lint:fix": "oxlint --fix; stylelint '**/*.css' --fix; markdownlint-cli2  --fix",
+    "lint:fix": "oxlint --fix; stylelint '**/*.css' --fix; markdownlint-cli2  --fix; oxfmt",
     "test": "bun test && playwright test",
     "test:coverage": "bun test --only-failures --coverage && playwright test",
     "test:unit": "bun test",
@@ -11,10 +11,12 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
+    "@types/bun": "^1.3.11",
     "markdownlint-cli2": "^0.22.0",
     "monocart-reporter": "^2.10.0",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
+    "oxlint-tsgolint": "^0.20.0",
     "stylelint": "^17.6.0",
     "stylelint-config-standard": "^40.0.0"
   },

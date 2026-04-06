@@ -13,6 +13,11 @@ main {
   background: var(--cy-bg);
 }
 
+/* Faded elements (for highlight/drill mode) */
+#cy .faded {
+  opacity: 0.2;
+}
+
 .cy-controls {
   position: absolute;
   bottom: 36px;

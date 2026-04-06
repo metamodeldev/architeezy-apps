@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { computeFilterCounts } from '../../js/filter/index.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────

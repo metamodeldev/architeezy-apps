@@ -24,8 +24,8 @@ let _lsKey = 'graphTooltips';
 let _cy;
 
 /**
- * Configures the tooltip module with app-specific settings and binds events.
- * Now uses data directly from Cytoscape elements - no getElem callback needed.
+ * Configures the tooltip module with app-specific settings and binds events. Now uses data directly
+ * from Cytoscape elements - no getElem callback needed.
  *
  * @param {cytoscape.Core} cy - The Cytoscape instance to attach tooltip events to.
  * @param {string} [lsKey] - LocalStorage key for tooltip enabled state.

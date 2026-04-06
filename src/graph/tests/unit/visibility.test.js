@@ -1,5 +1,11 @@
+import { describe, expect, it } from 'bun:test';
+
 import { computeVisRelCounts } from '../../js/filter/index.js';
-import { computeDrillBfs } from '../../js/graph/bfs.js';
+import {
+  computeDrillBfs,
+  computeVisibleNodeIds,
+  computeFadedNodeIds,
+} from '../../js/graph/visibility.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -16,7 +22,7 @@ function rel(id, type, source, target) {
 }
 
 function elemMap(...nodes) {
-  return Object.fromEntries(nodes.map((n) => [n.id, n]));
+  return new Map(nodes.map((n) => [n.id, n]));
 }
 
 // ── computeVisRelCounts ───────────────────────────────────────────────────────
@@ -400,5 +406,110 @@ describe('computeDrillBfs — nodeDepth', () => {
     expect(nodeDepth.get('n1')).toBe(1);
     expect(nodeDepth.get('n2')).toBe(2);
     expect(nodeDepth.get('n3')).toBe(3);
+  });
+});
+
+// ── computeVisibleNodeIds ─────────────────────────────────────────────────────
+
+const visElements = [
+  { id: 'a', type: 'Actor' },
+  { id: 'b', type: 'System' },
+  { id: 'c', type: 'DB' },
+  { id: 'd', type: 'Actor' },
+];
+
+describe('computeVisibleNodeIds — normal mode', () => {
+  it('showAll = true → all elements visible', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: true,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+    });
+    expect(result).toEqual(new Set(['a', 'b', 'c', 'd']));
+  });
+
+  it('type filter: only active types visible', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+    });
+    expect(result).toEqual(new Set(['a', 'd']));
+  });
+});
+
+describe('computeVisibleNodeIds — drill mode', () => {
+  it('drill: intersection of filter and scope', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor', 'System']),
+      showAll: false,
+      drillNodeId: 'a',
+      drillScopeIds: new Set(['a', 'b', 'c']), // 'c' filtered out, 'd' outside scope
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+    });
+    expect(result).toEqual(new Set(['a', 'b']));
+  });
+});
+
+describe('computeVisibleNodeIds — highlight mode', () => {
+  it('highlight: active types + highlighted node visible', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+      highlightEnabled: true,
+      highlightNodeId: 'b', // B: System, not in activeElemTypes but must be visible
+    });
+    expect(result).toContain('a');
+    expect(result).toContain('b'); // Force-visible
+    expect(result).toContain('d');
+    expect(result).not.toContain('c');
+  });
+});
+
+// ── computeFadedNodeIds ───────────────────────────────────────────────────────
+
+describe('computeFadedNodeIds — highlight mode', () => {
+  it('fades nodes outside BFS-reachability from highlighted', () => {
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['a', 'b', 'c', 'd']),
+      highlightEnabled: true,
+      highlightNodeId: 'a',
+      highlightReachableIds: new Set(['a', 'b']), // 'c' and 'd' not reachable
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+    });
+    expect(result).toContain('c');
+    expect(result).toContain('d');
+    expect(result).not.toContain('a'); // Highlighted does not fade itself
+    expect(result).not.toContain('b'); // Reachable
+  });
+});
+
+describe('computeFadedNodeIds — drill mode', () => {
+  it('fades nodes in scope but not visible (filtered out)', () => {
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['a', 'b']), // 'c' filtered out
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+      highlightReachableIds: undefined,
+      drillNodeId: 'a',
+      drillScopeIds: new Set(['a', 'b', 'c']), // 'c' in scope but not visible
+    });
+    expect(result).toContain('c');
+    expect(result).not.toContain('a');
+    expect(result).not.toContain('b');
   });
 });

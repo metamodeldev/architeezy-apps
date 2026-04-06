@@ -128,7 +128,6 @@ export function applyLayout(options = {}) {
   layoutInst.on('layoutstop', () => {
     layoutRunning = false;
     globalThis.__layoutRunning = false;
-    document.dispatchEvent(new CustomEvent('graph:layoutApplied'));
     if (savedViewport) {
       cy.pan(savedViewport.pan);
       cy.zoom(savedViewport.zoom);
@@ -199,6 +198,33 @@ export function updateStats(allElements, allRelations) {
  * @param {number} dx - Horizontal pan amount in pixels.
  * @param {number} dy - Vertical pan amount in pixels.
  */
+const FOCUS_ZOOM = 1.5;
+
+/**
+ * Resizes the Cytoscape canvas, animates the camera to the node with `id`, and selects it.
+ *
+ * @param {string} id - The node ID to focus on.
+ * @returns {boolean} True if node was found and focused.
+ */
+export function focusCyNode(id) {
+  const cy = getCy();
+  if (!cy) {
+    return false;
+  }
+  const cyEl = document.getElementById('cy');
+  if (cyEl) {
+    const _ = cyEl.offsetHeight;
+  }
+  cy.resize();
+  const node = cy.$id(id);
+  if (!node?.length) {
+    return false;
+  }
+  cy.animate({ center: { eles: node }, zoom: FOCUS_ZOOM }, { duration: 400 });
+  node.select();
+  return true;
+}
+
 export function panBy(dx, dy) {
   const cy = getCy();
   if (cy) {
@@ -210,9 +236,18 @@ export function panBy(dx, dy) {
 
 /** Wires zoom, fit, layout select, and refresh layout buttons. */
 export function wireGraphControlEvents() {
-  document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
-  document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
-  document.getElementById('fit-cy-btn').addEventListener('click', fitGraph);
+  const zoomInBtn = document.getElementById('zoom-in-btn');
+  if (zoomInBtn) {
+    zoomInBtn.addEventListener('click', zoomIn);
+  }
+  const zoomOutBtn = document.getElementById('zoom-out-btn');
+  if (zoomOutBtn) {
+    zoomOutBtn.addEventListener('click', zoomOut);
+  }
+  const fitBtn = document.getElementById('fit-cy-btn');
+  if (fitBtn) {
+    fitBtn.addEventListener('click', fitGraph);
+  }
   const layoutSelect = document.getElementById('layout-select');
   if (layoutSelect) {
     layoutSelect.addEventListener('change', (e) => {
@@ -220,9 +255,10 @@ export function wireGraphControlEvents() {
       localStorage.setItem('architeezyGraphLayout', e.target.value);
     });
   }
-  document
-    .getElementById('refresh-layout-btn')
-    ?.addEventListener('click', () => applyLayout({ preserveViewport: true }));
+  const refreshBtn = document.getElementById('refresh-layout-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => applyLayout({ preserveViewport: true }));
+  }
 }
 
 /** Wires keyboard navigation for the graph canvas (arrows to pan, +/- to zoom). */

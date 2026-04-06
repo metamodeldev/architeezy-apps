@@ -4,7 +4,5 @@
  * @module search
  */
 
-export { searchState } from './state.js';
-export { applySearch, initGlobalSearch, initSearch } from './ui.js';
-
-export { initGlobalSearch as init } from './ui.js';
+export { clearQuery, query, setQuery } from './service.js';
+export { initGlobalSearch, initSearch, setNoResultsHintVisible } from './ui.js';

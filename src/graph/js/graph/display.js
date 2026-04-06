@@ -1,7 +1,6 @@
 /**
- * Display management for graph elements.
- *
- * Provides functions for visibility, fading, and snapshot queries.
+ * Graph display management — DOM operations on Cytoscape elements. All functions operate on getCy()
+ * and accept explicit parameters.
  *
  * @module graph/display
  * @package
@@ -47,7 +46,7 @@ function syncCompoundParentIds(visibleIds) {
  *       }[];
  *     }
  *   | undefined}
- *   Snapshot of all graph elements, or undefined if graph not loaded
+ *   Returns graph snapshot or undefined if Cytoscape not initialized.
  */
 export function getGraphSnapshot() {
   const cy = getCy();
@@ -73,17 +72,12 @@ export function getGraphSnapshot() {
 /**
  * Applies display visibility to all graph elements in a single batched operation.
  *
- * @param {{
- *   visibleNodeIds: Set<string>;
- *   isEdgeVisible: (
- *     sourceId: string,
- *     targetId: string,
- *     type: string,
- *     isContainment: boolean,
- *   ) => boolean;
- *   forceVisibleId?: string;
- * }} params
- *   Configuration object for display state
+ * @param {object} params - Configuration object for visibility settings.
+ * @param {Set<string>} params.visibleNodeIds - Set of node IDs that should be visible.
+ * @param {(sourceId: string, targetId: string, type: string, isContainment: boolean) => boolean} params.isEdgeVisible -
+ *   Predicate to determine edge visibility.
+ * @param {string} [params.forceVisibleId] - Optional node ID to force visible regardless of
+ *   filters.
  */
 export function applyDisplayState({ visibleNodeIds, isEdgeVisible, forceVisibleId }) {
   const cy = getCy();
@@ -115,7 +109,7 @@ export function applyDisplayState({ visibleNodeIds, isEdgeVisible, forceVisibleI
  *   nodes: { id: string; type: string; faded: boolean }[];
  *   edges: { id: string; type: string; isContainment: boolean; faded: boolean }[];
  * }}
- *   Visible nodes and edges with their faded class status
+ *   Returns visible elements with their faded state.
  */
 export function getVisibleFadedElements() {
   const cy = getCy();
@@ -140,10 +134,9 @@ export function getVisibleFadedElements() {
 /**
  * Applies the .faded CSS class to nodes and edges according to caller-supplied predicates.
  *
- * @param {(nodeId: string) => boolean} shouldFadeNode - Predicate returning true if the node should
- *   be faded
+ * @param {(nodeId: string) => boolean} shouldFadeNode - Predicate determining which nodes to fade.
  * @param {(srcId: string, tgtId: string, edgeId: string) => boolean} shouldFadeEdge - Predicate
- *   returning true if the edge should be faded
+ *   determining which edges to fade.
  */
 export function applyFadedClasses(shouldFadeNode, shouldFadeEdge) {
   const cy = getCy();
@@ -158,6 +151,36 @@ export function applyFadedClasses(shouldFadeNode, shouldFadeEdge) {
       e.toggleClass('faded', shouldFadeEdge(e.source().id(), e.target().id(), e.id()));
     }
   });
+}
+
+/**
+ * Returns true if the graph contains a node with the given ID.
+ *
+ * @param {string} id - The node ID to check.
+ * @returns {boolean} True if the node exists in the graph.
+ */
+export function hasGraphNode(id) {
+  const cy = getCy();
+  return Boolean(cy?.$id(id).length);
+}
+
+/**
+ * Clears `.drill-root` from all nodes, then marks `nodeId` as the new drill root.
+ *
+ * @param {string} nodeId - The node ID to set as the new drill root.
+ */
+export function setDrillRootNode(nodeId) {
+  const cy = getCy();
+  if (cy) {
+    cy.nodes().removeClass('drill-root');
+    cy.$id(nodeId).addClass('drill-root');
+  }
+}
+
+/** Removes the `.drill-root` class from all nodes. */
+export function clearDrillRootNodes() {
+  const cy = getCy();
+  cy?.nodes().removeClass('drill-root');
 }
 
 /** Removes the .faded class from all nodes and edges. */
@@ -176,8 +199,8 @@ export function clearFadedClasses() {
  * @returns {{
  *   nodes: { id: string; type: string; label: string }[];
  *   edges: { id: string; type: string; label: string }[];
- *   }}
- *   Snapshot of currently visible nodes and edges with basic metadata
+ * }}
+ *   Returns currently visible nodes and edges.
  */
 export function getVisibleElements() {
   const cy = getCy();

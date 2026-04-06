@@ -1,4 +1,6 @@
-import { nodeLabel, sortNodes, identifyGroups } from '../../js/compute-helpers.js';
+import { describe, expect, it } from 'bun:test';
+
+import { identifyGroups, nodeLabel, sortNodes } from '../../js/compute-helpers.js';
 
 // ── sortNodes ─────────────────────────────────────────────────────────────────
 

@@ -100,27 +100,7 @@
 | --------- | ------------------- | ---------------------------- |
 | Node A    | Node B (link)       | Node B centered and selected |
 
-## TC-2.5.5: Properties panel opens on selection if closed
-
-### Preconditions
-
-- Graph view active
-- Properties panel is currently closed/hidden
-
-### Steps
-
-1. Select a node
-   - Properties panel automatically opens (slides in or appears)
-   - Panel shows the selected entity's data
-   - Selection automatically reveals properties panel
-
-### Test Data
-
-| Initial state | Select node | Panel state afterwards |
-| ------------- | ----------- | ---------------------- |
-| closed        | node click  | open                   |
-
-## TC-2.5.6: Selection persists during view mode switch (Graph ↔ Table)
+## TC-2.5.5: Selection persists during view mode switch (Graph ↔ Table)
 
 ### Preconditions
 
@@ -142,7 +122,7 @@
 | ----------------------------- | -------------------------- |
 | Node X selected               | Node X still selected      |
 
-## TC-2.5.7: Selection cleared on model change
+## TC-2.5.6: Selection cleared on model change
 
 ### Preconditions
 
@@ -162,7 +142,7 @@
 | ------------ | ---------------------- |
 | model switch | none                   |
 
-## TC-2.5.8: Multiple selection not supported (single only)
+## TC-2.5.7: Multiple selection not supported (single only)
 
 ### Preconditions
 

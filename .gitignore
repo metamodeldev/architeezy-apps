@@ -1,5 +1,5 @@
 /.claude/
-/coverage/
-/monocart-report/
 /node_modules/
-/test-results/
+coverage/
+monocart-report/
+test-results/

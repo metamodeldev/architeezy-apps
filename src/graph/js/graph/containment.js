@@ -1,17 +1,17 @@
 /**
- * Manages graph containment mode setting.
+ * Containment mode state management (reactive signal).
  *
- * Determines how node grouping is displayed.
+ * Stores the containment mode as a signal. No effects here — graph/service.js reads
+ * getContainmentMode() inside its own effect and rebuilds automatically.
  *
  * @module graph/containment
  * @package
  */
 
-import { buildCytoscape } from './core.js';
-import { getAllElements, getAllRelations } from '../model/index.js';
-import { elemColor, relColor } from '../palette.js';
+import { signal } from '../signals/index.js';
 
-let containmentMode = (() => {
+// Load initial value from localStorage
+const initialMode = (() => {
   try {
     return typeof localStorage !== 'undefined'
       ? (localStorage.getItem('architeezyGraphContainment') ?? 'edge')
@@ -21,22 +21,25 @@ let containmentMode = (() => {
   }
 })();
 
+// Reactive signal for containment mode ('none' | 'edge' | 'compound')
+const _containmentMode = signal(initialMode);
+
 /**
- * Returns the current containment display mode.
+ * Returns the current containment mode.
  *
- * @returns {'edge' | 'compound'} The current containment mode.
+ * @returns {'none' | 'edge' | 'compound'} The current containment mode.
  */
 export function getContainmentMode() {
-  return containmentMode;
+  return _containmentMode.value;
 }
 
 /**
- * Sets the containment mode and persists it to localStorage.
+ * Sets the containment mode and persists to localStorage.
  *
- * @param {'edge' | 'compound'} mode - The containment mode to set.
+ * @param {'none' | 'edge' | 'compound'} mode - The containment mode to apply.
  */
 export function setContainmentMode(mode) {
-  containmentMode = mode;
+  _containmentMode.value = mode;
   try {
     if (typeof localStorage !== 'undefined') {
       localStorage.setItem('architeezyGraphContainment', mode);
@@ -47,40 +50,25 @@ export function setContainmentMode(mode) {
 }
 
 /**
- * Wires the containment mode dropdown change event.
- *
- * @param {Function} onContainmentChange - Handler that receives the new mode.
+ * Wires the containment mode dropdown change event. Calls setContainmentMode, which triggers
+ * reactive effects automatically.
  */
-export function wireContainmentEvents(onContainmentChange) {
-  document
-    .getElementById('containment-select')
-    .addEventListener('change', (e) => onContainmentChange(e.target.value));
-}
-
-/**
- * Handler for graph:containmentChanged event.
- * Rebuilds cytoscape with new containment mode.
- */
-function onContainmentChanged() {
-  const elements = getAllElements();
-  if (!elements.length) {
+export function wireContainmentEvents() {
+  const select = document.getElementById('containment-select');
+  if (!select) {
     return;
   }
-
-  buildCytoscape({
-    elements,
-    relations: getAllRelations(),
-    elemColorFn: elemColor,
-    relColorFn: relColor,
-    containmentMode: getContainmentMode(),
+  select.addEventListener('change', (e) => {
+    setContainmentMode(e.target.value);
   });
-
-  document.dispatchEvent(new CustomEvent('graph:containmentApplied'));
 }
 
-/**
- * Initializes the containment module by registering global event listeners.
- */
+/** Initializes the containment dropdown UI to the stored value. */
 export function initContainment() {
-  document.addEventListener('graph:containmentChanged', onContainmentChanged);
+  const select = document.getElementById('containment-select');
+  if (select) {
+    select.value = getContainmentMode();
+  }
 }
+
+export { _containmentMode as containmentModeSignal };

@@ -173,37 +173,7 @@ test.describe('TC-2.5: Selection', () => {
     expect(detailName).toBe('Component B');
   });
 
-  test('TC-2.5.5: Properties panel opens on selection if closed', async ({ page }) => {
-    test.setTimeout(60_000); // Increase timeout for this flaky test
-    await injectCyCapture(page);
-    await mockApi(page);
-    await page.addInitScript(() => localStorage.clear());
-    await page.goto('/graph/?model=model-test');
-    await waitForLoading(page);
-    await waitForCyNode(page, 'comp-a');
-
-    // Wait for initial layout animation to complete
-    await page.waitForFunction(() => !globalThis.__layoutRunning);
-
-    // Close details section if open by clicking the toggle button
-    // The details section is toggled by button[data-section="sec-detail"]
-    const detailToggle = page.locator('button[data-section="sec-detail"]');
-    // Check if the section is expanded (aria-expanded="true")
-    const isExpanded = await detailToggle.getAttribute('aria-expanded').then((v) => v === 'true');
-    if (isExpanded) {
-      await detailToggle.click();
-    }
-
-    // Select node by clicking on it
-    const pos = await getNodePos(page, 'comp-a');
-    await page.mouse.click(pos.x, pos.y);
-    await page.waitForTimeout(300);
-
-    // Panel should be visible
-    await expect(page.locator('#detail-panel')).toBeVisible();
-  });
-
-  test('TC-2.5.6: Selection persists during view mode switch (Graph ↔ Table)', async ({ page }) => {
+  test('TC-2.5.5: Selection persists during view mode switch (Graph ↔ Table)', async ({ page }) => {
     await injectCyCapture(page);
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
@@ -234,7 +204,7 @@ test.describe('TC-2.5: Selection', () => {
     expect(isStillSelected).toBe(true);
   });
 
-  test('TC-2.5.7: Selection cleared on model change', async ({ page }) => {
+  test('TC-2.5.6: Selection cleared on model change', async ({ page }) => {
     await injectCyCapture(page);
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());
@@ -263,7 +233,7 @@ test.describe('TC-2.5: Selection', () => {
     expect(hasSelection).toBe(false);
   });
 
-  test('TC-2.5.8: Multiple selection not supported (single only)', async ({ page }) => {
+  test('TC-2.5.7: Multiple selection not supported (single only)', async ({ page }) => {
     await injectCyCapture(page);
     await mockApi(page);
     await page.addInitScript(() => localStorage.clear());

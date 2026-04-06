@@ -6,7 +6,6 @@
  */
 
 import { getCy } from './cy.js';
-import { applyLayout } from './controls.js';
 
 let savedLayoutState;
 
@@ -57,29 +56,4 @@ export function restoreLayoutState() {
 /** Clears any saved layout state. */
 export function clearSavedLayoutState() {
   savedLayoutState = undefined;
-}
-
-/**
- * Handler for layout:request event.
- *
- * @param {CustomEvent} e - Event with optional { preserveViewport: boolean }.
- */
-function onLayoutRequest(e) {
-  const { preserveViewport = false } = e.detail || {};
-  applyLayout({ preserveViewport });
-}
-
-/**
- * Handler for layout:saveStateRequest event.
- */
-function onSaveLayoutStateRequest() {
-  saveLayoutState();
-}
-
-/**
- * Initializes the layout controller by registering global event listeners.
- */
-export function initLayout() {
-  document.addEventListener('layout:request', onLayoutRequest);
-  document.addEventListener('layout:saveStateRequest', onSaveLayoutStateRequest);
 }

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { PALETTE, elemColor, hashStr, initColorMaps, relColor } from '../../js/palette.js';
 
 // ── hashStr ───────────────────────────────────────────────────────────────────

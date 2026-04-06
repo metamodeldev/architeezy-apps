@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { buildCompactDisplayRows } from '../../js/compact.js';
 import { computeMatrix } from '../../js/compute-matrix.js';
 import { state } from '../../js/state.js';

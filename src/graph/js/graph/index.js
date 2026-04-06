@@ -6,20 +6,12 @@
  * @module graph
  */
 
-import { wireContainmentEvents, setContainmentMode, initContainment, getContainmentMode } from './containment.js';
-import {
-  wireGraphControlEvents,
-  wireKeyboardEvents,
-} from './controls.js';
-import { buildCytoscape, rebuildGraph } from './core.js';
-import { initLayout } from './layout.js';
-import { getCy, isGraphLoaded } from './cy.js';
-import { initTooltips, isTooltipsEnabled, setTooltipsEnabled } from './tooltip.js';
-
-export { computeDrillBfs, computeDrillScopeIds } from './bfs.js';
+export { init } from './bootstrap.js';
+export { getContainmentMode, setContainmentMode, wireContainmentEvents } from './containment.js';
 export {
   applyLayout,
   fitGraph,
+  focusCyNode,
   isLayoutRunning,
   panBy,
   resizeCy,
@@ -30,52 +22,30 @@ export {
   zoomIn,
   zoomOut,
 } from './controls.js';
-export { bindNodeInteraction } from './events.js';
-export { focusCyNode, getSelectedNodeId, hasGraphNode } from './selection.js';
-// Display management (consolidated visibility + state)
+export { getCy, isGraphLoaded, isLayoutApplied, markLayoutApplied } from './cy.js';
 export {
   applyDisplayState,
-  applyFadedClasses,
+  clearDrillRootNodes,
   clearFadedClasses,
-  getGraphSnapshot,
-  getVisibleFadedElements,
   getVisibleElements,
+  hasGraphNode,
+  setDrillRootNode,
 } from './display.js';
-export { getCy, isGraphLoaded };
-export { getContainmentMode, setContainmentMode } from './containment.js';
-export { buildCytoscape, rebuildGraph } from './core.js';
+export { bindNodeInteraction } from './events.js';
+export { restoreLayoutState, saveLayoutState } from './layout.js';
+export { getLegendEnabled, initLegend, setLegendEnabled } from './legend.js';
+export { mountGraphComponent } from './component.js';
+export { initSearchIntegration } from './search.js';
+export {
+  displayState,
+  drillScopeIds,
+  drillVisibleIds,
+  graphBuiltSignal,
+  initializeGraphService,
+  isGraphBuilt,
+  rebuildGraph,
+  visibleElementIds,
+} from './service.js';
 export { cyBg } from './styles.js';
-export { initTooltips, isTooltipsEnabled, setTooltipsEnabled };
+export { initTooltips, isTooltipsEnabled, setTooltipsEnabled } from './tooltip.js';
 export { getViewportBounds, refreshEdgeLabelBg } from './utils.js';
-
-// ============ INITIALIZATION ============
-
-/**
- * Initializes the graph module: wires DOM events and registers controller event listeners.
- *
- * This function is called automatically on module load.
- */
-export function init() {
-  // Set up graph control events (zoom buttons, fit, etc.)
-  wireGraphControlEvents();
-  // Set up keyboard shortcuts
-  wireKeyboardEvents();
-  // Set up containment mode change events
-  wireContainmentEvents((mode) => {
-    setContainmentMode(mode);
-    document.dispatchEvent(new CustomEvent('graph:containmentChanged', { detail: { mode } }));
-  });
-  // Initialize controllers
-  initLayout();
-  initContainment();
-
-  // Build the graph from the loaded model data
-  rebuildGraph(getContainmentMode());
-
-  // Initialize tooltips with the new simplified API
-  const cy = getCy();
-  if (cy) {
-    initTooltips(cy, 'architeezyGraphTooltips');
-  }
-}
-

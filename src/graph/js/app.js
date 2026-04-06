@@ -1,195 +1,138 @@
 /**
  * Application entry point.
  *
- * Initializes feature modules and loads the initial model.
+ * Initialises feature modules and loads the initial model.
  *
  * @module app
  * @package
  */
 
-// ── ENTRY POINT ────────────────────────────────────────────────────────────────
+// ── IMPORTS ────────────────────────────────────────────────────────────────────
 
+import { initAuthUI, isAuthed, probe, wireAuthEvents } from './auth/index.js';
 import {
-  isAuthed,
-  probeAuth,
-  updateAuthUI,
-  init as initAuth,
-} from './auth/index.js';
-import { registerDrillUrlParams, init as initDrillDown } from './drill-down/index.js';
-import { applyVisibility, initializeFilters, initFilter, registerFilterUrlParams } from './filter/index.js';
+  init as initDrill,
+  initDrillRouter,
+  restoreFromUrl as restoreDrillFromUrl,
+  subscribeDrillToUrl,
+} from './drill/index.js';
 import {
-  getContainmentMode,
-  getCy,
-  isGraphLoaded,
-  isTooltipsEnabled,
-  setTooltipsEnabled,
-  init as initGraph,
-  rebuildGraph,
-} from './graph/index.js';
-
+  applyVisibility,
+  buildFiltersUI,
+  initFilter,
+  init as initFilterPanel,
+  initFilterRouter,
+  initializeFilterService,
+  loadFilterStateUI,
+  restoreFromUrl as restoreFilterFromUrl,
+  subscribeFilterToUrl,
+} from './filter/index.js';
+import { init as initGraphExport } from './graph-export/index.js';
+import { init as initGraph } from './graph/index.js';
+import { init as initHighlight } from './highlight/index.js';
 import { applyLocale } from './i18n.js';
 import {
-  clearModelData,
-  handleNoTargetUrl,
-  handleTargetLoad,
+  clear,
+  getElements,
+  getRelations,
+  getStatus,
   init as initModel,
-  registerModelUrlParams,
-  setCachedModels,
-  tryLoadFromLocalStorage,
-  tryLoadFromUrlParam,
+  initModelSelector,
 } from './model/index.js';
-import { prepareLoadContext, restoreStateFromUrl } from './navigation/index.js';
-import { wireSyncUrlListener } from './routing/index.js';
-import {
-  hideLoading,
-  initDetail,
-  initEvents,
-  initLegend,
-  initLegendModule,
-  restoreSidebarAndPanelState,
-  setTheme,
-  registerViewUrlParams,
-} from './ui/index.js';
-
-import { init as initHighlight } from './highlight/index.js';
+import { hideLoading, init as initNotification, showLoading } from './notification/index.js';
+import { initRouter, navParams, params } from './router/index.js';
 import { initSearch } from './search/index.js';
-import { initTable, initializeTable } from './table/index.js';
-import { init as initGraphExport } from './graph-export/index.js';
+import { effect, untrack } from './signals/index.js';
+import { initTableComponent, initTableService } from './table/index.js';
+import {
+  handleModelEmpty,
+  handleModelLoaded,
+  init as initView,
+  restoreViewFromUrl,
+} from './view/index.js';
+
+// ── REACTIVE EFFECTS ─────────────────────────────────────────────────────────────
+
+// Effect: Clear model state on logout
+let wasAuthed = false;
+effect(() => {
+  const authed = isAuthed.value;
+  if (wasAuthed && !authed) {
+    clear();
+  }
+  wasAuthed = authed;
+});
+
+// Effect: Re-initialize filter UI on each model load; restore URL state on first/subsequent loads.
+let firstLoad = true;
+effect(() => {
+  const status = getStatus();
+
+  untrack(() => {
+    if (status === 'loaded') {
+      const elements = getElements();
+      const relations = getRelations();
+      initializeFilterService(elements, relations);
+      buildFiltersUI();
+      loadFilterStateUI();
+
+      if (firstLoad) {
+        firstLoad = false;
+        restoreFilterFromUrl(params.value.entities, params.value.relationships);
+        restoreViewFromUrl(params.value.view);
+        restoreDrillFromUrl(
+          params.value.entity,
+          params.value.depth ? Number(params.value.depth) : undefined,
+        );
+      } else if (navParams.value) {
+        const nav = navParams.value;
+        restoreFilterFromUrl(nav.entities, nav.relationships);
+        restoreViewFromUrl(nav.view);
+        restoreDrillFromUrl(nav.entity, nav.depth ? Number(nav.depth) : undefined);
+      }
+
+      applyVisibility();
+      handleModelLoaded();
+      hideLoading();
+    } else if (status === 'empty') {
+      handleModelEmpty();
+      hideLoading();
+    }
+  });
+});
 
 // ── INIT SEQUENCE ──────────────────────────────────────────────────────────────
 
-async function initDOM() {
-  // Do not hide loading here; it will be hidden after model load or when selector opens
+async function boot() {
+  showLoading('');
   applyLocale();
 
-  // Theme
-  let storedTheme;
-  try {
-    storedTheme = localStorage.getItem('architeezyTheme');
-  } catch {
-    // Ignore storage errors
-  }
-  setTheme(storedTheme ?? 'system');
+  probe();
+  initRouter();
+  initNotification();
+  initModelSelector();
+  initAuthUI();
+  wireAuthEvents(boot);
 
-  // Containment select initial value
-  document.getElementById('containment-select').value = getContainmentMode();
-
-  // Layout select: restore saved preference or keep HTML default (fcose)
-  const layoutSelect = document.getElementById('layout-select');
-  if (layoutSelect) {
-    const savedLayout = localStorage.getItem('architeezyGraphLayout');
-    const validLayouts = ['fcose', 'dagre', 'cose', 'breadthfirst', 'grid', 'circle'];
-    if (savedLayout && validLayouts.includes(savedLayout)) {
-      layoutSelect.value = savedLayout;
-    }
-  }
-
-  // Auth
-  if (isAuthed()) {
-    updateAuthUI();
-  } else {
-    await probeAuth();
-  }
-}
-
-function initEventBridges() {
-  document.addEventListener('auth:signOut', () => {
-    clearModelData();
-    setCachedModels([]);
-  });
-  document.addEventListener('model:contentLoaded', () => {
-    if (!isGraphLoaded()) {
-      initGraph();
-      const cy = getCy();
-      initGraphFeatureModules(cy);
-    } else {
-      rebuildGraph(getContainmentMode());
-      initializeFilters();
-      applyVisibility();
-      initializeTable();
-    }
-  });
-}
-
-function initUIModules() {
-  // Register URL param handlers
-  registerModelUrlParams();
-  registerFilterUrlParams();
-  registerDrillUrlParams();
-  registerViewUrlParams();
-
-  // Toggle tooltips switch
-  document.getElementById('tooltips-toggle').checked = isTooltipsEnabled();
-  document.getElementById('tooltips-toggle').addEventListener('change', (e) => {
-    setTooltipsEnabled(e.target.checked);
-  });
-
-  // Initialize UI modules
-  initEvents(boot); // Wires sidebar, tabs, theme, toast, retry
-  initDetail(); // Listens to graph:nodeTap, graph:nodeDrilled, detail:requestShow
-  initLegendModule(); // Listens to graph:stateChange, highlight:legendUpdate
-  initLegend(); // Restores position/visibility, wires drag
-  initModel(); // Wires model selector modal, loadModel event, model:loadFailed
-  initAuth(boot); // Wires auth-btn, signout-btn, message listener
-
-  restoreSidebarAndPanelState();
-
-  // URL sync + popstate
-  wireSyncUrlListener();
-  globalThis.addEventListener('popstate', restoreStateFromUrl);
-}
-
-async function loadInitialModel(afterLoad) {
-  const { urlModelId } = prepareLoadContext();
-
-  let targetUrl;
-  let targetModelId;
-
-  if (urlModelId) {
-    targetUrl = await tryLoadFromUrlParam(urlModelId);
-    if (targetUrl) {
-      targetModelId = urlModelId;
-    }
-  }
-
-  if (!targetUrl) {
-    targetUrl = tryLoadFromLocalStorage();
-  }
-
-  if (targetUrl) {
-    await handleTargetLoad(targetUrl, targetModelId, afterLoad);
-    // Note: filter initialization moved to initGraphFeatureModules()
-  } else {
-    handleNoTargetUrl(urlModelId);
-  }
-}
-
-function initGraphFeatureModules(cy) {
-  // Initialize filter state and UI after graph is built and before applying filter visibility
-  initializeFilters();
-  initFilter(cy);
-  // Render initial table after filter state is ready
-  initializeTable();
-  initDrillDown(cy);
-  initHighlight(cy);
+  initFilterPanel();
+  initFilter();
+  initGraph();
+  initDrill();
+  initHighlight();
   initSearch();
-  initTable();
+  initTableService();
+  initTableComponent();
+  initView();
   initGraphExport();
-}
 
-function restoreNavigationState() {
-  restoreStateFromUrl();
-}
+  document.getElementById('retry-btn')?.addEventListener('click', boot);
 
-async function boot() {
-  await initDOM();
-  initEventBridges();
-  initUIModules();
-  await loadInitialModel(async () => {
-    // graph init and feature modules are handled by the model:contentLoaded listener
-    // in initEventBridges; here we only need to restore navigation state
-    restoreNavigationState();
-  });
+  await initModel();
+
+  initFilterRouter();
+  initDrillRouter();
+  subscribeFilterToUrl();
+  subscribeDrillToUrl();
 }
 
 boot();

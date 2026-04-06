@@ -5,18 +5,43 @@
  */
 
 export {
+  applyUrlFilters,
+  applyVisibility,
+  buildFiltersUI,
+  filterSearch,
+  init,
+  initFilter,
+  loadFilterStateUI,
+  renderFilterList,
+  selectAll,
+  updateElemFilterDim,
+  updateRelFilterCounts,
+  wireFilterEvents,
+} from './component.js';
+export { initFilterRouter, restoreFromUrl, subscribeFilterToUrl } from './router.js';
+export {
   computeFilterCounts,
   computeVisRelCounts,
   getActiveElemTypes,
   getActiveRelTypes,
   getElemTypeTotals,
   getRelTypeTotals,
-  getShowAllElem,
-  getShowAllRel,
-  initializeFilterState,
+  initializeFilterService,
+  loadFilterStateFromStorage,
+  saveFilterStateToStorage,
+  scopeElemCounts,
+  setActiveElemTypes,
+  setActiveRelTypes,
+  setAllElemTypes,
+  setAllRelTypes,
+  setFilterTypes,
+  setScopeElemCounts,
   setShowAllElem,
   setShowAllRel,
-} from './state.js';
-export { applyUrlFilters, applyVisibility, buildFiltersUI, initFilter, loadFilterStateUI } from './ui.js';
-export { initializeFilters } from './binder.js';
-export { registerFilterUrlParams } from './url.js';
+  setVisRelCounts,
+  showAllElem,
+  showAllRel,
+  toggleElemType,
+  toggleRelType,
+  visRelCounts,
+} from './service.js';

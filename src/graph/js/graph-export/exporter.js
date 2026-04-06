@@ -7,13 +7,14 @@
  * @package
  */
 
-import { getCy, getVisibleElements, isGraphLoaded } from '../graph/index.js';
+import { getCy, getLegendEnabled, getVisibleElements, isGraphBuilt } from '../graph/index.js';
 import { t } from '../i18n.js';
-import { showToast, getCurrentView } from '../ui/index.js';
+import { showToast } from '../notification/index.js';
+import { signal, effect } from '../signals/index.js';
 import { exportPNG } from './png.js';
 import { exportSVG } from './svg.js';
 
-let _isExporting = false;
+const _isExporting = signal(false);
 
 /**
  * Generates a sanitized export filename with timestamp.
@@ -72,20 +73,16 @@ async function performExport(cy, visibleElements, format, filename, includeLegen
  * @param {'png' | 'svg'} format - Image format.
  */
 export async function exportGraphImage(format) {
-  const legendEl = document.getElementById('graph-legend');
-  const includeLegend = Boolean(legendEl && !legendEl.classList.contains('hidden'));
-  if (_isExporting) {
+  const includeLegend = getLegendEnabled();
+  if (_isExporting.value) {
     return;
   }
-  _isExporting = true;
+  _isExporting.value = true;
 
   const btn = document.getElementById('export-image-btn');
   if (btn) {
     await prepareExportButton(btn);
   }
-
-  // Update button state (export starting)
-  updateExportButtonState();
 
   try {
     const cy = getCy();
@@ -104,12 +101,10 @@ export async function exportGraphImage(format) {
     console.error('Export failed', error);
     showToast(t('exportFailed') + ': ' + error.message);
   } finally {
-    _isExporting = false;
+    _isExporting.value = false;
     if (btn) {
       btn.classList.remove('loading');
     }
-    // Update button state (export finished)
-    updateExportButtonState();
   }
 }
 
@@ -144,18 +139,12 @@ export function wireExportEvents() {
   });
 }
 
-/** Updates the disabled state of the export image button based on current app state. */
-export function updateExportButtonState() {
+// Reactively update the export button when graph-built state or exporting flag changes.
+// The button is visually hidden by view/ when not in graph view, so no view check is needed here.
+effect(() => {
   const btn = document.getElementById('export-image-btn');
   if (!btn) {
     return;
   }
-  const hasModel = isGraphLoaded();
-  const inGraphView = getCurrentView() === 'graph';
-  const isExporting = _isExporting;
-  btn.disabled = !(hasModel && inGraphView && !isExporting);
-}
-
-// Update export button when graph is built or view changes
-document.addEventListener('graph:built', updateExportButtonState);
-document.addEventListener('view:changed', updateExportButtonState);
+  btn.disabled = !(isGraphBuilt() && !_isExporting.value);
+});

@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { computeGroupRowSpan } from '../../js/tabular.js';
 
 function makeRows(...displays) {

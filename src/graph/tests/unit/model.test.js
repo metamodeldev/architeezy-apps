@@ -1,4 +1,6 @@
-import { parseModel } from '../../js/model/index.js';
+import { describe, expect, it } from 'bun:test';
+
+import { parseModel } from '../../js/model/service.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -118,8 +120,8 @@ describe('graph nodes (rule 3)', () => {
       content: [{ eClass: 'ns:Root', data: { items: [node('ns:E', 'e1')] } }],
     };
     const { elemMap } = parseModel(raw);
-    expect(elemMap['e1']).toBeDefined();
-    expect(elemMap['e1'].type).toBe('E');
+    expect(elemMap.get('e1')).toBeDefined();
+    expect(elemMap.get('e1').type).toBe('E');
   });
 
   it('sets parent for nested nodes', () => {

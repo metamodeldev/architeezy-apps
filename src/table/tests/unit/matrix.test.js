@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import {
   blankDataItem,
   blankLevel,
@@ -42,7 +44,7 @@ describe(blankDataItem, () => {
   });
 
   it('has an id string', () => {
-    expectTypeOf(blankDataItem().id).toBeString();
+    expect(blankDataItem().id).toBeString();
   });
 
   it('returns a new object each call', () => {
@@ -78,7 +80,7 @@ describe(createDef, () => {
   });
 
   it('has a string id', () => {
-    expectTypeOf(createDef().id).toBeString();
+    expect(createDef().id).toBeString();
   });
 
   it('produces unique ids', () => {

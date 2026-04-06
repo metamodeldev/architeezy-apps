@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { readUrlParams } from '../../js/routing.js';
 
 // ── no params ─────────────────────────────────────────────────────────────────

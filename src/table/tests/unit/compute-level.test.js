@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { resolveLevel } from '../../js/compute-level.js';
 import { state } from '../../js/state.js';
 

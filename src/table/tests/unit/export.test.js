@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { buildTable } from '../../js/export.js';
 
 // ── helpers ───────────────────────────────────────────────────────────────────

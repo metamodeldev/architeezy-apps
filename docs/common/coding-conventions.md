@@ -60,12 +60,10 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
 - **Validation:** Prioritize HTML5 built-in validation (`required`, `pattern`). Use JavaScript only
   for complex cross-field logic.
 
-### Asset Loading and Data Handling
+### Script Loading
 
-- **Script Execution:** Use `defer` or `type="module"` for all external scripts to ensure
+- **Execution Scheduling:** Use `defer` or `type="module"` for all external scripts to ensure
   non-blocking parsing and DOM availability.
-- **Data Decoupling:** Use `data-*` attributes strictly for passing configuration or state from HTML
-  to JavaScript. Access them via the `dataset` API.
 
 ## CSS
 
@@ -88,6 +86,31 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
 
 ## JavaScript
 
+### Reactive Architecture and State Management
+
+- **Signal-Based Reactivity:** Implement a reactive architecture based on **Signals** rather than an
+  event-based model. Signals provide a more explicit data flow, making dependencies visible and the
+  application significantly easier to debug.
+- **Explicit Data Flows:** Logic must be structured so that data flows in a clear, traceable
+  direction. Signals ensure that when a piece of state changes, the impact on the rest of the system
+  is predictable and localizable.
+- **Events for Intent, Signals for State:** Use standard DOM events only to capture user intent
+  (e.g., `click`). Once captured, the state must be updated via signals. Avoid using events for
+  internal state synchronization between modules.
+
+### DOM Interaction and Data Boundaries
+
+- **DOM as a View Layer:** The DOM must be treated strictly as a target for updates (a view). It is
+  a projection of the application state, not a source of truth.
+- **No Data Storage in DOM:** It is strictly prohibited to store substantial application data,
+  complex objects, or state within DOM elements (e.g., in hidden attributes, custom properties, или
+  complex `data-*` JSON strings).
+- **No Data Exchange via DOM:** Modules must never use the DOM as a communication bus. Exchanging
+  data between modules by reading from or writing to DOM elements is prohibited. All communication
+  must occur within the JavaScript layer using signals or direct calls.
+- **Read-Only Data Attributes:** `data-*` attributes should only be used for static configuration
+  passed from the server or for simple CSS targeting.
+
 ### Bottom-Up Architecture and Structuring
 
 - **Domain-Driven Design (DDD):** Group code first by domain (e.g., `user`, `tasks`), then by layer
@@ -98,26 +121,22 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
   helper functions they call. Related functions (e.g., `addListener` and `removeListener`) should be
   grouped together in logical order.
 - **Variable Locality:** Declare and initialize variables as close to their first usage as possible,
-  preferably in a single expression. Do not declare variables at the top of a function if they are
-  used 50 lines later.
+  preferably in a single expression.
 
 ### Module Interaction and Communication
 
 - **Communication Simplicity:** Interaction between modules must be as simple as possible. Minimize
   coupling by using the most direct method that doesn't violate architectural layers.
 - **Direct Function Calls:** Use direct calls for hierarchical or vertical communication (e.g., a
-  controller calling a service it owns). This is the preferred method for clear, traceable logic.
-- **Custom Events:** Use `CustomEvent` for horizontal communication between independent domains. A
-  module should notify that "something happened" without knowing who reacts.
-- **Prohibition of Callbacks:** Do not pass callbacks between modules for state synchronization or
-  orchestration. This obscures the execution flow and creates "spaghetti" logic. Use `Promises` for
-  async results or `Events` for notifications.
-- **Atomic API Design:** Avoid two-step operations where the caller has to fetch a state, modify it,
-  and send it back (e.g., `setItems(getItems().add(x))`). Provide single, descriptive methods for
-  actions (e.g., `addActiveElement(type)`).
+  controller calling a service it owns).
+- **Reactive Subscriptions:** Use signal-based effects to react to state changes across independent
+  modules.
+- **Prohibition of Callbacks:** Do not pass callbacks between modules for state synchronization. Use
+  `Promises` for async results and `Signals` for state.
+- **Atomic API Design:** Provide single, descriptive methods for actions (e.g.,
+  `addActiveElement(type)`) instead of exposing raw internal setters.
 - **Global Scope Restriction:** The use of `globalThis`, `window`, or `self` to store application
-  state, share logic, or bypass the module system is strictly prohibited. Use explicit
-  `import`/`export`.
+  state or logic is strictly prohibited. Use explicit `import`/`export`.
 
 ### Functional Programming and Logic
 
@@ -125,50 +144,33 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
   touch the DOM.
 - **Early Return Pattern:** Handle edge cases and validation at the start of the function. Prohibit
   large `if` blocks wrapping the entire function body.
-- **Function Structure:** Follow this sequence: 1. Input validation, 2. Pre-processing, 3. Main
-  actions, 4. Result preparation, 5. Return.
 - **Simple Lambdas:** Keep lambda expressions minimal. If a `.forEach()` or `.map()` logic is
-  complex, move it to a named function: `.map(transformData)`.
+  complex, move it to a named function.
 
 ### State and Error Handling
 
 - **Encapsulated State:** State must be owned by a single module and hidden from the outside world.
-- **Immutable State Exposure:** Getters must return immutable collections or clones of the data
-  (e.g., `return [...this.items]`). The outside world must never be able to mutate a module's
-  internal state directly by modifying a returned reference.
-- **No Redundant Accessors:** Avoid generating "dumb" getters and setters for every internal
-  variable (e.g., `setFilterCounts`). Only expose state and update methods that are strictly
-  necessary for the application logic.
-- **Controlled Updates:** State updates must be intentional and highly controlled. Prohibit patterns
-  like `setX(getX())` which indicate a lack of proper encapsulation and logic ownership.
-- **Immediate Error Throwing:** If an error occurs (e.g., an object is not found by ID), throw an
-  exception immediately. Do not return `null` or `undefined`, as it forces duplicated checks and
-  hides bugs.
-- **Encapsulated Constants:** Avoid centralized global constant files. Keep constants within the
-  modules where they are used.
+- **Immutable State Exposure:** Getters must return immutable collections or clones of the data. The
+  outside world must never mutate a module's internal state directly via a returned reference.
+- **Immediate Error Throwing:** If an error occurs, throw an exception immediately. Do not return
+  `null` or `undefined` as a way to handle expected logical failures, as this hides bugs.
 
-### DOM Interaction and Performance
+### Performance
 
 - **Event Delegation:** Attach a single listener to a parent element for dynamic child nodes.
 - **Layout Thrashing:** Group DOM reads (e.g., `offsetWidth`) and DOM writes (e.g., `style.left`)
   separately. Never interleave them in a loop.
-- **Execution Scheduling:** Use `requestAnimationFrame` for visual updates and `requestIdleCallback`
-  for non-critical background tasks.
 - **Cleanup:** Manually clear `setInterval` and `removeEventListener` when an element or component
-  is removed from the DOM.
+  is removed from the DOM to prevent memory leaks.
 
 ## Dependencies
 
 - **Circular Dependencies:** Prohibit circular dependencies, both explicit (imports) and implicit
-  (logic/naming). Generic modules must never reference specific entities (e.g., an "attributes"
-  module should not know about "tasks" or "projects").
-- **Explicit Hierarchy:** A module in a lower layer (e.g., `utils` or `dom-primitives`) must never
-  import or reference modules from a higher layer (e.g., `feature-controllers`).
-- **Library Minimalism:** Do not add third-party libraries for simple functions that can be
-  implemented in a few lines. Minimize the dependency footprint.
+  (logic/naming). Generic modules must never reference specific entities.
+- **Library Minimalism:** Do not add third-party libraries for functions that can be implemented
+  natively in a few lines.
 
 ## Testing
 
 - **Unit Testing:** All pure utility functions and business logic must have unit tests.
-- **Integration Testing:** Test critical user flows and verify JavaScript-DOM interactions. Maintain
-  high code coverage to ensure no unused or unreachable code exists.
+- **Integration Testing:** Test critical user flows and verify JavaScript-DOM interactions.

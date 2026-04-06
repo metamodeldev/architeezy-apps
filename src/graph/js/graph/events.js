@@ -42,7 +42,6 @@ export function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
       if (onNodeTap) {
         onNodeTap(nodeId);
       }
-      document.dispatchEvent(new CustomEvent('graph:nodeTap', { detail: { nodeId } }));
     }, TAP_DELAY_MS);
   });
   cy.on('dbltap', 'node', (e) => {
@@ -55,7 +54,6 @@ export function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
     if (onNodeDblTap) {
       onNodeDblTap(nodeId);
     }
-    document.dispatchEvent(new CustomEvent('graph:nodeDblTap', { detail: { nodeId } }));
   });
   cy.on('tap', (e) => {
     if (e.target === cy) {
@@ -63,7 +61,6 @@ export function bindCyEvents(cy, onNodeTap, onNodeDblTap, onCanvasTap) {
       if (onCanvasTap) {
         onCanvasTap();
       }
-      document.dispatchEvent(new CustomEvent('graph:canvasTap', { detail: {} }));
     }
   });
 

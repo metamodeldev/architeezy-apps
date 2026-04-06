@@ -64,9 +64,18 @@ header {
 }
 
 .crumb-entity {
-  color: var(--text);
-  font-weight: 600;
+  color: var(--text-muted);
   max-width: 200px;
+}
+
+.crumb-entity:hover {
+  color: var(--text);
+}
+
+/* Активный (текущий) элемент навигации */
+.crumb-btn.active,
+.crumb-entity.active {
+  color: var(--text);
 }
 
 .crumb-sep {

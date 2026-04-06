@@ -1,65 +1,14 @@
 /**
  * API client with authentication support.
  *
- * Centralizes auth token state.
+ * Centralizes auth token state by reading from AuthService.
  *
  * @module api
  * @package
  */
 
+import { token, isAuthed as _isAuthed } from './auth/index.js';
 import { t } from './i18n.js';
-
-export const BASE_URL = 'https://architeezy.com';
-
-// ── AUTH TOKEN STATE ───────────────────────────────────────────────────────────
-
-let _authToken; // Bearer token; kept in memory only
-let _cookieAuthed = false; // True when /api/users/current succeeds without a token
-
-/**
- * Returns true when the user has an active session (token or cookie).
- *
- * @returns {boolean} True if authenticated.
- */
-export function isAuthed() {
-  return _cookieAuthed || Boolean(_authToken);
-}
-
-/**
- * Returns the current Bearer token (if any).
- *
- * @returns {string | undefined} The Bearer token or undefined.
- */
-export function getAuthToken() {
-  return _authToken;
-}
-
-/**
- * Sets the Bearer token.
- *
- * @param {string | undefined} token - The Bearer token or undefined to clear.
- */
-export function setAuthToken(token) {
-  _authToken = token;
-}
-
-/**
- * Returns whether a session cookie is present (set after successful /api/users/current).
- *
- * @returns {boolean} True if cookie-authed.
- */
-export function getCookieAuthed() {
-  return _cookieAuthed;
-}
-
-/**
- * Sets the cookie-authed flag.
- *
- * @param {boolean} value - True if cookie-authenticated.
- */
-export function setCookieAuthed(value) {
-  _cookieAuthed = value;
-}
 
 // ── HTTP CLIENT ───────────────────────────────────────────────────────────────
 
@@ -71,11 +20,13 @@ export function setCookieAuthed(value) {
  * @returns {Promise<Response>} The fetch response promise.
  */
 export async function apiFetch(url) {
-  const token = getAuthToken();
-  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const headers = token.value ? { Authorization: `Bearer ${token.value}` } : {};
   const r = await fetch(url, { headers, credentials: 'include' });
   if (r.status === 401) {
-    setAuthToken(undefined);
+    // Clear token directly (avoid circular import by dynamic import if needed)
+    // Since setToken is synchronous, we can import it directly
+    const { setToken } = await import('./auth/service.js');
+    setToken(undefined);
     throw new Error(t('authRequired'));
   }
   return r;

@@ -1,374 +1,426 @@
 /**
- * Model selection and listing functionality.
+ * Model Selector Component - Reactive Service-Based Architecture
+ *
+ * UI component for selecting models from the ModelService. Uses signals for state management and
+ * effects for DOM updates.
  *
  * @module model/selector
  * @package
  */
 
-import { apiFetch, BASE_URL } from '../api.js';
-import { isAuthErrorShown, setAuthErrorShown } from '../auth/index.js';
 import { t } from '../i18n.js';
+import { showLoading } from '../notification/index.js';
+import { pushState } from '../router/index.js';
+import { effect, signal } from '../signals/index.js';
 import { escHtml } from '../utils.js';
-import { loadAndDisplayModel } from './loader.js';
-import { getAllElements, getCachedModels, setCachedModels } from './state.js';
+import {
+  fetchModelList,
+  getModelList,
+  getModelName,
+  load,
+  modelContentUrl,
+  modelTypeLabel,
+  setCurrentModelName,
+  setModelList,
+} from './service.js';
 
-const MODELS_API = `${BASE_URL}/api/models?size=100`;
+// ── PRIVATE SIGNALS ─────────────────────────────────────────────────────────────
 
-/**
- * Derives a short human-readable label from a model's `contentType` string.
- *
- * @param {string | undefined} contentType - The model's MIME-type-like content type.
- * @returns {string} Short label, or "?" when no recognisable pattern is found.
- */
-export function modelTypeLabel(contentType) {
-  if (!contentType) {
-    return '?';
-  }
-  const m = contentType.match(/\/metamodel\/([^/]+)\//);
-  if (m) {
-    return m[1].toUpperCase();
-  }
-  const hash = contentType.split('#')[1];
-  return hash ? hash.replace(/Model$/, '') : '?';
-}
+/** @type {import('../signals').Signal<string>} */
+const _searchQuery = signal('', 'model-search-query');
 
-/**
- * Resolves the content fetch URL for a model object returned by the API. Prefers the
- * `_links.content` HAL link; falls back to constructing the canonical API path from the model's
- * slug fields.
- *
- * @param {object} model - A model object from the API model list.
- * @returns {string | undefined} The content URL, or undefined if it cannot be resolved.
- */
-export function modelContentUrl(model) {
-  const links = model._links?.content;
-  if (Array.isArray(links) && links[0]?.href) {
-    return links[0].href.replaceAll(/\{[^}]*\}/g, '');
-  }
-  if (links?.href) {
-    return links.href.replaceAll(/\{[^}]*\}/g, '');
-  }
-  const { scopeSlug, projectSlug, projectVersion, slug } = model;
-  if (scopeSlug && projectSlug && projectVersion && slug) {
-    return `${BASE_URL}/api/models/${scopeSlug}/${projectSlug}/${projectVersion}/${slug}/content?format=json`;
-  }
-}
+/** @type {import('../signals').Signal<boolean>} */
+const _isModalOpen = signal(false, 'model-modal-open');
 
-// Cached model list - now in model/state.js
+/** @type {import('../signals').Signal<boolean>} */
+const _listLoading = signal(false, 'model-list-loading');
 
-/**
- * Fetches the full paginated model list from the API. Follows `_links.next` until all pages are
- * consumed.
- *
- * @returns {Promise<Array>} Resolved list of model objects.
- * @throws {Error} If any page request fails or the list is empty.
- */
-export async function fetchModelList() {
-  const models = [];
-  let url = MODELS_API;
-  while (url) {
-    // eslint-disable-next-line no-await-in-loop
-    const r = await apiFetch(url);
-    if (!r.ok) {
-      throw new Error(`HTTP ${r.status}`);
-    }
-    // eslint-disable-next-line no-await-in-loop
-    const data = await r.json();
-    models.push(...(data._embedded?.models ?? []));
-    const next = data._links?.next?.href;
-    url = next && next !== url ? next : undefined;
-  }
-  if (!models.length) {
-    throw new Error(t('emptyModelList'));
-  }
-  return models;
-}
+/** @type {import('../signals').Signal<string>} */
+const _error = signal('', 'model-error');
 
-// GetCachedModels and setCachedModels are exported from ./state.js
-export { getCachedModels, setCachedModels } from './state.js';
+// ── COMPUTED ────────────────────────────────────────────────────────────────────
 
-/**
- * Opens the model-selector modal and focuses the search input. Fetches the model list on first open
- * (or after the cache is cleared); shows a loading placeholder until the list is ready.
- */
-export async function openModelSelector() {
-  document.getElementById('model-modal').classList.remove('hidden');
-  document.getElementById('model-search').value = '';
-  document.getElementById('model-search').focus();
+// ── PUBLIC FUNCTIONS ───────────────────────────────────────────────────────────
 
-  if (!getCachedModels().length) {
-    document.getElementById('model-list').innerHTML =
-      `<div class="model-list-loading">${t('modalLoading')}</div>`;
+/** Opens the model selector modal. Resets search, focuses input, and fetches model list if needed. */
+export async function open() {
+  _isModalOpen.value = true;
+  _searchQuery.value = '';
+  _error.value = '';
+
+  const modelList = getModelList();
+  if (modelList.length === 0) {
+    _listLoading.value = true;
     try {
-      setCachedModels(await fetchModelList());
-    } catch (error) {
-      document.getElementById('model-list').innerHTML =
-        `<div class="empty-model-message">${escHtml(error.message)}</div>`;
-      return;
+      await fetchModelListInternal();
+    } catch {
+      // Error is set in fetchModelListInternal
+    } finally {
+      _listLoading.value = false;
     }
   }
 
-  renderModelList(getCachedModels(), '');
+  // Render the model list after ensuring data is loaded
+  renderModelList();
+
+  // Focus search input after modal opens
+  setTimeout(() => {
+    const searchInput = document.getElementById('model-search');
+    if (searchInput) {
+      searchInput.focus();
+    }
+  }, 0);
 }
 
-/** Closes the model-selector modal. */
-export function closeModelSelector() {
-  document.getElementById('model-modal').classList.add('hidden');
+/** Closes the model selector modal. */
+export function close() {
+  _isModalOpen.value = false;
 }
 
 /**
- * Renders the model list inside the modal, filtered by `query`. Items without a resolvable content
- * URL are shown as disabled.
+ * Updates the search query.
  *
- * @param {Array} models - List of model objects from the API.
- * @param {string} query - Filter string (matched against name, type label, and description).
+ * @param {string} q - Search query
  */
-export function renderModelList(models, query) {
-  const q = query.toLowerCase();
-  const container = document.getElementById('model-list');
-  const currentUrl = localStorage.getItem('architeezyGraphModelUrl');
-  container.innerHTML = '';
+export function setSearchQuery(q) {
+  _searchQuery.value = q;
+  // Re-render the list whenever search query changes
+  renderModelList();
+}
 
-  for (const model of models) {
-    const typeLabel = modelTypeLabel(model.contentType);
+/**
+ * Selects a model and updates application state.
+ *
+ * @param {object} model - The selected model object
+ */
+export async function selectModel(model) {
+  close();
+
+  try {
     const url = modelContentUrl(model);
-    if (
-      q &&
-      !model.name.toLowerCase().startsWith(q) &&
-      !typeLabel.toLowerCase().startsWith(q) &&
-      !(model.description ?? '').toLowerCase().startsWith(q)
-    ) {
-      continue;
+    if (!url) {
+      throw new Error(t('invalidModelUrl'));
     }
-
-    const item = document.createElement('div');
-    item.className = `model-item${url === currentUrl ? ' active' : ''}`;
-    item.tabIndex = 0;
-    item.setAttribute('role', 'button');
-    item.innerHTML = `
-      <div class="model-item-icon">📐</div>
-      <div class="model-item-info">
-        <div class="model-item-name" title="${escHtml(model.name)}">${escHtml(model.name)}</div>
-        <div class="model-item-meta">
-          <span class="model-type-badge">${escHtml(typeLabel)}</span>
-          ${model.description ? `<span class="model-item-desc">${escHtml(model.description)}</span>` : ''}
-        </div>
-      </div>`;
-
-    if (url) {
-      item.addEventListener('click', () => {
-        closeModelSelector();
-        setCurrentModelName(model.name);
-        // Push a new history entry for model switch (major transition)
-        const newUrl = new URL(location.href);
-        newUrl.searchParams.set('model', model.id ?? undefined);
-        // oxlint-disable-next-line unicorn/no-null
-        history.pushState(null, '', newUrl);
-        // LoadModel is in app.js; use a custom event to avoid circular dependency
-        document.dispatchEvent(
-          new CustomEvent('loadModel', {
-            detail: { url, modelId: model.id ?? undefined },
-          }),
-        );
-      });
-    } else {
-      item.classList.add('disabled');
+    const modelName = model.name;
+    showLoading(t('loadingModel'));
+    // Push current state to create new history entry before loading
+    pushState({ model: model.id });
+    // Load the model (will hide loading on completion)
+    await load(model.id, url);
+    if (modelName) {
+      setCurrentModelName(modelName);
     }
-    container.append(item);
-  }
-
-  if (!container.children.length) {
-    container.innerHTML = `<div class="model-list-loading">${t('noResults')}</div>`;
+  } catch (error) {
+    console.error('Failed to select model:', error);
+    showErrorInModal(t('modelSelectError') + ': ' + error.message);
   }
 }
 
-/**
- * Re-renders the model list using the cached model array, filtered by `query`. Bound to the search
- * input's `oninput` event.
- *
- * @param {string} query - Search string typed by the user.
- */
-export function filterModelList(query) {
-  renderModelList(getCachedModels(), query);
-}
-
-/**
- * Updates the header model name label and the document title.
- *
- * @param {string} name - Display name of the loaded model.
- */
-export function setCurrentModelName(name) {
-  document.getElementById('current-model-name').textContent = name;
-  document.title = `${name} — Architeezy Graph`;
-}
-
-/** Wires model selector modal events. */
-export function wireModelSelectorEvents() {
-  document.getElementById('modal-close-btn').addEventListener('click', closeModelSelector);
-  document
-    .getElementById('model-search')
-    .addEventListener('input', (e) => filterModelList(e.target.value));
-  document.getElementById('current-model-btn').addEventListener('click', openModelSelector);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeModelSelector();
-    }
-  });
-  document.getElementById('model-modal').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) {
-      closeModelSelector();
-    }
-  });
-
-  // Keyboard navigation for model selector modal
-  const modal = document.getElementById('model-modal');
-  modal.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeModelSelector();
-      e.preventDefault();
-      return;
-    }
-
-    const modelItems = [...modal.querySelectorAll('.model-item:not([disabled])')];
-
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-      let targetIndex;
-      if (document.activeElement === modal) {
-        targetIndex = e.key === 'ArrowDown' ? 0 : modelItems.length - 1;
-      } else {
-        const currentIndex = modelItems.indexOf(document.activeElement);
-        if (currentIndex === -1) {
-          return;
-        } // Not a model item, ignore
-        targetIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
-        // Wrap around
-        if (targetIndex < 0) {
-          targetIndex = modelItems.length - 1;
-        }
-        if (targetIndex >= modelItems.length) {
-          targetIndex = 0;
-        }
-      }
-      if (modelItems[targetIndex]) {
-        modelItems[targetIndex].focus();
-      }
-      e.preventDefault();
-    } else if (e.key === 'Enter' || e.key === 'Space') {
-      if (document.activeElement.classList.contains('model-item')) {
-        document.activeElement.click();
-        e.preventDefault();
-      }
-    }
-  });
-}
-
-// ── URL PARAM HELPERS ─────────────────────────────────────────────────────────
-
-/**
- * Tries to load model from URL modelId parameter.
- *
- * @param {string} urlModelId - Model ID from URL query parameter.
- * @returns {Promise<string | undefined>} Content URL on success, undefined on failure.
- */
-export async function tryLoadFromUrlParam(urlModelId) {
+/** Internal async fetch for model list. Sets loading and error states. */
+async function fetchModelListInternal() {
+  _error.value = '';
   try {
     const models = await fetchModelList();
-    setCachedModels(models);
-  } catch {
+    setModelList(models);
+  } catch (error) {
+    _error.value = error.message || t('unknownError');
+    throw error;
+  }
+}
+
+/** Renders the model list to the DOM. */
+function renderModelList() {
+  const container = document.getElementById('model-list');
+  if (!container) {
     return;
   }
-  const urlModel = getCachedModels().find((m) => m.id === urlModelId);
-  if (urlModel) {
-    setCurrentModelName(urlModel.name);
-    return modelContentUrl(urlModel);
+
+  container.innerHTML = '';
+
+  const query = _searchQuery.value.toLowerCase();
+  let models = getModelList();
+
+  // Apply search filter
+  if (query) {
+    models = models.filter((model) => {
+      const typeLabel = modelTypeLabel(model.contentType);
+      return (
+        model.name.toLowerCase().startsWith(query) ||
+        typeLabel.toLowerCase().startsWith(query) ||
+        (model.description ?? '').toLowerCase().startsWith(query)
+      );
+    });
   }
-}
 
-/**
- * Tries to get model URL from localStorage.
- *
- * @returns {string | undefined} Model content URL if present in storage, undefined otherwise.
- */
-export function tryLoadFromLocalStorage() {
-  const url = localStorage.getItem('architeezyGraphModelUrl');
-  return url ?? undefined;
-}
-
-// ── LOAD ORCHESTRATION ─────────────────────────────────────────────────────────
-
-/**
- * Handles loading when a target URL is resolved. Calls loadAndDisplayModel, then updates model name
- * or opens selector on failure.
- *
- * @param {string} targetUrl - The URL of the model to load.
- * @param {string} [targetModelId] - The model ID, if available.
- * @param {Function} [afterLoad] - Callback to run after the model is loaded.
- */
-export async function handleTargetLoad(targetUrl, targetModelId, afterLoad) {
-  setAuthErrorShown(false);
-  await loadAndDisplayModel(targetUrl, targetModelId, afterLoad);
-
-  // Check if graph was built (non-empty model)
-  if (getAllElements().length > 0) {
-    // Try to get model name from localStorage first (for persistence restoration)
-    const persistedName = localStorage.getItem('architeezyGraphModelName');
-    if (persistedName) {
-      setCurrentModelName(persistedName);
-    } else {
-      const saved = getCachedModels().find((m) => modelContentUrl(m) === targetUrl);
-      if (saved) {
-        setCurrentModelName(saved.name);
-      }
-    }
-  } else {
-    if (!isAuthErrorShown()) {
-      // For empty models, treat as a valid load if a specific model was requested via URL.
-      // In that case, we keep the modal closed and just ensure graph container is hidden
-      // (since graph won't be built). For a generic load with no modelId, show selector.
-      if (targetModelId) {
-        // Set model name if available from cache
-        const saved = getCachedModels().find((m) => modelContentUrl(m) === targetUrl);
-        if (saved) {
-          setCurrentModelName(saved.name);
-        }
-        // Ensure graph container remains hidden (no graph to show)
-        document.getElementById('cy').classList.add('hidden');
-        // Ensure table-view is not hidden so user can switch to it
-        document.getElementById('table-view')?.classList.remove('hidden');
-        // Do NOT open the model selector; the empty model is considered loaded.
-      } else {
-        // No specific model requested → open selector to choose a model
-        localStorage.removeItem('architeezyGraphModelUrl');
-        document.getElementById('cy').classList.add('hidden');
-        openModelSelector();
-      }
-    }
-  }
-}
-
-/**
- * Handles the case when no target URL is available.
- *
- * @param {string} [urlModelId] - The model ID from URL, if any.
- */
-export function handleNoTargetUrl(urlModelId) {
-  document.dispatchEvent(new CustomEvent('loading:hide'));
-  document.getElementById('cy').classList.add('hidden');
-  if (urlModelId) {
-    document.dispatchEvent(
-      new CustomEvent('toast:show', { detail: { message: t('modelNotFound') } }),
-    );
-  }
-  openModelSelector();
-}
-
-/** Initializes model selector module: wires DOM events, handles model:loadFailed. */
-export function init() {
-  wireModelSelectorEvents();
-  document.addEventListener('model:loadFailed', () => {
-    openModelSelector();
+  // Only include models with a valid content URL
+  models = models.filter((model) => {
+    const url = modelContentUrl(model);
+    return url !== undefined;
   });
-  document.addEventListener('loadModel', (e) => {
-    loadAndDisplayModel(e.detail.url, e.detail.modelId);
+
+  const currentUrl = localStorage.getItem('architeezyGraphModelUrl');
+
+  if (models.length === 0) {
+    if (_listLoading.value) {
+      container.innerHTML = `<div class="model-list-loading">${t('modalLoading')}</div>`;
+    } else if (_error.value) {
+      showErrorInModal(_error.value);
+    } else if (query) {
+      container.innerHTML = `<div class="model-list-loading">${t('noResults')}</div>`;
+    } else {
+      container.innerHTML = `<div class="empty-model-message">${t('emptyModelList')}</div>`;
+    }
+    return;
+  }
+
+  for (const model of models) {
+    const itemEl = createModelItemElement(model, currentUrl);
+    container.append(itemEl);
+  }
+}
+
+/**
+ * Creates the icon element for a model item.
+ *
+ * @returns {HTMLElement} The icon element
+ */
+function createModelIcon() {
+  const icon = document.createElement('div');
+  icon.className = 'model-item-icon';
+  icon.textContent = '📐';
+  return icon;
+}
+
+/**
+ * Creates the meta element (badge and optional description) for a model item.
+ *
+ * @param {string} typeLabel - The formatted type label
+ * @param {object} model - Model object containing optional description
+ * @returns {HTMLElement} The meta element
+ */
+function createModelMeta(typeLabel, model) {
+  const meta = document.createElement('div');
+  meta.className = 'model-item-meta';
+
+  const badge = document.createElement('span');
+  badge.className = 'model-type-badge';
+  badge.textContent = escHtml(typeLabel);
+  meta.append(badge);
+
+  if (model.description) {
+    const desc = document.createElement('span');
+    desc.className = 'model-item-desc';
+    desc.textContent = model.description;
+    meta.append(desc);
+  }
+
+  return meta;
+}
+
+/**
+ * Creates a DOM element for a single model item.
+ *
+ * @param {object} model - Model object
+ * @param {string | null} currentUrl - Currently loaded model URL
+ * @returns {HTMLElement} The model item DOM element
+ */
+function createModelItemElement(model, currentUrl) {
+  const typeLabel = modelTypeLabel(model.contentType);
+  const url = modelContentUrl(model);
+
+  const item = document.createElement('div');
+  item.className = `model-item${url === currentUrl ? ' active' : ''}`;
+  item.setAttribute('role', 'button');
+  item.setAttribute('tabindex', '0');
+  item.dataset.modelId = model.id;
+
+  const icon = createModelIcon();
+
+  const info = document.createElement('div');
+  info.className = 'model-item-info';
+
+  const nameEl = document.createElement('div');
+  nameEl.className = 'model-item-name';
+  nameEl.textContent = model.name;
+  nameEl.title = escHtml(model.name);
+
+  const meta = createModelMeta(typeLabel, model);
+
+  info.append(nameEl, meta);
+  item.append(icon, info);
+
+  if (!url) {
+    item.classList.add('disabled');
+    item.setAttribute('aria-disabled', 'true');
+  } else {
+    item.addEventListener('click', () => {
+      selectModel(model);
+    });
+  }
+
+  return item;
+}
+
+/**
+ * Displays an error message in the modal list container.
+ *
+ * @param {string} message - Error message
+ */
+function showErrorInModal(message) {
+  const container = document.getElementById('model-list');
+  if (container) {
+    container.innerHTML = `<div class="error-message">${escHtml(message)}</div>`;
+  }
+}
+
+/**
+ * Handles keyboard navigation in the modal.
+ *
+ * @param {KeyboardEvent} e - Keyboard event
+ */
+function handleModalKeydown(e) {
+  if (e.key === 'Escape') {
+    close();
+    e.preventDefault();
+    return;
+  }
+
+  const modal = document.getElementById('model-modal');
+  if (!modal || !_isModalOpen.value) {
+    return;
+  }
+
+  const items = modal.querySelectorAll('.model-item:not(.disabled):not([aria-disabled="true"])');
+
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    let targetIndex;
+
+    if (document.activeElement === modal) {
+      targetIndex = e.key === 'ArrowDown' ? 0 : items.length - 1;
+    } else {
+      const currentIndex = [...items].indexOf(document.activeElement);
+      if (currentIndex === -1) {
+        return;
+      }
+      targetIndex = e.key === 'ArrowDown' ? currentIndex + 1 : currentIndex - 1;
+
+      // Wrap around
+      if (targetIndex < 0) {
+        targetIndex = items.length - 1;
+      }
+      if (targetIndex >= items.length) {
+        targetIndex = 0;
+      }
+    }
+
+    if (items[targetIndex]) {
+      items[targetIndex].focus();
+    }
+    e.preventDefault();
+  } else if (e.key === 'Enter' || e.key === 'Space') {
+    if (document.activeElement.classList.contains('model-item')) {
+      document.activeElement.click();
+      e.preventDefault();
+    }
+  }
+}
+
+// ── EFFECTS ─────────────────────────────────────────────────────────────────────
+
+/** Sets up effect for loading state. */
+function setupLoadingEffect() {
+  effect(() => {
+    const container = document.getElementById('model-list');
+    if (!container) {
+      return;
+    }
+
+    if (_listLoading.value) {
+      container.innerHTML = `<div class="model-list-loading">${t('modalLoading')}</div>`;
+    }
+  });
+}
+
+/** Sets up effect for error display. */
+function setupErrorEffect() {
+  effect(() => {
+    if (_error.value && _isModalOpen.value) {
+      showErrorInModal(_error.value);
+    }
+  });
+}
+
+/** Sets up effect to show/hide modal based on _isModalOpen. */
+function setupVisibilityEffect() {
+  effect(() => {
+    const modal = document.getElementById('model-modal');
+    if (modal) {
+      modal.classList.toggle('hidden', !_isModalOpen.value);
+    }
+  });
+}
+
+// ── EVENT WIRING ───────────────────────────────────────────────────────────────
+
+/** Initializes DOM event listeners. */
+function wireEvents() {
+  const modal = document.getElementById('model-modal');
+  const searchInput = document.getElementById('model-search');
+  const closeBtn = document.getElementById('modal-close-btn');
+  const currentModelBtn = document.getElementById('current-model-btn');
+
+  // Close button
+  if (closeBtn) {
+    closeBtn.addEventListener('click', close);
+  }
+
+  // Search input
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      setSearchQuery(e.target.value);
+    });
+  }
+
+  // Current model button (in header)
+  if (currentModelBtn) {
+    currentModelBtn.addEventListener('click', open);
+  }
+
+  // Backdrop click to close
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        close();
+      }
+    });
+
+    // Keyboard navigation
+    modal.addEventListener('keydown', handleModalKeydown);
+  }
+
+  // Global Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && _isModalOpen.value) {
+      close();
+    }
+  });
+}
+
+// ── PUBLIC API (INIT) ───────────────────────────────────────────────────────────
+
+/** Initializes the model selector component. Sets up effects and event listeners. */
+export function initModelSelector() {
+  setupLoadingEffect();
+  setupErrorEffect();
+  setupVisibilityEffect();
+  wireEvents();
+
+  // Reactively update the current model name in the header
+  effect(() => {
+    const name = getModelName();
+    const el = document.getElementById('current-model-name');
+    if (el) {
+      el.textContent = name ?? '';
+    }
   });
 }

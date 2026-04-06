@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { BASE, PALETTE } from '../../js/constants.js';
 import {
   elemColor,
@@ -50,7 +52,7 @@ describe(isUUID, () => {
 
 describe(hashStr, () => {
   it('returns a number', () => {
-    expectTypeOf(hashStr('hello')).toBeNumber();
+    expect(hashStr('hello')).toBeNumber();
   });
 
   it('is deterministic — same input gives same output', () => {

@@ -1,9 +1,11 @@
+import { describe, expect, it } from 'bun:test';
+
 import {
   buildAxisItems,
+  buildAxisItemsAllLevels,
   collectAllElems,
   getOrigRange,
   recomputeFlatRowGroups,
-  buildAxisItemsAllLevels,
 } from '../../js/compute-axis.js';
 
 // ── buildAxisItems ────────────────────────────────────────────────────────────

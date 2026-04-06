@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'bun:test';
+
 import { escHtml, isUUID } from '../../js/utils.js';
 
 // ── escHtml ───────────────────────────────────────────────────────────────────

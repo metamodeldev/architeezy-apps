@@ -1,16 +1,25 @@
 /**
  * Table module public API.
  *
+ * Exports reactive service and component from feature-sliced architecture.
+ *
  * @module table
+ * @package
  */
 
-export { exportCSV, updateExportButtonState } from './csv.js';
+export { focusNode, initTableComponent, renderTable, switchTableTab } from './component.js';
 export {
-  focusNode,
-  initTable,
-  initTableEvents,
-  renderTable,
-  switchTableTab,
-  wireTableEvents,
-} from './ui.js';
-export { initializeTable } from './binder.js';
+  clearSort,
+  elementRowHtml,
+  exportCsv,
+  filteredElements,
+  filteredRelations,
+  getCurrentTab,
+  getSortAsc,
+  getSortCol,
+  handleSortClick,
+  initTableService,
+  isElementsTab,
+  relationRowHtml,
+  setCurrentTab,
+} from './service.js';

@@ -1,13 +1,21 @@
 /**
  * Auth module public API.
  *
+ * Re-exports from service and component.
+ *
  * @module auth
  */
 
+export { initAuthUI, startAuth, wireAuthEvents } from './component.js';
 export {
-  isAuthed,
   handleAuthSuccess,
-  isAuthErrorShown,
-  setAuthErrorShown,
-} from './state.js';
-export { init, probeAuth, updateAuthUI, signOut } from './ui.js';
+  isAuthed,
+  probe,
+  setErrorShown as setAuthErrorShown,
+  setCookieAuthed,
+  setErrorShown,
+  setPopup,
+  setToken,
+  signOut,
+  token,
+} from './service.js';

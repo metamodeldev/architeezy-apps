@@ -1,15 +1,12 @@
 /**
- * Highlight module public API.
+ * Highlight module — public API.
  *
  * @module highlight
  */
 
+export { init, initHighlightComponent, wireHighlightEvents } from './component.js';
 export {
-  clearHighlightState,
   getHighlightEnabled,
-  getHighlightNodeId,
+  saveHighlightStateToStorage,
   setHighlightEnabled,
-  setHighlightNodeId,
-} from './state.js';
-export { applyHighlight } from './apply.js';
-export { bindHighlightEvents, init, wireHighlightEvents } from './ui.js';
+} from './service.js';
