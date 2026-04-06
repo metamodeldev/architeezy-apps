@@ -266,10 +266,24 @@ export const CHAIN_CONTENT = {
   ],
 };
 
+// Helper to get origin from request
+function getCorsHeaders(r) {
+  const headers = r.request().headers();
+  const origin = headers.origin || headers.Origin || 'http://localhost:4200';
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Credentials': 'true',
+  };
+}
+
 export async function mockApi(page, { modelListStatus = 200 } = {}) {
   // Auth probe — 401 means anonymous; app handles this gracefully
   await page.route('https://architeezy.com/api/users/current', (r) =>
-    r.fulfill({ status: 401, body: 'Unauthorized' }),
+    r.fulfill({
+      status: 401,
+      headers: getCorsHeaders(r),
+      body: 'Unauthorized',
+    }),
   );
 
   await page.route(
@@ -279,15 +293,23 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
           r.fulfill({
             status: 200,
             contentType: 'application/json',
+            headers: getCorsHeaders(r),
             body: JSON.stringify(MODEL_LIST),
           })
-      : (r) => r.fulfill({ status: modelListStatus, body: 'Server Error' }),
+      : (r) =>
+          r.fulfill({
+            status: modelListStatus,
+            contentType: 'application/json',
+            headers: getCorsHeaders(r),
+            body: 'Server Error',
+          }),
   );
 
   await page.route(`${MODEL_CONTENT_URL}*`, (r) =>
     r.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: getCorsHeaders(r),
       body: JSON.stringify(MODEL_CONTENT),
     }),
   );
@@ -296,6 +318,7 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
     r.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: getCorsHeaders(r),
       body: JSON.stringify(ECOMMERCE_CONTENT),
     }),
   );
@@ -304,6 +327,7 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
     r.fulfill({
       status: 200,
       contentType: 'application/json',
+      headers: getCorsHeaders(r),
       body: JSON.stringify(CHAIN_CONTENT),
     }),
   );

@@ -39,6 +39,17 @@
     "eslint/no-prototype-builtins": "error",
     "eslint/no-redeclare": "error",
     "eslint/no-regex-spaces": "error",
+    "eslint/no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["*/*/*", "!*/*/index.js"],
+            "message": "Don't import module internals, import from index.js only."
+          }
+        ]
+      }
+    ],
     "eslint/no-ternary": "off",
     "eslint/no-undefined": "off",
     "eslint/no-use-before-define": ["error", { "functions": false, "classes": false }],

@@ -1,4 +1,4 @@
-import { computeFilterCounts } from '../../js/filters.js';
+import { computeFilterCounts } from '../../js/filter/index.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

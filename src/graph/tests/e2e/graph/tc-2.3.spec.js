@@ -26,10 +26,6 @@ async function injectCyCapture(page) {
 
 async function waitForCyNode(page, nodeId) {
   await page.waitForFunction((id) => {
-    // Fallback: if __cy not set but cy exists (e.g., after reload without cy capture), capture it
-    if (!globalThis.__cy && globalThis.cy) {
-      globalThis.__cy = globalThis.cy;
-    }
     if (!globalThis.__cy) {
       return false;
     }

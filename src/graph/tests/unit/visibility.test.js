@@ -1,4 +1,5 @@
-import { computeDrillBfs, computeVisRelCounts } from '../../js/visibility.js';
+import { computeVisRelCounts } from '../../js/filter/index.js';
+import { computeDrillBfs } from '../../js/graph/bfs.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

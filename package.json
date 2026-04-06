@@ -2,8 +2,8 @@
   "scripts": {
     "dev": "bunx http-server src -p 3000",
     "format": "oxfmt",
-    "lint": "oxlint && stylelint '**/*.css' && markdownlint-cli2 '**/*.md' '!node_modules' '!.claude'",
-    "lint:fix": "oxlint --fix; stylelint '**/*.css' --fix; markdownlint-cli2 '**/*.md' '!node_modules' '!.claude' --fix",
+    "lint": "oxlint && stylelint '**/*.css' && markdownlint-cli2",
+    "lint:fix": "oxlint --fix; stylelint '**/*.css' --fix; markdownlint-cli2  --fix",
     "test": "bun test && playwright test",
     "test:coverage": "bun test --only-failures --coverage && playwright test",
     "test:unit": "bun test",

@@ -101,6 +101,24 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
   preferably in a single expression. Do not declare variables at the top of a function if they are
   used 50 lines later.
 
+### Module Interaction and Communication
+
+- **Communication Simplicity:** Interaction between modules must be as simple as possible. Minimize
+  coupling by using the most direct method that doesn't violate architectural layers.
+- **Direct Function Calls:** Use direct calls for hierarchical or vertical communication (e.g., a
+  controller calling a service it owns). This is the preferred method for clear, traceable logic.
+- **Custom Events:** Use `CustomEvent` for horizontal communication between independent domains. A
+  module should notify that "something happened" without knowing who reacts.
+- **Prohibition of Callbacks:** Do not pass callbacks between modules for state synchronization or
+  orchestration. This obscures the execution flow and creates "spaghetti" logic. Use `Promises` for
+  async results or `Events` for notifications.
+- **Atomic API Design:** Avoid two-step operations where the caller has to fetch a state, modify it,
+  and send it back (e.g., `setItems(getItems().add(x))`). Provide single, descriptive methods for
+  actions (e.g., `addActiveElement(type)`).
+- **Global Scope Restriction:** The use of `globalThis`, `window`, or `self` to store application
+  state, share logic, or bypass the module system is strictly prohibited. Use explicit
+  `import`/`export`.
+
 ### Functional Programming and Logic
 
 - **Pure Functions:** Isolate business logic into functions that do not modify external state or
@@ -114,8 +132,15 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
 
 ### State and Error Handling
 
-- **Encapsulated State:** Avoid global state. Maintain state locally within modules. Expose only
-  specific functions (APIs) for interaction; do not export the state itself.
+- **Encapsulated State:** State must be owned by a single module and hidden from the outside world.
+- **Immutable State Exposure:** Getters must return immutable collections or clones of the data
+  (e.g., `return [...this.items]`). The outside world must never be able to mutate a module's
+  internal state directly by modifying a returned reference.
+- **No Redundant Accessors:** Avoid generating "dumb" getters and setters for every internal
+  variable (e.g., `setFilterCounts`). Only expose state and update methods that are strictly
+  necessary for the application logic.
+- **Controlled Updates:** State updates must be intentional and highly controlled. Prohibit patterns
+  like `setX(getX())` which indicate a lack of proper encapsulation and logic ownership.
 - **Immediate Error Throwing:** If an error occurs (e.g., an object is not found by ID), throw an
   exception immediately. Do not return `null` or `undefined`, as it forces duplicated checks and
   hides bugs.
@@ -137,6 +162,8 @@ bugs are harder to commit, performance bottlenecks are visible, and maintenance 
 - **Circular Dependencies:** Prohibit circular dependencies, both explicit (imports) and implicit
   (logic/naming). Generic modules must never reference specific entities (e.g., an "attributes"
   module should not know about "tasks" or "projects").
+- **Explicit Hierarchy:** A module in a lower layer (e.g., `utils` or `dom-primitives`) must never
+  import or reference modules from a higher layer (e.g., `feature-controllers`).
 - **Library Minimalism:** Do not add third-party libraries for simple functions that can be
   implemented in a few lines. Minimize the dependency footprint.
 

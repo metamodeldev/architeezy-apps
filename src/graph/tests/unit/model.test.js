@@ -1,4 +1,4 @@
-import { parseModel } from '../../js/model.js';
+import { parseModel } from '../../js/model/index.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

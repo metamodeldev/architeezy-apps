@@ -10,7 +10,7 @@ test.describe('TC-5.3: Graph image export', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     const downloadPromise = page.waitForEvent('download');
     // Open export dropdown and click PNG
@@ -29,7 +29,7 @@ test.describe('TC-5.3: Graph image export', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#export-image-btn').click();
@@ -51,12 +51,12 @@ test.describe('TC-5.3: Graph image export', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Enter drill-down
     await page.evaluate(() => {
-      if (globalThis.cy) {
-        const node = globalThis.cy.nodes().first();
+      if (globalThis.__cy) {
+        const node = globalThis.__cy.nodes().first();
         if (node) {
           node.trigger('dbltap');
         }
@@ -76,15 +76,15 @@ test.describe('TC-5.3: Graph image export', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Enable highlight
     await page.locator('#highlight-toggle').click();
 
     // Select a node
     await page.evaluate(() => {
-      if (globalThis.cy) {
-        const node = globalThis.cy.nodes().first();
+      if (globalThis.__cy) {
+        const node = globalThis.__cy.nodes().first();
         if (node) {
           node.trigger('tap');
         }
@@ -104,7 +104,7 @@ test.describe('TC-5.3: Graph image export', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Enable legend
     await page.locator('#legend-toggle').click();
@@ -145,7 +145,7 @@ test.describe('TC-5.3: Graph image export', () => {
     // Use a model name with spaces and special chars to test sanitization
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     const downloadPromise = page.waitForEvent('download');
     await page.locator('#export-image-btn').click();
@@ -162,7 +162,7 @@ test.describe('TC-5.3: Graph image export', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Initiate first export
     const downloadPromise1 = page.waitForEvent('download');

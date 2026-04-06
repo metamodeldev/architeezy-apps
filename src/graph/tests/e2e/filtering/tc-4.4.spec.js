@@ -7,7 +7,7 @@ test.describe('TC-4.4: Global search', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     const searchInput = page.locator('#global-search');
     await searchInput.fill('payment');
@@ -16,8 +16,8 @@ test.describe('TC-4.4: Global search', () => {
     // Should dim non-matching nodes
     // Use 'label' field (node data) since name is stored as label in Cytoscape
     const nonMatchingOpacity = await page.evaluate(() => {
-      const allNodes = globalThis.cy.nodes();
-      const matching = globalThis.cy.$(`node[label*="payment"]`);
+      const allNodes = globalThis.__cy.nodes();
+      const matching = globalThis.__cy.$(`node[label*="payment"]`);
       const nonMatching = allNodes.not(matching);
       if (nonMatching.length > 0) {
         return nonMatching.first().style('opacity');
@@ -75,7 +75,7 @@ test.describe('TC-4.4: Global search', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Apply entity filter: only Microservice active
     // Uncheck all entity types first (bulk action)
@@ -90,7 +90,7 @@ test.describe('TC-4.4: Global search', () => {
 
     // Verify: all non-dimmed nodes should be Microservice
     const nonDimmedTypes = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return [];
       }
@@ -129,7 +129,7 @@ test.describe('TC-4.4: Global search', () => {
     await page.waitForTimeout(100);
     // Check that no nodes are dimmed yet (search hasn't been applied)
     const dimmedCountBefore = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return 0;
       }
@@ -141,7 +141,7 @@ test.describe('TC-4.4: Global search', () => {
     await page.waitForTimeout(300);
     // Search executed: some nodes should be dimmed (or all if no match)
     const dimmedCountAfter = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return 0;
       }
@@ -158,8 +158,8 @@ test.describe('TC-4.4: Global search', () => {
 
     // Enter drill-down on first node
     await page.evaluate(() => {
-      if (globalThis.cy) {
-        const node = globalThis.cy.nodes().first();
+      if (globalThis.__cy) {
+        const node = globalThis.__cy.nodes().first();
         if (node) {
           node.trigger('dbltap');
         }
@@ -169,7 +169,7 @@ test.describe('TC-4.4: Global search', () => {
 
     // Capture the set of visible node IDs after drill-down (the drill scope)
     const drillScopeIds = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return [];
       }
@@ -183,7 +183,7 @@ test.describe('TC-4.4: Global search', () => {
 
     // Verify: all non-dimmed nodes are within the drill scope
     const nonDimmedIds = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return [];
       }
@@ -237,7 +237,7 @@ test.describe('TC-4.4: Global search', () => {
     await page.locator('#global-search').fill('PAYMENT');
     await page.waitForTimeout(400);
     const nonDimmedCount1 = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return 0;
       }
@@ -250,7 +250,7 @@ test.describe('TC-4.4: Global search', () => {
     await page.locator('#global-search').fill('payment');
     await page.waitForTimeout(400);
     const nonDimmedCount2 = await page.evaluate(() => {
-      const cy = globalThis.cy;
+      const cy = globalThis.__cy;
       if (!cy) {
         return 0;
       }

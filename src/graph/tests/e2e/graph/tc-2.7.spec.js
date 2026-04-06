@@ -2,15 +2,9 @@ import { expect } from '@playwright/test';
 
 import { mockApi, test, waitForLoading } from '../fixtures.js';
 
-// Wait for cytoscape to be ready (either __cy from injector or global cy)
+// Wait for cytoscape to be ready (test hook: globalThis.__cy)
 async function waitForCyReady(page) {
-  await page.waitForFunction(() => globalThis.cy || globalThis.__cy);
-  // Alias: tests expect __cy, but app uses globalThis.cy
-  await page.evaluate(() => {
-    if (globalThis.cy && !globalThis.__cy) {
-      globalThis.__cy = globalThis.cy;
-    }
-  });
+  await page.waitForFunction(() => globalThis.__cy !== undefined);
 }
 
 test.describe('TC-2.7: Drill-down', () => {

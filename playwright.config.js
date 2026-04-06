@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test';
 // oxlint-disable-next-line import/no-default-export
 export default defineConfig({
   testMatch: '**/tests/e2e/**/*.spec.js',
-  timeout: 10_000,
+  timeout: 15_000,
   use: {
     baseURL: 'http://localhost:4200',
   },

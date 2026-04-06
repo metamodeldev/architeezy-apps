@@ -1,4 +1,11 @@
-// ── LOCALISATION ───────────────────────────────────────────────────────────
+/**
+ * Internationalization support.
+ *
+ * Active locale based on browser language.
+ *
+ * @module i18n
+ * @package
+ */
 
 /** Active locale: "ru" when the browser language starts with "ru", otherwise "en". */
 export const LANG = globalThis.navigator?.language?.startsWith('ru') ? 'ru' : 'en';

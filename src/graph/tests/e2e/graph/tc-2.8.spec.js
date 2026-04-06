@@ -23,17 +23,9 @@ async function injectCyCapture(page) {
   });
 }
 
-// Wait for Cytoscape to be ready (either __cy from injector or global cy)
+// Wait for Cytoscape to be ready (test hook: globalThis.__cy)
 async function waitForCyReady(page) {
-  await page.waitForFunction(
-    () => globalThis.__cy !== undefined || (globalThis.cy && globalThis.cy !== undefined),
-  );
-  // Sync: if app uses globalThis.cy, map it to __cy for tests
-  await page.evaluate(() => {
-    if (globalThis.cy && !globalThis.__cy) {
-      globalThis.__cy = globalThis.cy;
-    }
-  });
+  await page.waitForFunction(() => globalThis.__cy !== undefined);
 }
 
 // Wait for a specific node to be positioned

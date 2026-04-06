@@ -1,15 +1,11 @@
-// ── COLOR PALETTE ──────────────────────────────────────────────────────────
+/**
+ * Color palette with categorical colors in bit-reversal hue order. Provides maximum perceptual
+ * separation for up to 12 types.
+ *
+ * @module palette
+ * @package
+ */
 
-// Categorical colors ordered for maximum perceptual separation.
-//
-// The palette is arranged in "bit-reversal" hue order: each successive entry is as far as
-// Possible in hue from all previous entries. Because buildColorMap assigns colors consecutively
-// (i % palette.length), the first N types always receive the N most-spread colors available:
-//   N=2  → Red + Teal           (180° apart)
-//   N=4  → Red, Teal, Green, Violet  (90° apart)
-//   N=6  → + Gold, Blue         (60° apart from neighbours)
-//   N=8  → + Emerald, Berry     (45° apart from neighbours)
-//   N=12 → all entries used
 export const PALETTE = [
   '#c0474a', // H=  1° red
   '#2e9898', // H=180° teal

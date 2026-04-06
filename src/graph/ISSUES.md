@@ -453,7 +453,7 @@ panels.
 - Check translation strings if label changes
 - Update any E2E tests that depend on element positioning
 
-## 16. Implement a more accurate algorithm for calculating available filter items in drill-down mode, showing the count of objects that will be displayed when enabling each filter
+## 16. Improve filter count calculation in drill-down mode to accurately reflect visible object counts
 
 **Current State**: Filter counts in drill-down mode show "Available / Total" counts, but current
 algorithm may not account for complex drill-down dependencies correctly. The "available" count
@@ -599,8 +599,18 @@ horizontal scroll.
   - On narrow screens, adjust column widths responsively
 - Implementation:
   - In CSS:
-    `#table-body td { max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }`
+
+    ```css
+    #table-body td {
+      max-width: 200px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    ```
+
   - Or per column: `th[data-col="0"], td:first-child { width: 40%; }` etc.
+
 - Test with extremely long names (500+ chars)
 - Check accessibility: truncated text should be readable by screen readers (consider `aria-label`
   with full text)
