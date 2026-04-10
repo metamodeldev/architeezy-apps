@@ -2,8 +2,21 @@ import { expect } from '@playwright/test';
 
 import { mockApi, test, waitForLoading } from '../fixtures.js';
 
+async function switchToTableAndWait(page) {
+  await page.locator('#tab-table').click();
+  await expect(page.locator('#table-view')).toBeVisible();
+  await expect(page.locator('#table-body tr').first()).toBeVisible();
+}
+
+async function getTableHeaders(page) {
+  const raw = await page.locator('#table-head th').allTextContents();
+  return raw.map((h) => h.trim());
+}
+
 test.describe('TC-3.2: Tabular display', () => {
-  test('TC-3.2.1: Entities tab shows entity list with default columns', async ({ page }) => {
+  test('TC-3.2.1: Entities tab shows entity list with Name and Type columns always present', async ({
+    page,
+  }) => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
@@ -13,18 +26,18 @@ test.describe('TC-3.2: Tabular display', () => {
     await expect(page.locator('#table-view')).toBeVisible();
     await expect(page.locator('#ttab-elements')).toHaveClass(/active/);
 
-    // Wait for table headers to be rendered
-    await expect(page.locator('#table-head th')).toHaveCount(4);
-    // Check for default columns in header (text contains column names, ignoring sort icon)
+    // Name and Type columns are always present regardless of model
     const headers = await page.locator('#table-head th').allTextContents();
-    expect(headers.map((h) => h.trim())).toContain('Name ⇅');
-    expect(headers.map((h) => h.trim())).toContain('Type ⇅');
-    expect(headers.map((h) => h.trim())).toContain('Status ⇅');
-    expect(headers.map((h) => h.trim())).toContain('Owner ⇅');
+    const cleanHeaders = headers.map((h) => h.trim());
+    expect(cleanHeaders).toContain('Name ⇅');
+    expect(cleanHeaders).toContain('Type ⇅');
+
+    // Additional columns are derived from the model's data properties (dynamic, not hardcoded)
+    // At minimum 2 columns (Name + Type); extra columns depend on active model metadata
+    expect(cleanHeaders.length).toBeGreaterThanOrEqual(2);
 
     // Wait for at least one row to be visible
     await expect(page.locator('#table-body tr').first()).toBeVisible();
-    // Check that table body has rows
     const rowCount = await page.locator('#table-body tr').count();
     expect(rowCount).toBeGreaterThan(0);
   });
@@ -279,7 +292,103 @@ test.describe('TC-3.2: Tabular display', () => {
     expect(rowCount).toBeGreaterThan(0);
   });
 
-  test('TC-3.2.9: Switching tabs (Entities ↔ Relationships) does not refetch data', async ({
+  test('TC-3.2.9: Entity table columns are derived from model metadata', async ({ page }) => {
+    // Model A: entities have 'description' and 'url' properties
+    const MODEL_A = {
+      ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
+      content: [
+        {
+          eClass: 'archi:ArchimateModel',
+          id: 'model-root',
+          data: {
+            name: 'Model A',
+            elements: [
+              {
+                eClass: 'archi:ApplicationComponent',
+                id: 'a1',
+                data: { name: 'Service A', description: 'Handles requests', url: 'http://a' },
+              },
+            ],
+            relations: [],
+          },
+        },
+      ],
+    };
+
+    // Model B: entities have 'title' and 'version' properties
+    const MODEL_B = {
+      ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
+      content: [
+        {
+          eClass: 'archi:ArchimateModel',
+          id: 'model-root',
+          data: {
+            name: 'Model B',
+            elements: [
+              {
+                eClass: 'archi:ApplicationComponent',
+                id: 'b1',
+                data: { name: 'Service B', title: 'My Service', version: '2.0' },
+              },
+            ],
+            relations: [],
+          },
+        },
+      ],
+    };
+
+    const {
+      MODEL_CONTENT_URL,
+      ECOMMERCE_CONTENT_URL,
+      mockApi: _mockApi,
+    } = await import('../fixtures.js');
+    await mockApi(page);
+    await page.route(MODEL_CONTENT_URL, (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(MODEL_A),
+      }),
+    );
+    await page.route(ECOMMERCE_CONTENT_URL, (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(MODEL_B),
+      }),
+    );
+    await page.addInitScript(() => localStorage.clear());
+
+    // Step 1: Load model A and switch to table
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await switchToTableAndWait(page);
+
+    const headersA = await getTableHeaders(page);
+    // Name and Type always present
+    expect(headersA).toContain('Name ⇅');
+    expect(headersA).toContain('Type ⇅');
+    // Model A properties should appear as columns; Model B properties should not
+    const lowerA = headersA.map((h) => h.toLowerCase());
+    expect(lowerA.some((h) => h.includes('description') || h.includes('url'))).toBe(true);
+    expect(lowerA.some((h) => h.includes('title') || h.includes('version'))).toBe(false);
+
+    // Step 2: Switch to model B — columns must update
+    await page.locator('#current-model-btn').click();
+    await expect(page.locator('#model-modal')).toBeVisible();
+    await page.locator('.model-item', { hasText: 'e-commerce' }).click();
+    await waitForLoading(page);
+    await switchToTableAndWait(page);
+
+    const headersB = await getTableHeaders(page);
+    expect(headersB).toContain('Name ⇅');
+    expect(headersB).toContain('Type ⇅');
+    const lowerB = headersB.map((h) => h.toLowerCase());
+    expect(lowerB.some((h) => h.includes('title') || h.includes('version'))).toBe(true);
+    expect(lowerB.some((h) => h.includes('description') || h.includes('url'))).toBe(false);
+  });
+
+  test('TC-3.2.10: Switching tabs (Entities ↔ Relationships) does not refetch data', async ({
     page,
   }) => {
     await mockApi(page);

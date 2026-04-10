@@ -230,19 +230,22 @@
 
 1. Double-click on a different visible node B (which is currently a neighbor within the scope)
    - Drill-down root changes from A to B
-   - Scope resets to B's immediate neighbors (depth effectively becomes 1, or retained?
-     Implementation choice)
-   - Navigation bar updates to show root B
-   - URL updates to reflect new root entity
-2. Can continue drilling from B
-   - Depth controls still work; can increase from B's default (likely depth=1)
-   - User can re-root drill-down to a different node within current view
+   - Exploration depth is preserved (remains at 2)
+   - Scope recalculates: the graph shows B and its neighbors within depth 2
+   - Navigation bar updates to show root B; depth indicator still shows 2
+   - URL updates to reflect new root entity (replaceState)
+2. Verify layout recalculates using only the newly visible nodes
+   - No previously hidden or invisible nodes influence the new layout positions
+   - The graph shows B's neighborhood within depth 2; elements outside this scope are not rendered
+3. Continue drilling from B
+   - Depth controls still work; depth is already at the preserved value and can be adjusted from
+     there
 
 ### Test Data
 
-| Initial root | Double-click on | New root? | Depth reset?                         |
-| ------------ | --------------- | --------- | ------------------------------------ |
-| A            | B (neighbor)    | B         | usually yes (to 1) or optional keep? |
+| Initial root | Double-click on | New root? | Depth after   | Layout uses invisible nodes? |
+| ------------ | --------------- | --------- | ------------- | ---------------------------- |
+| A (depth=2)  | B (neighbor)    | B         | preserved (2) | no                           |
 
 ## TC-2.7.10: Exit drill-down preserves previous layout state
 
@@ -309,3 +312,96 @@
   system **applies the current layout algorithm** to the full model
 - Graph shapes are properly displayed with correct positioning
 - The behavior ensures a good user experience even when drill-down is the entry point
+
+## TC-2.7.12: Properties panel link in drill-down changes the drill-down root
+
+### Preconditions
+
+- Drill-down mode active on root node A, depth increased to **2**
+- Node A is selected; properties panel is open showing a link to related entity B
+- Node B is visible within the current drill-down scope (reachable from A within depth 2)
+
+### Steps
+
+1. Click the link to entity B in the properties panel
+   - Drill-down root changes from A to B
+   - Exploration depth is preserved (remains at 2; **not** reset to 1)
+   - Scope recalculates: the graph now shows B and its neighbors within depth 2
+   - Navigation bar updates to show root B; depth indicator still shows 2
+   - URL updates via replaceState to reflect new entity
+   - Layout is reapplied to the new visible subgraph
+2. Verify A is no longer the root
+   - Navigation bar does not reference A
+   - If A is outside B's neighborhood at depth 2, A is not visible
+3. Use depth controls from new root B
+   - Depth controls work relative to B as the root; current depth is 2
+
+### Test Data
+
+| Initial root | Properties link clicked | New drill-down root | Depth after   | Depth reset to 1? |
+| ------------ | ----------------------- | ------------------- | ------------- | ----------------- |
+| A (depth=2)  | B (neighbor of A)       | B                   | preserved (2) | no                |
+| A (depth=2)  | C (depth-2 neighbor)    | C                   | preserved (2) | no                |
+
+## TC-2.7.13: Dangling nodes disconnected from drill-down root are hidden after filter change
+
+### Preconditions
+
+- Drill-down active on root R (depth=2)
+- Visible scope: R → M (Microservice) → D (Database)
+- The only path from R to D goes through M
+
+### Steps
+
+1. Open filter panel and uncheck entity type `Microservice`
+   - Node M disappears (filtered out)
+   - Node D becomes unreachable from root R (path R→M→D is broken)
+   - Node D also disappears from the graph (dangling node hidden)
+   - Only R remains visible (along with any other neighbors still reachable)
+2. Verify graph state
+   - No nodes are visible that do not have a reachable path to R through currently visible
+     relationship types
+3. Re-check `Microservice`
+   - M reappears; D becomes reachable again and reappears
+   - Graph restores to the scope before the filter change
+
+### Test Data
+
+| Filter action           | Node M visible? | Node D visible? | Reason               |
+| ----------------------- | --------------- | --------------- | -------------------- |
+| All types checked       | yes             | yes             | path R→M→D exists    |
+| Microservice unchecked  | no              | no              | D unreachable from R |
+| Microservice re-checked | yes             | yes             | path restored        |
+
+## TC-2.7.14: Switching to a different model while in drill-down exits drill-down
+
+### Preconditions
+
+- Drill-down mode active on root node "OrderService" at depth=2
+- Drill-down navigation bar visible
+
+### Steps
+
+1. Open the model selector (click the application name / model switcher in the header)
+   - The model selection interface opens
+2. Select a different model (e.g., "hr-system")
+   - The new model loads
+   - Drill-down mode exits automatically
+   - The graph displays the full model view of "hr-system" with no drill-down scope applied
+   - The drill-down navigation bar disappears
+   - URL contains only the new model identifier; no `entity` or `depth` parameters are present
+3. Verify no drill-down state carried over
+   - The new model shows its default full view
+   - No root node or depth from the previous model is applied to "hr-system"
+
+### Expected results
+
+- Switching models always exits Drill-down mode
+- The new model opens in the standard full model view
+- Drill-down parameters are cleared and not transferred when switching models
+
+### Test Data
+
+| Initial state               | Action                  | Result                             |
+| --------------------------- | ----------------------- | ---------------------------------- |
+| Drill-down active (depth=2) | Switch to another model | Drill-down exits; full model shown |

@@ -18,11 +18,9 @@
 1. Click "Uncheck all" button in the Entities section
    - All entity checkboxes become unchecked
    - Graph view becomes empty (or shows only drill-down root if in drill-down mode)
-   - All relationships disappear because their endpoints are hidden (available counts drop to 0)
-   - Relationship type list updates: counts show 0/Total; some relationships may become dimmed or
-     disappear based on their checked state
-   - No entities are visible
-   - Relationships are all hidden due to lack of endpoints
+   - All relationship available counts drop to 0 (no visible endpoints)
+   - In Full Model, relationship types **remain visible** in the list, each now showing "0 / total"
+     (dimmed); they are not removed from the list because their total count remains > 0
    - "Uncheck all" state is reflected in UI and URL (if applicable)
 
 ### Test Data
@@ -30,6 +28,10 @@
 | Entity types (before) | After "Uncheck all" |
 | --------------------- | ------------------- |
 | All checked           | all unchecked       |
+
+| Relationships list after "Uncheck all" entities (Full Model) |
+| ------------------------------------------------------------ |
+| All types remain visible; each shows "0 / total" (dimmed)    |
 
 ## TC-4.2.2: "Check all" in Entities restores all entity types
 
@@ -103,25 +105,23 @@
 | "micro"      | Uncheck all | no              |
 | "micro"      | Check all   | no              |
 
-## TC-4.2.5: Bulk action on Relationships with mixed visibility
+## TC-4.2.5: Bulk action on Relationships with mixed checked state
 
 ### Preconditions
 
 - Entity filters: all entities are visible (checked)
-- Relationship filters: only "Calls" and "DependsOn" are checked; others unchecked (hidden)
-- Some unchecked relationship types have 0 available count (hidden from list); others are dimmed
+- Relationship filters: only "Calls" and "DependsOn" are checked; others are unchecked
+- All relationship types are visible in the list (Full Model: total > 0 for all types)
 
 ### Steps
 
 1. Click "Check all" in Relationships
    - ALL relationship types become checked
-   - Previously hidden types (with 0 count) reappear in the list if they now have >0 available
-     endpoints
    - All edges become visible on the graph
 2. Click "Uncheck all" in Relationships
    - All relationship checkboxes become unchecked
-   - All edges disappear; nodes remain (if entities still checked)
-   - Bulk actions affect all relationship types regardless of current visibility in the list
+   - All edges disappear; nodes remain (entities still checked)
+   - Bulk actions affect all relationship types regardless of their current checked state
 
 ### Test Data
 
@@ -129,33 +129,31 @@
 | -------------- | ------------------------------- | --------------------------------- |
 | Some unchecked | all checked                     | all unchecked                     |
 
-## TC-4.2.6: Bulk actions affect all relationship types regardless of current visibility
+## TC-4.2.6: Bulk actions on Relationships when all entity types are unchecked
 
 ### Preconditions
 
 - All entity types are unchecked (entities section is "uncheck all" state)
-- All relationship types have count 0/Total and are hidden from the list (if unchecked) or dimmed
-  (if checked)
+- In Full Model, all relationship types remain visible in the list, each showing "0 / total"
+  (dimmed)
 
 ### Steps
 
 1. Open filter panel and note Relationships list
-   - No relationship types are visible (all hidden because count=0 and unchecked) OR only previously
-     checked ones are visible but dimmed
+   - All relationship types are visible, each showing "0 / total" (dimmed); no edges on graph
 2. Click "Check all" in Relationships
-   - All relationship types become checked (including those that were hidden)
-   - Hidden relationship types with count=0 become visible in the list, dimmed with count 0/Total
-   - Even though all relationships are now checked, no edges appear on the graph (because no
-     entities are visible)
-3. Observe "Uncheck all" in Relationships
+   - All relationship types become checked internally
+   - The list remains the same (types still visible, showing "0 / total"); available remains 0
+     because no entity endpoints are visible
+   - No edges appear on the graph
+3. Click "Uncheck all" in Relationships
    - All relationship types become unchecked
-   - Those with count=0 may become hidden again (if no other reason to stay visible)
-   - Bulk actions apply to all relationship types, regardless of whether they have available
-     endpoints
+   - The list remains the same (types still visible, showing "0 / total")
+   - Bulk actions apply to all relationship types regardless of available count
 
 ### Test Data
 
-| Entity state     | Relationship list visibility | "Check all" behavior                     |
-| ---------------- | ---------------------------- | ---------------------------------------- |
-| all unchecked    | all hidden or dimmed only    | checks all types (including hidden ones) |
-| some/all checked | some visible with count >0   | checks all types                         |
+| Entity state     | Relationship list visibility              | "Check all" behavior                   |
+| ---------------- | ----------------------------------------- | -------------------------------------- |
+| all unchecked    | all visible, showing "0 / total" (dimmed) | checks all types; list stays unchanged |
+| some/all checked | visible with count > 0                    | checks all types                       |

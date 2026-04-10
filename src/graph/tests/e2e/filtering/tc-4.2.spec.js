@@ -63,7 +63,6 @@ const FILTER_MODEL_CONTENT = {
 test.describe('TC-4.2: Bulk actions', () => {
   test.beforeEach(async ({ page }) => {
     await mockApi(page);
-    // Override model content with filter-specific types
     await page.route(MODEL_CONTENT_URL, (r) =>
       r.fulfill({
         status: 200,
@@ -77,10 +76,10 @@ test.describe('TC-4.2: Bulk actions', () => {
   });
 
   test('TC-4.2.1: "Uncheck all" in Entities hides all entity types', async ({ page }) => {
-    // Click "Uncheck all" in Entities section
     await page.locator('[data-action="select-none"][data-kind="elem"]').click();
+    await page.waitForTimeout(200);
 
-    // All entity checkboxes should be unchecked (for visible types)
+    // All entity checkboxes become unchecked
     const entities = ['Microservice', 'Database', 'Queue', 'ExternalAPI'];
     for (const entity of entities) {
       const checkbox = page.locator(`input[data-kind="elem"][data-type="${entity}"]`);
@@ -89,7 +88,18 @@ test.describe('TC-4.2: Bulk actions', () => {
       }
     }
 
-    // Graph should be empty or show only drill-down root if active
+    // In Full Model, relationship types REMAIN VISIBLE in the list (total count > 0)
+    // Each shows "0 / total" (dimmed) because all entity endpoints are hidden
+    const callsCheckbox = page.locator('input[data-kind="rel"][data-type="Calls"]');
+    await expect(callsCheckbox).toBeVisible();
+    const callsRow = page.locator(
+      'label.filter-item:has(input[data-kind="rel"][data-type="Calls"])',
+    );
+    await expect(callsRow).toHaveClass(/dim/);
+    const callsCountEl = page.locator(
+      'label.filter-item:has(input[data-kind="rel"][data-type="Calls"]) .count',
+    );
+    await expect(callsCountEl).toHaveText(/^0 \/ \d+$/);
   });
 
   test('TC-4.2.2: "Check all" in Entities restores all entity types', async ({ page }) => {
@@ -132,58 +142,55 @@ test.describe('TC-4.2: Bulk actions', () => {
     expect(await page.locator('#elem-filter-search').inputValue()).toBe('micro');
   });
 
-  test('TC-4.2.5: Bulk action on Relationships with mixed visibility', async ({ page }) => {
+  test('TC-4.2.5: Bulk action on Relationships with mixed checked state', async ({ page }) => {
     // Some relationships unchecked - use Calls as example
     await page.locator('input[data-kind="rel"][data-type="Calls"]').uncheck();
 
     // Check all relationships
     await page.locator('[data-action="select-all"][data-kind="rel"]').click();
 
-    // All should be checked
+    // All should be checked; all edges become visible on the graph
     await expect(page.locator('input[data-kind="rel"][data-type="Calls"]')).toBeChecked();
 
     // Uncheck all
     await page.locator('[data-action="select-none"][data-kind="rel"]').click();
 
-    // All should be unchecked
+    // All should be unchecked; nodes remain (entities still checked)
     await expect(page.locator('input[data-kind="rel"][data-type="Calls"]')).not.toBeChecked();
   });
 
-  test('TC-4.2.6: Bulk actions affect all relationship types regardless of visibility', async ({
+  test('TC-4.2.6: Bulk actions on Relationships when all entity types are unchecked', async ({
     page,
   }) => {
-    // Uncheck all entities first - this causes all relationships to have count=0
+    // Uncheck all entities — all relationship available counts drop to 0
     await page.locator('[data-action="select-none"][data-kind="elem"]').click();
+    await page.waitForTimeout(200);
 
-    // Uncheck Calls to establish the "unchecked" precondition (it starts checked from buildFilters)
-    await page.locator('input[data-kind="rel"][data-type="Calls"]').uncheck();
-
-    // Relationship types with count=0 that were unchecked should be hidden from the list
+    // In Full Model, relationship types REMAIN VISIBLE (showing "0 / total", dimmed)
     const callsCheckbox = page.locator('input[data-kind="rel"][data-type="Calls"]');
-    await expect(callsCheckbox).not.toBeVisible();
-
-    // Click "Check all" in Relationships - this should affect ALL relationship types
-    await page.locator('[data-action="select-all"][data-kind="rel"]').click();
-
-    // Now hidden types like Calls should become visible (even though count is still 0)
     await expect(callsCheckbox).toBeVisible();
-    await expect(callsCheckbox).toBeChecked();
-
-    // The row should have the 'dim' class because count=0
     const callsRow = page.locator(
       'label.filter-item:has(input[data-kind="rel"][data-type="Calls"])',
     );
     await expect(callsRow).toHaveClass(/dim/);
 
-    // Verify that even with all relationships checked, no edges appear on graph
-    // (because no entities are visible - this is implicit in the design)
+    // Click "Check all" in Relationships
+    await page.locator('[data-action="select-all"][data-kind="rel"]').click();
+    await page.waitForTimeout(200);
 
-    // Now click "Uncheck all" on relationships
+    // List remains the same: types still visible (showing "0 / total"); available stays 0
+    await expect(callsCheckbox).toBeVisible();
+    await expect(callsCheckbox).toBeChecked();
+    await expect(callsRow).toHaveClass(/dim/);
+
+    // Click "Uncheck all" in Relationships
     await page.locator('[data-action="select-none"][data-kind="rel"]').click();
+    await page.waitForTimeout(200);
 
-    // All relationships should become unchecked
+    // List remains the same: types still visible (showing "0 / total")
+    // Bulk actions apply to all relationship types regardless of available count
+    await expect(callsCheckbox).toBeVisible();
     await expect(callsCheckbox).not.toBeChecked();
-    // The type may become hidden again (if it was originally unchecked before bulk action)
-    // But the key is that bulk actions work regardless of count visibility
+    await expect(callsRow).toHaveClass(/dim/);
   });
 });

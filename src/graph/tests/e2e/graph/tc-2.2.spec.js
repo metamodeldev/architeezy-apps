@@ -177,6 +177,43 @@ test.describe('TC-2.2: Legend', () => {
     expect(box.y + box.height).toBeLessThanOrEqual(600);
   });
 
+  test('TC-2.2.9: Legend is repositioned within viewport when enabled', async ({ page }) => {
+    const legend = page.locator('#graph-legend');
+
+    // Enable legend so it becomes draggable
+    await page.locator('#legend-toggle').check();
+    await page.waitForTimeout(200);
+    await expect(legend).toBeVisible();
+
+    // Drag legend to near the right edge of the current viewport
+    const legendBox = await legend.boundingBox();
+    const viewport = page.viewportSize();
+    await page.mouse.move(legendBox.x + legendBox.width / 2, legendBox.y + 5);
+    await page.mouse.down();
+    await page.mouse.move(viewport.width - 20, 100, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+
+    // Disable legend (position near right edge is saved to localStorage)
+    await page.locator('#legend-toggle').uncheck();
+    await page.waitForTimeout(100);
+
+    // Shrink the viewport so the saved position is now out-of-bounds
+    await page.setViewportSize({ width: 600, height: 500 });
+    await page.waitForTimeout(200);
+
+    // Enable legend again — it must be clamped to the new (narrower) viewport
+    await page.locator('#legend-toggle').check();
+    await page.waitForTimeout(300);
+    await expect(legend).toBeVisible();
+
+    const box = await legend.boundingBox();
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.y).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(600);
+    expect(box.y + box.height).toBeLessThanOrEqual(500);
+  });
+
   test('TC-2.2.8: Legend does not interfere with node interactions', async ({ page }) => {
     // Enable legend
     await page.locator('#legend-toggle').check();

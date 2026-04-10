@@ -14,12 +14,16 @@
 ### Steps
 
 1. Open the filtering panel
-   - Two lists appear: "Entities" and "Relationships"; each type has a checkbox and an "Available /
-     Total" count
+   - Two lists appear: "Entities" and "Relationships"; each type has a checkbox and a count
+   - When available count equals total, only a single number is displayed (e.g., "30"); when they
+     differ, both are shown separated by a slash (e.g., "15 / 30")
 2. Uncheck the "Database" entity type
-   - All Database nodes disappear from the graph; edges connected to them also disappear (or become
-     dangling/hidden according to rules)
-   - The "Available" count for relationship types that depend on Database decreases accordingly
+   - All Database nodes disappear from the graph; edges connected to them also disappear
+   - In Full Model, entity available count always equals total count, so entity counts remain
+     unchanged (Database still shows its total count)
+   - The "Available" count for relationship types with Database as an endpoint drops to 0; those
+     types remain visible in the list, now showing "0 / total" (dimmed)
+   - Relationship types whose endpoints are still visible retain their available count
 3. Re-check "Database"
    - Database nodes reappear; related relationships restore
    - Entity type visibility toggles correctly
@@ -34,6 +38,11 @@
 | Queue        | ✓               | ✓                      |
 | ExternalAPI  | ✓               | ✓                      |
 
+| Relationship   | Before (display) | After uncheck DB (display) | In list?     |
+| -------------- | ---------------- | -------------------------- | ------------ |
+| Calls (MS→MS)  | "8"              | "8" (unchanged)            | yes          |
+| Stores (MS→DB) | "5"              | "0 / 5"                    | yes (dimmed) |
+
 ## TC-4.1.2: Toggle relationship type visibility
 
 ### Preconditions
@@ -46,7 +55,8 @@
 
 1. Uncheck "DependsOn" relationship type
    - All DependsOn edges disappear from the graph
-   - Nodes remain visible (unless they were also filtered by entity type)
+   - Connected nodes remain visible (unless they become unreachable in Drill-down mode, in which
+     case they would also disappear)
 2. Re-check "DependsOn"
    - DependsOn edges reappear
    - Relationship visibility toggles correctly
@@ -58,10 +68,11 @@
 | ----------------- | --------- | ------------------------ |
 | DependsOn         | unchecked | edges hidden, nodes keep |
 
-## TC-4.1.3: "Available" count updates dynamically
+## TC-4.1.3: Relationship type with available count 0 remains visible in the filter list
 
 ### Preconditions
 
+- Full Model (not Drill-down)
 - Graph shows entities: 5 Microservices, 3 Databases
 - Relationship "Calls" connects Microservice→Microservice (8 edges)
 - Relationship "Stores" connects Microservice→Database (5 edges)
@@ -69,47 +80,59 @@
 
 ### Steps
 
-1. Note the "Available" counts for relationship types:
-   - "Calls" shows 8 (total and available same if all endpoints visible)
-   - "Stores" shows 5
+1. Note the counts for relationship types (available = total → displayed as single number):
+   - "Calls" shows "8"
+   - "Stores" shows "5"
 2. Uncheck "Database" entity type
-   - "Stores" available count drops to 0 (because Database endpoint is hidden)
-   - "Calls" count remains 8 (endpoints still visible)
-3. Note the UI behavior for relationship types with 0 available count
-   - If "Stores" was unchecked, it disappears from the list
-   - If "Stores" was checked, it remains visible but becomes dimmed (grayed out) with count 0/5
-   - Available counts reflect current visible endpoints
-   - Dynamic hiding/dimming based on counts
+   - "Stores" available count drops to 0 (no visible Database endpoints)
+   - "Stores" total count remains 5 (Full Model total = count in the model, unchanged)
+   - "Stores" **remains visible** in the Relationships list, now showing "0 / 5" and appearing
+     dimmed
+   - "Calls" count remains "8" (both Microservice endpoints are still visible)
+3. Re-check "Database"
+   - "Stores" available count restores to 5; display reverts to single number "5"
+   - The type was never removed from the list
 
 ### Test Data
 
-| Filter action                        | Relationship | Total | Available | Visibility in list |
-| ------------------------------------ | ------------ | ----- | --------- | ------------------ |
-| All entities visible                 | Calls        | 8     | 8         | visible            |
-|                                      | Stores       | 5     | 5         | visible            |
-| Database unchecked (endpoint hidden) | Stores       | 5     | 0         | dimmed or hidden   |
+| Filter action        | Relationship | Total | Available | Count display | Visible in list? |
+| -------------------- | ------------ | ----- | --------- | ------------- | ---------------- |
+| All entities visible | Calls        | 8     | 8         | "8"           | yes              |
+|                      | Stores       | 5     | 5         | "5"           | yes              |
+| Database unchecked   | Calls        | 8     | 8         | "8"           | yes              |
+|                      | Stores       | 5     | 0         | "0 / 5"       | yes (dimmed)     |
+| Database re-checked  | Stores       | 5     | 5         | "5"           | yes              |
 
-## TC-4.1.4: Relationship types hidden or dimmed when count is 0
+## TC-4.1.4: Relationship type disappears from filter list when total count is 0 in Drill-down
 
 ### Preconditions
 
-- All entity types are unchecked (completely filtered out)
-- This means no nodes are visible
+- Drill-down mode active on node "OrderService"
+- Drill-down scope contains only Microservice nodes connected by "Calls" relationships
+- Relationship type "Stores" (Microservice→Database) exists in the full model but has no instances
+  within the current drill-down scope (in-scope total = 0)
+- All entity and relationship types are checked
 
 ### Steps
 
-1. Observe the "Relationships" filter list
-   - All relationship types show count 0/Total
-   - Types that were previously checked remain visible but are dimmed (grayed out)
-   - Types that were unchecked are hidden from the list entirely
-   - User can still find hidden types via search or "Show all" toggle
-   - Checkboxes remain interactive; types are hidden based on rule, not disabled
+1. Open the filter panel in Drill-down mode
+   - "Calls" relationship type is visible: its in-scope total count (relationships of this type
+     reachable in scope with all filters enabled) > 0
+   - "Stores" relationship type is **not visible**: its in-scope total = 0 (no Database nodes or
+     Stores edges exist within the scope regardless of filter state)
+2. Toggle "Show all" ON
+   - "Stores" appears in the list, dimmed, with a 0 count
+3. Toggle "Show all" OFF
+   - "Stores" disappears again (total count = 0 in scope)
+   - A relationship type is hidden from the filter list if and only if its total count in the
+     current scope equals 0
 
 ### Test Data
 
-| Entity visibility | Relationship checkboxes state                              |
-| ----------------- | ---------------------------------------------------------- |
-| none              | hidden (count=0 & unchecked) OR dimmed (count=0 & checked) |
+| Relationship type | In-scope total | Visible in list (Show all OFF)? |
+| ----------------- | -------------- | ------------------------------- |
+| Calls (MS→MS)     | > 0            | yes                             |
+| Stores (MS→DB)    | 0              | no (hidden)                     |
 
 ## TC-4.1.5: Visibility changes apply to both graph and table
 

@@ -103,8 +103,9 @@ export async function selectModel(model) {
     }
     const modelName = model.name;
     showLoading(t('loadingModel'));
-    // Push current state to create new history entry before loading
-    pushState({ model: model.id });
+    // Push current state to create new history entry before loading.
+    // Clear drill params so the new model starts without stale entity/depth.
+    pushState({ model: model.id, entity: undefined, depth: undefined });
     // Load the model (will hide loading on completion)
     await load(model.id, url);
     if (modelName) {

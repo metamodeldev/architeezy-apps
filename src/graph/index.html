@@ -16,24 +16,12 @@
     <link rel="stylesheet" href="css/loading.css" />
     <link rel="stylesheet" href="css/tooltip.css" />
 
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/cytoscape@3.33.1/dist/cytoscape.min.js"
-    ></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/@dagrejs/dagre@2.0.0/dist/dagre.min.js"
-    ></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/cytoscape-dagre@2.5.0/cytoscape-dagre.min.js"
-    ></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
-    <script
-      defer
-      src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"
-    ></script>
+    <script defer src="../vendor/cytoscape-3.33.2.min.js"></script>
+    <script defer src="../vendor/dagre-2.0.0.min.js"></script>
+    <script defer src="../vendor/cytoscape-dagre-2.5.0.min.js"></script>
+    <script defer src="../vendor/layout-base-2.0.1.min.js"></script>
+    <script defer src="../vendor/cose-base-2.2.0.min.js"></script>
+    <script defer src="../vendor/cytoscape-fcose-2.2.0.min.js"></script>
   </head>
   <body>
     <!-- ── LOADING ──────────────────────────────────────────────── -->
@@ -104,7 +92,7 @@
       <nav class="breadcrumb">
         <a class="crumb-link" href="../">Architeezy Apps</a>
         <span class="crumb-sep">›</span>
-        <button class="crumb-btn" id="current-model-btn">Graph</button>
+        <button class="crumb-btn" id="current-model-btn">Graph 📂</button>
         <span class="crumb-sep">›</span>
         <button class="crumb-btn" id="drill-exit-btn">
           <span id="current-model-name" data-i18n="selectModel">Select model…</span>
@@ -228,16 +216,16 @@
               </div>
             </div>
             <div class="sidebar-content" id="sec-elem">
-              <input
-                id="elem-filter-search"
-                class="filter-search"
-                type="text"
-                data-i18n-ph="filterSearchPh"
-                data-i18n-label="elemSearchLabel"
-                aria-label="Search entities"
-                placeholder="Search…"
-              />
-              <div class="filter-show-all-wrap">
+              <div class="filter-search-row">
+                <input
+                  id="elem-filter-search"
+                  class="filter-search"
+                  type="text"
+                  data-i18n-ph="filterSearchPh"
+                  data-i18n-label="elemSearchLabel"
+                  aria-label="Search entities"
+                  placeholder="Search…"
+                />
                 <label class="filter-show-all-label">
                   <input type="checkbox" id="elem-show-all" class="filter-show-all" />
                   <span data-i18n="showAll">Show all</span>
@@ -276,16 +264,16 @@
               </div>
             </div>
             <div class="sidebar-content" id="sec-rel">
-              <input
-                id="rel-filter-search"
-                class="filter-search"
-                type="text"
-                data-i18n-ph="filterSearchPh"
-                data-i18n-label="relSearchLabel"
-                aria-label="Search relationships"
-                placeholder="Search…"
-              />
-              <div class="filter-show-all-wrap">
+              <div class="filter-search-row">
+                <input
+                  id="rel-filter-search"
+                  class="filter-search"
+                  type="text"
+                  data-i18n-ph="filterSearchPh"
+                  data-i18n-label="relSearchLabel"
+                  aria-label="Search relationships"
+                  placeholder="Search…"
+                />
                 <label class="filter-show-all-label">
                   <input type="checkbox" id="rel-show-all" class="filter-show-all" />
                   <span data-i18n="showAll">Show all</span>
@@ -324,8 +312,6 @@
                 <select class="ctrl sidebar-ctrl" id="layout-select">
                   <option value="fcose" selected>fCoSE</option>
                   <option value="dagre">Dagre</option>
-                  <option value="cose">CoSE</option>
-                  <option value="breadthfirst">Breadthfirst</option>
                   <option value="grid">Grid</option>
                   <option value="circle">Circle</option>
                 </select>

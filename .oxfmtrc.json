@@ -1,4 +1,5 @@
 {
+  "ignorePatterns": ["src/vendor"],
   "jsdoc": {},
   "proseWrap": "always",
   "quoteProps": "consistent",

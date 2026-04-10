@@ -18,7 +18,7 @@ html {
   --z-overlay: 10;
   --z-modal: 200;
   --z-top: 300;
-  --bg: #1a1a2e;
+  --bg: #1f2040;
   --surface: #16213e;
   --surface2: #0f3460;
   --accent: #e94560;
@@ -32,7 +32,7 @@ html {
 [data-theme='light'] {
   --bg: #f0f4f8;
   --surface: #fff;
-  --surface2: #e4ecf7;
+  --surface2: #d6e3f5;
   --accent: #e94560;
   --accent2: #6b5aad;
   --text: #1e293b;
@@ -45,7 +45,7 @@ html {
   [data-theme='system'] {
     --bg: #f0f4f8;
     --surface: #fff;
-    --surface2: #e4ecf7;
+    --surface2: #d6e3f5;
     --accent: #e94560;
     --accent2: #6b5aad;
     --text: #1e293b;

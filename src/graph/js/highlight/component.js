@@ -6,6 +6,7 @@
  */
 
 import { setSelectedNodeId } from '../selection/index.js';
+import { effect } from '../signals/index.js';
 import {
   getHighlightEnabled,
   initializeHighlightService,
@@ -22,7 +23,10 @@ export function wireHighlightEvents() {
     return;
   }
 
-  highlightToggle.checked = getHighlightEnabled();
+  // Keep DOM checkbox in sync with signal (handles programmatic resets, e.g. on model switch)
+  effect(() => {
+    highlightToggle.checked = getHighlightEnabled();
+  });
 
   highlightToggle.addEventListener('change', (e) => {
     const enabled = e.target.checked;

@@ -321,7 +321,7 @@ describe('computeDrillBfs — compound mode', () => {
     expect(visibleIds).toContain('parent');
   });
 
-  it('does NOT traverse compound parent/child links in non-compound mode', () => {
+  it('traverses compound parent/child links in edge mode', () => {
     const { visibleIds } = computeDrillBfs({
       rootId: 'child',
       drillDepth: 1,
@@ -329,9 +329,9 @@ describe('computeDrillBfs — compound mode', () => {
       edges: [],
       activeElemTypes: new Set(['Group', 'Item']),
       activeRelTypes: new Set(),
-      containmentMode: 'edge', // Compound links not traversed
+      containmentMode: 'edge',
     });
-    expect(visibleIds).not.toContain('parent');
+    expect(visibleIds).toContain('parent');
   });
 });
 
@@ -447,13 +447,13 @@ describe('computeVisibleNodeIds — normal mode', () => {
 });
 
 describe('computeVisibleNodeIds — drill mode', () => {
-  it('drill: intersection of filter and scope', () => {
+  it('drill: returns drillVisibleIds as-is (BFS already applied type filter)', () => {
     const result = computeVisibleNodeIds({
       allElements: visElements,
       activeElemTypes: new Set(['Actor', 'System']),
       showAll: false,
       drillNodeId: 'a',
-      drillScopeIds: new Set(['a', 'b', 'c']), // 'c' filtered out, 'd' outside scope
+      drillVisibleIds: new Set(['a', 'b']), // Pre-filtered by BFS: 'c' filtered out, 'd' outside scope
       highlightEnabled: false,
       highlightNodeId: undefined,
     });

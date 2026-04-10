@@ -17,6 +17,14 @@ const _drillDepth = signal(2);
 
 let _skipNextLayoutSave = false;
 
+// ── SKIP-URL-SYNC FLAG ───────────────────────────────────────────────────────
+
+/**
+ * Set to true before signal mutations triggered by URL restoration (popstate) so that
+ * subscribeDrillToUrl does not push a new history entry and destroy forward history.
+ */
+let _restoringFromUrl = false;
+
 /**
  * Consumes the skip-layout-save flag. Returns true once (on URL-restore entry) then resets to
  * false.
@@ -92,6 +100,7 @@ export function changeDepth(newDepth) {
 export function restoreFromUrl(entityId, depth) {
   if (!entityId) {
     if (_drillNodeId.value) {
+      _restoringFromUrl = true;
       clearDrillState();
     }
     return;
@@ -100,6 +109,7 @@ export function restoreFromUrl(entityId, depth) {
     _drillDepth.value = depth;
   }
   if (getElemMap().has(entityId)) {
+    _restoringFromUrl = true;
     _skipNextLayoutSave = true;
     onNodeDrill(entityId);
   }
@@ -116,7 +126,17 @@ export function subscribeDrillToUrl() {
     }
     const nodeId = _drillNodeId.value;
     const depth = _drillDepth.value;
+    if (_restoringFromUrl) {
+      _restoringFromUrl = false;
+      prevDrillNodeId = nodeId;
+      return;
+    }
     if (nodeId !== undefined) {
+      if (!getElemMap().has(nodeId)) {
+        // Node no longer exists (model switched); discard stale drill state silently.
+        prevDrillNodeId = undefined;
+        return;
+      }
       pushState({ entity: nodeId, depth });
     } else if (prevDrillNodeId !== undefined) {
       pushState({ entity: undefined, depth: undefined });

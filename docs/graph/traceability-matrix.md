@@ -9,11 +9,11 @@ and validation status.
 | Functional Domain                  |   FR   |   SR   |   TC    |  Done   |
 | ---------------------------------- | :----: | :----: | :-----: | :-----: |
 | [FR-1: Models](#fr-1-models)       |   6    |   5    |   40    |   40    |
-| [FR-2: Graph](#fr-2-graph)         |   8    |   8    |   65    |   65    |
-| [FR-3: Table](#fr-3-table)         |   3    |   4    |   32    |   32    |
+| [FR-2: Graph](#fr-2-graph)         |   8    |   8    |   69    |   69    |
+| [FR-3: Table](#fr-3-table)         |   3    |   4    |   33    |   33    |
 | [FR-4: Filtering](#fr-4-filtering) |   3    |   6    |   42    |   42    |
 | [FR-5: Export](#fr-5-export)       |   2    |   3    |   25    |   22    |
-| **Total**                          | **22** | **26** | **204** | **201** |
+| **Total**                          | **22** | **26** | **209** | **206** |
 
 ## FR-1: Models
 

@@ -12,7 +12,7 @@
 import { onNodeDrill } from '../drill/index.js';
 import { getActiveRelTypes } from '../filter/index.js';
 import { getElements, getRelations } from '../model/index.js';
-import { setSelectedNodeId } from '../selection/index.js';
+import { setSelectedEdgeId, setSelectedNodeId } from '../selection/index.js';
 import { effect } from '../signals/index.js';
 import { updateStats } from './controls.js';
 import { destroyCy, getCy } from './cy.js';
@@ -114,14 +114,22 @@ function setupNodeInteractions() {
     return;
   }
 
-  // Node single tap: update selected node signal
+  // Node single tap: update selected node signal, clear edge selection
   cy.on('tap', 'node', (e) => {
+    setSelectedEdgeId(undefined);
     setSelectedNodeId(e.target.id());
+  });
+
+  // Edge tap: update selected edge signal, clear node selection
+  cy.on('tap', 'edge', (e) => {
+    setSelectedNodeId(undefined);
+    setSelectedEdgeId(e.target.id());
   });
 
   // Node double tap: update selection and start drill-down
   cy.on('dbltap', 'node', (e) => {
     const nodeId = e.target.id();
+    setSelectedEdgeId(undefined);
     setSelectedNodeId(nodeId);
     onNodeDrill(nodeId);
   });
@@ -130,6 +138,7 @@ function setupNodeInteractions() {
   cy.on('tap', (e) => {
     if (e.target === cy) {
       setSelectedNodeId(undefined);
+      setSelectedEdgeId(undefined);
     }
   });
 }

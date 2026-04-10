@@ -126,6 +126,9 @@ As a user, I want to use browser navigation buttons to move between different vi
 3. Click the browser's "Back" button.
    - The system reverts to the previous view mode or model. Minor adjustments (filters) made before
      the view switch are skipped.
+4. Click the browser's "Forward" button after navigating back.
+   - The system advances to the next history entry. In particular, if the user exited Drill-down via
+     the "Back" button, "Forward" returns to the Drill-down state (same root entity and depth).
 
 #### Edge Cases
 

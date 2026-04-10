@@ -226,6 +226,45 @@ test.describe('TC-2.6: Highlight Mode', () => {
     expect(allFullOpacity).toBe(true);
   });
 
+  test('TC-2.6.9: Highlight mode and dimming reset on model switch', async ({ page }) => {
+    // Enable highlight mode
+    await page.locator('#highlight-toggle').click();
+    await expect(page.locator('#highlight-toggle')).toBeChecked();
+
+    // Select a node so dimming is applied
+    const pos = await getNodePos(page, 'comp-a');
+    await page.mouse.click(pos.x, pos.y);
+    await page.waitForTimeout(300);
+
+    // Verify dimming is active (some node at reduced opacity)
+    const hasDimming = await page.evaluate(() =>
+      globalThis.__cy.nodes().some((n) => Number.parseFloat(n.style('opacity')) < 1),
+    );
+    expect(hasDimming).toBe(true);
+
+    // Switch to a different model
+    await page.locator('#current-model-btn').click();
+    await expect(page.locator('#model-modal')).toBeVisible();
+    await page.locator('.model-item', { hasText: 'e-commerce' }).click();
+    await waitForLoading(page);
+    await page.waitForFunction(() => globalThis.__cy && globalThis.__cy.nodes().length > 0);
+
+    // Highlight toggle must be OFF after model switch
+    await expect(page.locator('#highlight-toggle')).not.toBeChecked();
+
+    // All elements in the new model must be at full opacity (no residual dimming)
+    const allFullOpacity = await page.evaluate(() =>
+      globalThis.__cy.nodes().every((n) => Number.parseFloat(n.style('opacity')) >= 1),
+    );
+    expect(allFullOpacity).toBe(true);
+
+    // Properties panel should be cleared (no selection carried over)
+    const hasSelection = await page.evaluate(() =>
+      globalThis.__cy.nodes().some((n) => n.selected()),
+    );
+    expect(hasSelection).toBe(false);
+  });
+
   test('TC-2.6.8: Highlight mode works with filter changes', async ({ page }) => {
     // Enable highlight mode
     await page.locator('#highlight-toggle').click();

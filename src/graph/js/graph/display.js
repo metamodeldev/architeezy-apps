@@ -27,7 +27,8 @@ function syncCompoundParentIds(visibleIds) {
         n.move({ parent: origParent });
       }
     } else if (currentParId !== undefined) {
-      n.move({ parent: undefined });
+      // oxlint-disable-next-line unicorn/no-null
+      n.move({ parent: null });
     }
   }
 }

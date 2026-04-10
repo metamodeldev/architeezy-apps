@@ -4,11 +4,21 @@
  * @module view/detail-panel
  */
 
-import { drillNodeId } from '../drill/index.js';
-import { focusCyNode } from '../graph/index.js';
+import { drillNodeId, onNodeDrill } from '../drill/index.js';
+import { getCy, focusCyNode } from '../graph/index.js';
 import { t } from '../i18n.js';
-import { getElemMap, getRelationshipsForElement, hasElement } from '../model/index.js';
-import { selectedNodeId } from '../selection/index.js';
+import {
+  getElemMap,
+  getRelations,
+  getRelationshipsForElement,
+  hasElement,
+} from '../model/index.js';
+import {
+  selectedEdgeId,
+  selectedNodeId,
+  setSelectedEdgeId,
+  setSelectedNodeId,
+} from '../selection/index.js';
 import { effect } from '../signals/index.js';
 import { escHtml } from '../utils.js';
 
@@ -56,9 +66,61 @@ export function showDetail(id) {
       }
       const targetId = item.dataset.target;
       if (hasElement(targetId)) {
-        showDetail(targetId);
-        focusCyNode(targetId);
+        if (drillNodeId.value) {
+          onNodeDrill(targetId);
+        } else {
+          const cy = getCy();
+          if (cy) {
+            cy.elements().unselect();
+          }
+          setSelectedEdgeId(undefined);
+          setSelectedNodeId(targetId);
+          focusCyNode(targetId);
+        }
       }
+    });
+  }
+}
+
+/**
+ * Renders the detail panel for the edge with the given `id`.
+ *
+ * @param {string} id - ID of the relationship to display.
+ */
+export function showEdgeDetail(id) {
+  const rel = getRelations().find((r) => r.id === id);
+  if (!rel) {
+    return;
+  }
+
+  const elemMap = getElemMap();
+  const sourceName = elemMap.get(rel.source)?.name ?? rel.source;
+  const targetName = elemMap.get(rel.target)?.name ?? rel.target;
+  const relLabel = rel.name || rel.type;
+
+  document.getElementById('detail-panel').innerHTML = `
+    <div class="detail-name">${escHtml(relLabel)}</div>
+    <div class="detail-type">${escHtml(rel.type)}</div>
+    <div class="detail-section-title">${t('detailSource')}</div>
+    <div class="detail-edge-entity" data-node-id="${escHtml(rel.source)}">${escHtml(sourceName)}</div>
+    <div class="detail-section-title">${t('detailTarget')}</div>
+    <div class="detail-edge-entity" data-node-id="${escHtml(rel.target)}">${escHtml(targetName)}</div>
+  `;
+
+  const panel = document.getElementById('detail-panel');
+  for (const el of panel.querySelectorAll('.detail-edge-entity[data-node-id]')) {
+    el.addEventListener('click', () => {
+      const nodeId = el.dataset.nodeId;
+      if (!hasElement(nodeId)) {
+        return;
+      }
+      const cy = getCy();
+      if (cy) {
+        cy.elements().unselect();
+        cy.$id(nodeId).select();
+      }
+      setSelectedEdgeId(undefined);
+      setSelectedNodeId(nodeId);
     });
   }
 }
@@ -73,10 +135,13 @@ export function clearDetail() {
 
 /** Initializes detail module: registers reactive effects. */
 export function init() {
-  // React to node selection changes (tap/clear)
+  // React to node/edge selection changes
   effect(() => {
+    const edgeId = selectedEdgeId.value;
     const nodeId = selectedNodeId.value;
-    if (nodeId) {
+    if (edgeId) {
+      showEdgeDetail(edgeId);
+    } else if (nodeId) {
       showDetail(nodeId);
     } else {
       clearDetail();

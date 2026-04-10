@@ -89,6 +89,9 @@ effect(() => {
         restoreFilterFromUrl(nav.entities, nav.relationships);
         restoreViewFromUrl(nav.view);
         restoreDrillFromUrl(nav.entity, nav.depth ? Number(nav.depth) : undefined);
+      } else {
+        // Model loaded via selector (no popstate); clear stale drill state from previous model.
+        restoreDrillFromUrl();
       }
 
       applyVisibility();

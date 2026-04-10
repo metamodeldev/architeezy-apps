@@ -257,21 +257,44 @@ test.describe('TC-2.7: Drill-down', () => {
     });
     await page.waitForTimeout(500);
 
-    // Double-click another node in scope (if exists)
-    const nodeCount = await page.evaluate(() => globalThis.__cy.nodes().length);
-    if (nodeCount > 1) {
+    // Increase depth to 2 to ensure a second node is reachable
+    const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
+    if (await depth2Btn.isVisible()) {
+      await depth2Btn.click();
+      await page.waitForTimeout(500);
+    }
+
+    const visibleCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+    if (visibleCount > 1) {
+      // Double-click a neighbor node to re-root drill-down
       await page.evaluate(() => {
-        const nodes = globalThis.__cy.nodes();
-        nodes[1].trigger('dbltap');
+        const visible = globalThis.__cy.nodes(':visible');
+        // Pick a node that is NOT the current root (not depth=0)
+        const neighbor = visible.filter((n) => n.data('drillDepth') !== 0).first();
+        if (neighbor.length) {
+          neighbor.trigger('dbltap');
+        } else {
+          visible[1].trigger('dbltap');
+        }
       });
       await page.waitForTimeout(500);
 
-      // After second double-click, either root changes or stays same (implementation dependent)
-      // But drill-down nav should remain visible
+      // Drill-down nav must remain visible with the new root
       await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
       await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+
+      // Depth must be preserved (remains at 2, not reset to 1)
+      const activeDepthText = await page.locator('#depth-picker .depth-btn.active').textContent();
+      expect(activeDepthText.trim()).toBe('2');
+
+      // Layout must use only the newly visible nodes (no hidden nodes visible)
+      const hiddenInScope = await page.evaluate(
+        () =>
+          globalThis.__cy.nodes(':hidden').filter((n) => n.data('drillDepth') !== undefined).length,
+      );
+      expect(hiddenInScope).toBe(0);
     } else {
-      // Single node: still valid
+      // Single node or no neighbors: drill nav still visible
       await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
     }
   });
@@ -385,6 +408,206 @@ test.describe('TC-2.7: Drill-down', () => {
       }
     }
     expect(preservesFcose).toBe(true);
+  });
+
+  test('TC-2.7.12: Properties panel link in drill-down changes the drill-down root', async ({
+    page,
+  }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Enter drill-down on comp-a (has connection to comp-b via rel-1)
+    await page.evaluate(() => {
+      const node = globalThis.__cy.$id('comp-a');
+      if (node?.length) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+
+    // Increase depth to 2
+    const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
+    if (await depth2Btn.isVisible()) {
+      await depth2Btn.click();
+      await page.waitForTimeout(300);
+    }
+
+    // Select the root node so its properties are shown
+    await page.evaluate(() => {
+      const root = globalThis.__cy.$id('comp-a');
+      if (root?.length) {
+        root.trigger('tap');
+      }
+    });
+    await page.waitForTimeout(300);
+
+    // Properties panel should show comp-a's connection to comp-b
+    await expect(page.locator('#detail-panel')).toBeVisible();
+
+    // Get the drill-down root before clicking the link
+    const rootBefore = await page.locator('#drill-label').textContent();
+
+    // Click the related entity link to comp-b in the properties panel
+    const connLink = page.locator('#detail-panel .detail-conn-item').first();
+    await connLink.click();
+    await page.waitForTimeout(500);
+
+    // Drill-down root should now be comp-b (label changed)
+    const rootAfter = await page.locator('#drill-label').textContent();
+    expect(rootAfter).not.toBe(rootBefore);
+
+    // URL should reflect new entity via replaceState
+    await expect(page).toHaveURL(/entity=/);
+
+    // Drill-down nav is still visible
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+
+    // Exploration depth is preserved (not reset to 1)
+    const activeDepth = await page.locator('#depth-picker .depth-btn.active').textContent();
+    expect(activeDepth.trim()).toBe('2');
+  });
+
+  test('TC-2.7.13: Dangling nodes disconnected from drill-down root are hidden after filter change', async ({
+    page,
+  }) => {
+    // Custom model: root-r (ApplicationComponent) → middle-m (Microservice) → end-d (Database)
+    const DANGLING_MODEL = {
+      ns: { archi: 'http://www.opengroup.org/xsd/archimate/3.0/' },
+      content: [
+        {
+          eClass: 'archi:ArchimateModel',
+          id: 'model-root',
+          data: {
+            name: 'Dangling Test',
+            elements: [
+              { eClass: 'archi:ApplicationComponent', id: 'root-r', data: { name: 'Root R' } },
+              { eClass: 'archi:Microservice', id: 'middle-m', data: { name: 'Middle M' } },
+              { eClass: 'archi:Database', id: 'end-d', data: { name: 'End D' } },
+            ],
+            relations: [
+              {
+                eClass: 'archi:AssociationRelationship',
+                id: 'rel-r-m',
+                data: { source: 'root-r', target: 'middle-m' },
+              },
+              {
+                eClass: 'archi:AssociationRelationship',
+                id: 'rel-m-d',
+                data: { source: 'middle-m', target: 'end-d' },
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    await mockApi(page);
+    // Override model content with the dangling-test model
+    const { MODEL_CONTENT_URL } = await import('../fixtures.js');
+    await page.route(MODEL_CONTENT_URL, (r) =>
+      r.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(DANGLING_MODEL),
+      }),
+    );
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Enter drill-down on root-r at depth=2 (should see root-r, middle-m, end-d)
+    await page.evaluate(() => {
+      const node = globalThis.__cy.$id('root-r');
+      if (node?.length) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+
+    // Increase depth to 2 to include end-d
+    const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
+    await depth2Btn.click();
+    await page.waitForTimeout(500);
+
+    // All three nodes should be visible
+    const visibleBefore = await page.evaluate(() =>
+      globalThis.__cy.nodes(':visible').map((n) => n.id()),
+    );
+    expect(visibleBefore).toContain('root-r');
+    expect(visibleBefore).toContain('middle-m');
+    expect(visibleBefore).toContain('end-d');
+
+    // Filter out Microservice — middle-m disappears, end-d becomes dangling
+    await page.locator('input[data-kind="elem"][data-type="Microservice"]').uncheck();
+    await page.waitForTimeout(500);
+
+    const visibleAfter = await page.evaluate(() =>
+      globalThis.__cy.nodes(':visible').map((n) => n.id()),
+    );
+    // Middle-m should be hidden (filtered)
+    expect(visibleAfter).not.toContain('middle-m');
+    // End-d should also be hidden (dangling — no path from root-r)
+    expect(visibleAfter).not.toContain('end-d');
+    // Root-r itself should remain visible
+    expect(visibleAfter).toContain('root-r');
+
+    // Re-check Microservice — both nodes should reappear
+    await page.locator('input[data-kind="elem"][data-type="Microservice"]').check();
+    await page.waitForTimeout(500);
+
+    const visibleRestored = await page.evaluate(() =>
+      globalThis.__cy.nodes(':visible').map((n) => n.id()),
+    );
+    expect(visibleRestored).toContain('middle-m');
+    expect(visibleRestored).toContain('end-d');
+  });
+
+  test('TC-2.7.14: Switching to a different model while in drill-down exits drill-down', async ({
+    page,
+  }) => {
+    await mockApi(page);
+    await page.addInitScript(() => localStorage.clear());
+    await page.goto('/graph/?model=model-test');
+    await waitForLoading(page);
+    await waitForCyReady(page);
+
+    // Enter drill-down on first node at depth=2
+    await page.evaluate(() => {
+      const node = globalThis.__cy.nodes().first();
+      if (node) {
+        node.trigger('dbltap');
+      }
+    });
+    await page.waitForTimeout(500);
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+
+    const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
+    if (await depth2Btn.isVisible()) {
+      await depth2Btn.click();
+      await page.waitForTimeout(300);
+    }
+
+    // Switch to a different model via the model selector
+    await page.locator('#current-model-btn').click();
+    await expect(page.locator('#model-modal')).toBeVisible();
+    await page.locator('.model-item', { hasText: 'e-commerce' }).click();
+    await waitForLoading(page);
+
+    // Drill-down mode should exit automatically
+    await expect(page.locator('#crumb-entity-sep')).toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).toHaveClass(/hidden/);
+
+    // Full model view of e-commerce is shown
+    await expect(page.locator('#cy')).toBeVisible();
+
+    // URL should not contain drill-down parameters from the previous model
+    await expect(page).not.toHaveURL(/entity=/);
+    await expect(page).not.toHaveURL(/depth=/);
   });
 
   test('TC-2.7.11: Exit drill-down with no previous state applies fresh layout', async ({

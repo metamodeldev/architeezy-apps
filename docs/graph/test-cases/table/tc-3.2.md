@@ -160,6 +160,34 @@
 | ---------------- | ---------------- | ------------------------------- |
 | 3 nodes          | 3 rows           | 2 rows (endpoint both in scope) |
 
+## TC-3.2.9: Entity table columns are derived from model metadata
+
+### Preconditions
+
+- Table view active, Entities tab
+- Model A contains entity types with properties: `name`, `type`, `description`, `url`
+- Model B contains entity types with properties: `name`, `type`, `title`, `version`
+
+### Steps
+
+1. Load model A and switch to Table view → Entities tab
+   - Columns displayed: Name, Type, Description, URL
+   - No columns appear that are absent from model A's metadata
+2. Switch to model B
+   - Columns update to: Name, Type, Title, Version
+   - The column set reflects model B's metadata, not model A's
+3. Load a model that has no additional properties (only `name` and `type`)
+   - Table shows only Name and Type columns
+   - Columns are always derived from the active model's metadata
+
+### Test Data
+
+| Model properties             | Expected columns             |
+| ---------------------------- | ---------------------------- |
+| name, type, description, url | Name, Type, Description, URL |
+| name, type, title, version   | Name, Type, Title, Version   |
+| name, type                   | Name, Type                   |
+
 ## TC-3.2.8: Switching tabs (Entities ↔ Relationships) does not refetch data
 
 ### Preconditions

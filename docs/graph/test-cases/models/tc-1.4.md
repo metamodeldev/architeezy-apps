@@ -111,7 +111,7 @@
 | --------------- | --------------------- |
 | A → B → C       | C                     |
 
-## TC-1.4.5: Drill-down navigation adds a history entry
+## TC-1.4.5: Drill-down navigation adds a history entry; Back and Forward work correctly
 
 ### Preconditions
 
@@ -119,19 +119,27 @@
 
 ### Steps
 
-1. Click on a node to enter drill-down mode
-   - URL updates (e.g., `&drill=node-id`); history entry added (pushState); UI shows drill-down view
-2. Click Back button
-   - Drill-down mode exits; returns to the previous graph state
-   - Drill-down is part of navigation history
+1. Double-click on a node (e.g., `OrderService`) to enter drill-down mode
+   - URL updates (e.g., `&entity=order-id&depth=1`); history entry added (pushState); UI shows
+     drill-down view with the navigation bar
+2. Click the browser's Back button
+   - Drill-down mode exits; returns to the previous graph state (full model)
+   - Drill-down navigation bar disappears; full model is restored
+3. Immediately after step 2, click the browser's Forward button
+   - The application navigates forward to the drill-down state
+   - Drill-down mode re-activates with the same root entity and depth as before
+   - Navigation bar reappears showing the same root and depth
+   - URL restores the drill-down parameters
    - Back exits drill-down cleanly
+   - Forward returns to drill-down state; it does not disappear after becoming available
 
 ### Test Data
 
-| Action    | History method |
-| --------- | -------------- |
-| Drill in  | pushState      |
-| Drill out | back/navigate  |
+| Action           | History method | Expected UI state             |
+| ---------------- | -------------- | ----------------------------- |
+| Enter drill-down | pushState      | drill-down active             |
+| Click Back       | popState       | full model view               |
+| Click Forward    | popState       | drill-down active (same root) |
 
 ## TC-1.4.6: URL always reflects the current application state
 

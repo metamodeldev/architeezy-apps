@@ -79,11 +79,16 @@ test.describe('TC-3.5: Graph navigation', () => {
     // Wait for the node to be selected
     await waitForNodeSelected(page, rowEntity);
 
-    // Should switch to graph (default view, no view parameter in URL)
-    // After syncUrl, view=table should be removed because graph is default
-    await expect(page).not.toHaveURL(/[?&]view=table/);
+    // The `view` parameter must be completely absent from the URL:
+    // Not `view=table`, not `view=graph`, not `view=` (empty value)
+    // Absence of the parameter signals the default Graph view
+    await expect(page).not.toHaveURL(/[?&]view=/i);
     // Should have model param
     expect(page.url()).toContain('model=model-test');
+
+    // Double-check via URL inspection (covers edge case of `view=` with empty value)
+    const urlParams = new URL(page.url()).searchParams;
+    expect(urlParams.has('view')).toBe(false);
 
     // Verify selected node
     const selectedNode = await page.evaluate(() =>

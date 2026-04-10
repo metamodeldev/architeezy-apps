@@ -40,7 +40,7 @@ export function init() {
   const layoutSelect = document.getElementById('layout-select');
   if (layoutSelect) {
     const savedLayout = localStorage.getItem('architeezyGraphLayout');
-    const validLayouts = ['fcose', 'dagre', 'cose', 'breadthfirst', 'grid', 'circle'];
+    const validLayouts = ['fcose', 'dagre', 'grid', 'circle'];
     if (savedLayout && validLayouts.includes(savedLayout)) {
       layoutSelect.value = savedLayout;
     }

@@ -4,4 +4,4 @@
  * @module selection
  */
 
-export { selectedNodeId, setSelectedNodeId } from './service.js';
+export { selectedNodeId, setSelectedNodeId, selectedEdgeId, setSelectedEdgeId } from './service.js';

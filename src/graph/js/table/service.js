@@ -11,7 +11,13 @@
 import { getActiveElemTypes, getActiveRelTypes } from '../filter/index.js';
 import { drillVisibleIds } from '../graph/index.js';
 import { t } from '../i18n.js';
-import { getElementsByTypes, getElemMap, getModelName, getRelations } from '../model/index.js';
+import {
+  getElementsByTypes,
+  getElemMap,
+  getElements,
+  getModelName,
+  getRelations,
+} from '../model/index.js';
 import { showToast } from '../notification/index.js';
 import { elemColor, relColor } from '../palette.js';
 import { query } from '../search/index.js';
@@ -23,6 +29,22 @@ import { escHtml } from '../utils.js';
 const _currentTab = signal('elements');
 const _sortCol = signal(); // Sort column (number | undefined)
 const _sortAsc = signal(true);
+
+/**
+ * Computed set of extra property keys derived from the current model's elements.
+ *
+ * @type {ComputedSignal<string[]>}
+ */
+export const extraColKeys = computed(() => {
+  const elements = getElements();
+  const keySet = new Set();
+  for (const e of elements) {
+    for (const key of Object.keys(e.extras ?? {})) {
+      keySet.add(key);
+    }
+  }
+  return [...keySet];
+});
 
 // ── PUBLIC COMPUTED ────────────────────────────────────────────────────────────
 
@@ -41,14 +63,22 @@ export const filteredElements = computed(() => {
   let elements = getElementsByTypes(activeElemTypes).filter(
     (e) =>
       (!drillVisibleIdsVal || drillVisibleIdsVal.has(e.id)) &&
-      (!q || [e.name, e.type, e.status, e.owner, e.ns].some((v) => v?.toLowerCase().includes(q))),
+      (!q || [e.name, e.type, e.ns].some((v) => v?.toLowerCase().includes(q))),
   );
 
   if (sortCol !== undefined) {
-    const colKeys = ['name', 'type', 'status', 'owner'];
+    const colKeys = ['name', 'type'];
+    const extraKeys = extraColKeys.value;
     elements = [...elements].toSorted((a, b) => {
-      const av = (a[colKeys[sortCol]] ?? '').toString().toLowerCase();
-      const bv = (b[colKeys[sortCol]] ?? '').toString().toLowerCase();
+      let av, bv;
+      if (sortCol < colKeys.length) {
+        av = (a[colKeys[sortCol]] ?? '').toString().toLowerCase();
+        bv = (b[colKeys[sortCol]] ?? '').toString().toLowerCase();
+      } else {
+        const extraKey = extraKeys[sortCol - colKeys.length];
+        av = (a.extras?.[extraKey] ?? '').toString().toLowerCase();
+        bv = (b.extras?.[extraKey] ?? '').toString().toLowerCase();
+      }
       return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
     });
   }
@@ -192,15 +222,18 @@ export function thHtml(cols, sortCol, sortAsc) {
  * Generates HTML for a single element table row.
  *
  * @param {object} e - Element object
+ * @param {string[]} [extraKeys] - Extra column keys from model metadata.
  * @returns {string} HTML string for `<tr>`
  */
-export function elementRowHtml(e) {
+export function elementRowHtml(e, extraKeys = []) {
   const c = elemColor(e.type);
+  const extraCells = extraKeys
+    .map((k) => `<td>${escHtml(String(e.extras?.[k] ?? '')) || '—'}</td>`)
+    .join('');
   return `<tr data-id="${e.id}">
     <td>${escHtml(e.name)}</td>
     <td><span class="type-badge" style="--type-bg:${c}33;--type-color:${c}">${escHtml(e.type)}</span></td>
-    <td>${escHtml(e.status) || '—'}</td>
-    <td>${escHtml(e.owner) || '—'}</td>
+    ${extraCells}
   </tr>`;
 }
 
@@ -296,64 +329,31 @@ export async function exportCsv() {
     const currentTab = getCurrentTab();
     const type = currentTab === 'elements' ? 'entities' : 'relationships';
 
-    // Get headers from table head (respects any DOM reordering)
-    const headerCells = document.querySelectorAll('#table-head th');
-    const headers = [...headerCells].map((th) => {
-      const clone = th.cloneNode(true);
-      const icon = clone.querySelector('.sort-icon');
-      if (icon) {
-        icon.remove();
-      }
-      return clone.textContent.trim();
-    });
+    let headers;
+    let rows;
 
-    // Get data from computed values
-    const elements = filteredElements.value;
-    const relations = filteredRelations.value;
-    const elemMap = getElemMap();
+    if (currentTab === 'elements') {
+      // Build headers from column structure: Name, Type, then capitalized extra keys
+      const extraKeys = extraColKeys.value;
+      const extraLabels = extraKeys.map((k) => k.charAt(0).toUpperCase() + k.slice(1));
+      headers = [t('colName'), t('colType'), ...extraLabels];
 
-    // Build rows based on current column order from headers
-    // For elements: Name, Type, Status, Owner; For relationships: Source, Rel Type, Target, Rel Name
-    const rows =
-      currentTab === 'elements'
-        ? elements.map((e) => {
-            const row = [];
-            for (const header of headers) {
-              const headerLower = header.toLowerCase();
-              if (headerLower.includes('name')) {
-                row.push(e.name);
-              } else if (headerLower.includes('type')) {
-                row.push(e.type);
-              } else if (headerLower.includes('status')) {
-                row.push(e.status || '');
-              } else if (headerLower.includes('owner')) {
-                row.push(e.owner || '');
-              } else {
-                row.push('');
-              }
-            }
-            return row;
-          })
-        : relations.map((r) => {
-            const row = [];
-            const src = elemMap.get(r.source)?.name ?? r.source;
-            const tgt = elemMap.get(r.target)?.name ?? r.target;
-            for (const header of headers) {
-              const headerLower = header.toLowerCase();
-              if (headerLower.includes('source')) {
-                row.push(src);
-              } else if (headerLower.includes('rel type') || headerLower.includes('type')) {
-                row.push(r.type);
-              } else if (headerLower.includes('target')) {
-                row.push(tgt);
-              } else if (headerLower.includes('rel name') || headerLower.includes('name')) {
-                row.push(r.name ?? '');
-              } else {
-                row.push('');
-              }
-            }
-            return row;
-          });
+      // Build rows by directly reading element properties and extras
+      rows = filteredElements.value.map((e) => [
+        e.name,
+        e.type,
+        ...extraKeys.map((k) => e.extras?.[k] ?? ''),
+      ]);
+    } else {
+      const elemMap = getElemMap();
+      headers = [t('colSource'), t('colRelType'), t('colTarget'), t('colRelName')];
+
+      rows = filteredRelations.value.map((r) => {
+        const src = elemMap.get(r.source)?.name ?? r.source;
+        const tgt = elemMap.get(r.target)?.name ?? r.target;
+        return [src, r.type, tgt, r.name ?? ''];
+      });
+    }
 
     buildAndDownloadCsv(headers, rows, type);
   } catch (error) {

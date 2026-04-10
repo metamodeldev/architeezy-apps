@@ -22,6 +22,25 @@ test.describe('TC-5.1: Entity table export', () => {
 
     // Verify filename pattern (model name may contain spaces and special chars)
     expect(download.suggestedFilename()).toMatch(/[a-zA-Z0-9\s-]+-entities-\d{8}-\d{6}\.csv/i);
+
+    // Verify CSV has header and multiple data rows with actual values
+    const path = await download.path();
+    const fileContent = await readFile(path, 'utf8');
+    const csvText = fileContent.replace(/^\uFEFF/, '');
+    const lines = csvText.trim().split('\n');
+
+    // Header row should list Name, Type, and extra columns
+    expect(lines[0]).toMatch(/Name,Type/i);
+
+    // Should have many data rows (model-test has 60+ elements)
+    expect(lines.length).toBeGreaterThan(10);
+
+    // Data rows should not be entirely empty (each row must have at least a name value)
+    const dataRows = lines.slice(1).filter((l) => l.trim());
+    for (const row of dataRows) {
+      expect(row.trim()).not.toBe(',,');
+      expect(row.split(',')[0].trim()).not.toBe('');
+    }
   });
 
   // TC-5.1.2: Column visibility UI not implemented; skipping test
@@ -130,7 +149,7 @@ test.describe('TC-5.1: Entity table export', () => {
 
     // Should have headers but no data rows
     const lines = text.trim().split('\n');
-    expect(lines[0]).toMatch(/Name,Type,Status,Owner/i);
+    expect(lines[0]).toMatch(/Name,Type,Documentation,Status,Owner/i);
     expect(lines.length).toBe(1); // Only header
   });
 
@@ -166,30 +185,10 @@ test.describe('TC-5.1: Entity table export', () => {
     }
   });
 
-  test('TC-5.1.6: Column order in CSV matches display order', async ({ page }) => {
+  test('TC-5.1.6: Extra column data is exported correctly', async ({ page }) => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test&view=table');
     await waitForLoading(page);
-
-    // Simulate user reordering: move Owner column before Name via DOM manipulation
-    await page.evaluate(() => {
-      const thead = document.querySelector('#table-head');
-      if (!thead) {
-        return;
-      }
-      const row = thead.querySelector('tr');
-      if (!row) {
-        return;
-      }
-      const ths = [...row.querySelectorAll('th')];
-      const ownerTh = ths.find((th) => th.textContent.includes('Owner'));
-      const nameTh = ths.find((th) => th.textContent.includes('Name'));
-      if (ownerTh && nameTh) {
-        nameTh.before(ownerTh);
-      }
-    });
-    // Wait for the table to re-render with new column order
-    await expect(page.locator('#table-head th:first-child')).toContainText('Owner');
 
     await expect(page.locator('#export-csv-btn')).toBeEnabled();
     const [download] = await Promise.all([
@@ -197,18 +196,38 @@ test.describe('TC-5.1: Entity table export', () => {
       page.locator('#export-csv-btn').click(),
     ]);
 
-    const path2 = await download.path();
-    const fileContent2 = await readFile(path2, 'utf8');
-    const csvText = fileContent2.replace(/^\uFEFF/, '');
+    const path = await download.path();
+    const fileContent = await readFile(path, 'utf8');
+    const csvText = fileContent.replace(/^\uFEFF/, '');
+    const lines = csvText.trim().split('\n');
 
-    // Expected order after reordering: Owner, Name, Type, Status
-    const firstLine = csvText.split('\n')[0];
-    const columns = firstLine.split(',');
+    // Header must include extra columns in order: Name, Type, Documentation, Status, Owner
+    const header = lines[0];
+    expect(header).toBe('Name,Type,Documentation,Status,Owner');
 
-    expect(columns[0]).toBe('Owner');
-    expect(columns[1]).toBe('Name');
-    expect(columns[2]).toBe('Type');
-    expect(columns[3]).toBe('Status');
+    // Find the index of each column
+    const cols = header.split(',');
+    const docIdx = cols.indexOf('Documentation');
+    const statusIdx = cols.indexOf('Status');
+    const ownerIdx = cols.indexOf('Owner');
+
+    expect(docIdx).toBeGreaterThan(1);
+    expect(statusIdx).toBeGreaterThan(1);
+    expect(ownerIdx).toBeGreaterThan(1);
+
+    // At least one row should have a non-empty Documentation value
+    // (comp-a has documentation: 'First component')
+    const hasDocumentation = lines
+      .slice(1)
+      .some((row) => row.split(',')[docIdx]?.trim().length > 0);
+    expect(hasDocumentation).toBe(true);
+
+    // The row for "John's Component" must have status=active and owner=john
+    const johnRow = lines.slice(1).find((row) => row.startsWith("John's Component"));
+    expect(johnRow).toBeDefined();
+    const johnCols = johnRow.split(',');
+    expect(johnCols[statusIdx]?.trim()).toBe('active');
+    expect(johnCols[ownerIdx]?.trim()).toBe('john');
   });
 
   test('TC-5.1.7: Export during loading shows indicator', async ({ page }) => {

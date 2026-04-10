@@ -15,13 +15,14 @@
    - Node receives visual highlight (e.g., thicker border, different fill)
    - Properties panel opens (if not already open)
    - Properties panel displays entity details: name, type, attributes, relationships
+   - The camera does not move (viewport stays unchanged)
 2. Verify properties panel content
    - Panel shows correct data for the selected entity
 3. Select a different node
    - Previous node loses highlight; new node gets highlight; properties panel updates to show new
      entity's data
-   - Single selection works
-   - Properties panel synchronized with selection
+   - The camera does not move
+   - Single selection works; properties panel synchronized with selection
 
 ### Test Data
 
@@ -40,20 +41,24 @@
 1. Click on an edge (not a node)
    - Edge becomes highlighted (thicker line, different color)
    - Properties panel opens showing:
-     - Source entity name
-     - Target entity name
+     - Relationship name (if present; omitted otherwise)
      - Relationship type (e.g., "Calls")
-     - Relationship name (if any)
-2. Click on a node
-   - Edge highlight clears; node selection updates properties
-   - Edge selection distinct from node selection
-   - Relationship properties displayed correctly
+     - Source entity as a clickable link (navigates to and selects the source node)
+     - Target entity as a clickable link (navigates to and selects the target node)
+2. Click the source entity link in the properties panel
+   - Camera centers on the source node; source node becomes selected; edge highlight clears
+3. Click on a different edge
+   - Edge highlight clears from the previous edge; new edge gets highlight; properties panel updates
+   - The camera does not move
+   - Edge selection is distinct from node selection
+   - Relationship properties displayed correctly, including interactive links
 
 ### Test Data
 
-| Edge: source→target | Expected props panel                            |
-| ------------------- | ----------------------------------------------- |
-| ServiceA→ServiceB   | source: ServiceA, target: ServiceB, type: Calls |
+| Edge: source→target | Expected props panel content                                                            |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| ServiceA→ServiceB   | type: Calls, source link: ServiceA, target link: ServiceB (name omitted if not present) |
+| A→B (name: "uses")  | name: "uses", type: Calls, source link: A, target link: B                               |
 
 ## TC-2.5.3: Deselect by clicking canvas background
 
@@ -80,25 +85,26 @@
 
 ### Preconditions
 
-- Node A is selected
+- Node A is selected and highlighted
 - Properties panel shows relationships from Node A to Node B
 
 ### Steps
 
 1. In the properties panel, locate a related entity link (e.g., "ServiceB" under "Outgoing Calls")
 2. Click on that link
-   - Graph view switches to ensure Node B is in viewport (smooth centering animation)
+   - **Node A loses its highlight** (previous selection is cleared)
    - Node B becomes selected (highlighted)
    - Properties panel updates to show Node B's details
-   - If Node B was outside current view, camera pans to center it
-   - Navigation from properties to graph node works
-   - Smooth centering animation occurs
+   - The camera centers on Node B
+3. Verify that no two nodes are simultaneously highlighted
+   - Only Node B is highlighted; Node A appears in its normal (unselected) visual state
+   - Selection is always singular; clicking a link replaces the current selection
 
 ### Test Data
 
-| From node | Click linked entity | Expected result              |
-| --------- | ------------------- | ---------------------------- |
-| Node A    | Node B (link)       | Node B centered and selected |
+| From node | Click linked entity | Node A highlight after | Node B highlight after |
+| --------- | ------------------- | ---------------------- | ---------------------- |
+| Node A    | Node B (link)       | removed                | active                 |
 
 ## TC-2.5.5: Selection persists during view mode switch (Graph ↔ Table)
 

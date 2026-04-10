@@ -358,6 +358,24 @@ export function parseModel(raw) {
 
     // Rule 3: graph node — track containment parent
     const parentIsNode = parentId !== undefined && elemMap.has(parentId);
+
+    // Collect model-specific scalar properties as extras (excluding structural/reserved keys)
+    const EXCLUDED_KEYS = new Set([
+      'name',
+      'label',
+      'source',
+      'target',
+      'children',
+      'elements',
+      'relations',
+    ]);
+    const extras = {};
+    for (const [key, val] of Object.entries(d)) {
+      if (!EXCLUDED_KEYS.has(key) && val !== null && typeof val !== 'object') {
+        extras[key] = val;
+      }
+    }
+
     const elem = {
       id,
       type,
@@ -365,8 +383,7 @@ export function parseModel(raw) {
       name: d.name || d.label || d.title || type,
       doc: d.documentation || d.description || d.doc || '',
       parent: parentIsNode ? parentId : undefined,
-      status: d.status || '',
-      owner: d.owner || '',
+      extras,
     };
     allElements.push(elem);
     elemMap.set(id, elem);

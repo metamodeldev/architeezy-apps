@@ -31,6 +31,12 @@ aside.collapsed .sidebar-scroll {
   padding: 3px 6px;
 }
 
+select.ctrl.sidebar-ctrl,
+button.ctrl.sidebar-ctrl {
+  background: var(--bg);
+  border-color: var(--border);
+}
+
 select.sidebar-ctrl {
   min-width: 0;
 }
@@ -66,7 +72,7 @@ select.sidebar-ctrl {
   z-index: var(--z-overlay);
   width: 24px;
   height: 40px;
-  background: var(--surface2);
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 0 6px 6px 0;
   color: var(--text-muted);
@@ -205,26 +211,27 @@ select.sidebar-ctrl {
   padding: 0;
 }
 
+.filter-search-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
 .filter-search {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   background: var(--bg);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 4px 8px;
   border-radius: 5px;
   font-size: 0.78rem;
-  margin-bottom: 6px;
 }
 
 .filter-search:focus {
   outline: none;
   border-color: var(--accent);
-}
-
-.filter-show-all-wrap {
-  margin-bottom: 6px;
-  display: flex;
-  align-items: center;
 }
 
 .filter-show-all-label {

@@ -173,6 +173,34 @@
 | ---------------- | ---------------------------- |
 | near right edge  | adjusted leftwards           |
 
+## TC-2.2.9: Legend is repositioned within viewport when enabled
+
+### Preconditions
+
+- Legend was previously saved at a position near the right edge of the canvas
+- Browser window has been resized (canvas is now narrower) so the saved position is outside the
+  visible area
+- Legend is currently hidden
+
+### Steps
+
+1. Enable the legend via the toggle
+   - Legend appears fully within the visible canvas area
+   - No part of the legend panel is clipped or hidden outside the viewport
+   - The saved position is adjusted to the nearest valid in-bounds position
+2. Drag the legend to a valid position and disable it
+3. Resize the window so the canvas becomes even narrower
+4. Enable the legend again
+   - Legend appears in bounds; position is corrected automatically
+   - Legend is always fully visible when enabled, regardless of the saved position
+
+### Test Data
+
+| Saved position         | Canvas width after resize | Legend position after enable  |
+| ---------------------- | ------------------------- | ----------------------------- |
+| x=950px (right edge)   | 800px                     | adjusted to fit within 800px  |
+| x=0px, y=0px (in-view) | any                       | unchanged (already in bounds) |
+
 ## TC-2.2.8: Legend does not interfere with node interactions
 
 ### Preconditions

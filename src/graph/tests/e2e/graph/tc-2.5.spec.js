@@ -59,6 +59,24 @@ async function clickEmptyCanvas(page) {
   await page.mouse.click(rect.x + 5, rect.y + 5);
 }
 
+async function setupGraphPage(page) {
+  await injectCyCapture(page);
+  await mockApi(page);
+  await page.addInitScript(() => localStorage.clear());
+  await page.goto('/graph/?model=model-test');
+  await waitForLoading(page);
+}
+
+async function clickEdgeSourceLinkAndVerify(page) {
+  const sourceLink = page.locator('#detail-panel').getByText('Component A').first();
+  await sourceLink.click();
+  await page.waitForTimeout(500);
+  const isCompASelected = await page.evaluate(() => globalThis.__cy.$id('comp-a').selected());
+  expect(isCompASelected).toBe(true);
+  const isRelStillSelected = await page.evaluate(() => globalThis.__cy.$id('rel-1').selected());
+  expect(isRelStillSelected).toBe(false);
+}
+
 test.describe('TC-2.5: Selection', () => {
   test('TC-2.5.1: Select a node to highlight and show properties', async ({ page }) => {
     await injectCyCapture(page);
@@ -70,6 +88,9 @@ test.describe('TC-2.5: Selection', () => {
 
     // Wait for initial layout animation to complete
     await page.waitForFunction(() => !globalThis.__layoutRunning);
+
+    // Capture camera position before click
+    const panBefore = await page.evaluate(() => globalThis.__cy.pan());
 
     // Select node by clicking on it
     const pos = await getNodePos(page, 'comp-a');
@@ -85,36 +106,74 @@ test.describe('TC-2.5: Selection', () => {
 
     // Properties panel should open
     await expect(page.locator('#detail-panel')).toBeVisible();
+
+    // Camera must not move when clicking a node directly
+    const panAfter = await page.evaluate(() => globalThis.__cy.pan());
+    expect(panAfter.x).toBeCloseTo(panBefore.x, 0);
+    expect(panAfter.y).toBeCloseTo(panBefore.y, 0);
+
+    // Click a second node and verify camera still does not move
+    await waitForCyNode(page, 'comp-b');
+    const panBeforeB = await page.evaluate(() => globalThis.__cy.pan());
+    const posB = await getNodePos(page, 'comp-b');
+    await page.mouse.click(posB.x, posB.y);
+    await page.waitForTimeout(300);
+    const panAfterB = await page.evaluate(() => globalThis.__cy.pan());
+    expect(panAfterB.x).toBeCloseTo(panBeforeB.x, 0);
+    expect(panAfterB.y).toBeCloseTo(panBeforeB.y, 0);
+    // Only the newly clicked node should be selected (single selection)
+    const selectedCount = await page.evaluate(
+      () => globalThis.__cy.nodes().filter((n) => n.selected()).length,
+    );
+    expect(selectedCount).toBe(1);
   });
 
   test('TC-2.5.2: Select an edge to show relationship properties', async ({ page }) => {
-    await injectCyCapture(page);
-    await mockApi(page);
-    await page.addInitScript(() => localStorage.clear());
-    await page.goto('/graph/?model=model-test');
-    await waitForLoading(page);
-    // Wait for both nodes connected by the edge to be positioned
+    await setupGraphPage(page);
     await waitForCyNode(page, 'comp-a');
     await waitForCyNode(page, 'comp-b');
     await waitForCyEdge(page, 'rel-1');
-
-    // Wait for initial layout animation to complete
     await page.waitForFunction(() => !globalThis.__layoutRunning);
 
-    // Select the edge by clicking on the midpoint between the two nodes
+    // Step 1: Click on the edge (midpoint between comp-a and comp-b)
     const posA = await getNodePos(page, 'comp-a');
     const posB = await getNodePos(page, 'comp-b');
-    const midX = (posA.x + posB.x) / 2;
-    const midY = (posA.y + posB.y) / 2;
-    await page.mouse.click(midX, midY);
+    await page.mouse.click((posA.x + posB.x) / 2, (posA.y + posB.y) / 2);
     await page.waitForTimeout(300);
 
     // Edge should be selected
-    const isSelected = await page.evaluate(() => {
-      const edge = globalThis.__cy.$id('rel-1');
-      return edge && edge.selected();
-    });
-    expect(isSelected).toBe(true);
+    const isEdgeSelected = await page.evaluate(() => globalThis.__cy.$id('rel-1').selected());
+    expect(isEdgeSelected).toBe(true);
+
+    // Properties panel should show edge details
+    await expect(page.locator('#detail-panel')).toBeVisible();
+
+    // Panel must include source and target entity names as clickable links
+    // Rel-1: comp-a (Component A) → comp-b (Component B), name 'calls'
+    const panelText = await page.locator('#detail-panel').textContent();
+    expect(panelText).toContain('Component A');
+    expect(panelText).toContain('Component B');
+
+    // Step 2: Click the source entity link — camera centers on source; edge deselected
+    await clickEdgeSourceLinkAndVerify(page);
+
+    // Step 3: Click a different edge — camera must NOT move
+    await waitForCyEdge(page, 'rel-db');
+    const posCompB = await getNodePos(page, 'comp-b');
+    const posDb = await getNodePos(page, 'db-1');
+    const panBefore = await page.evaluate(() => globalThis.__cy.pan());
+    await page.mouse.click((posCompB.x + posDb.x) / 2, (posCompB.y + posDb.y) / 2);
+    await page.waitForTimeout(300);
+    const panAfter = await page.evaluate(() => globalThis.__cy.pan());
+    expect(panAfter.x).toBeCloseTo(panBefore.x, 0);
+    expect(panAfter.y).toBeCloseTo(panBefore.y, 0);
+
+    // New edge is selected; properties panel updates
+    const isRelDbSelected = await page.evaluate(() => globalThis.__cy.$id('rel-db').selected());
+    expect(isRelDbSelected).toBe(true);
+    const updatedPanelText = await page.locator('#detail-panel').textContent();
+    expect(updatedPanelText).toContain('Component B');
+    expect(updatedPanelText).toContain('Database');
   });
 
   test('TC-2.5.3: Deselect by clicking canvas background', async ({ page }) => {
@@ -158,18 +217,37 @@ test.describe('TC-2.5: Selection', () => {
     // Wait for initial layout animation to complete
     await page.waitForFunction(() => !globalThis.__layoutRunning);
 
-    // Select node by clicking on it
+    // Select Node A by clicking on it
     const pos = await getNodePos(page, 'comp-a');
     await page.mouse.click(pos.x, pos.y);
     await page.waitForTimeout(300);
 
-    // Click related entity link in properties panel (first connection)
+    // Verify Node A is selected
+    const isCompAInitiallySelected = await page.evaluate(() =>
+      globalThis.__cy.$id('comp-a').selected(),
+    );
+    expect(isCompAInitiallySelected).toBe(true);
+
+    // Click related entity link in properties panel (first connection from comp-a → comp-b)
     await page.locator('#detail-panel .detail-conn-item').first().click();
     await page.waitForTimeout(300);
 
-    // Verify that the detail panel now shows details for the connected node (comp-b)
+    // Node A must lose its highlight (previous selection cleared)
+    const isCompASelected = await page.evaluate(() => globalThis.__cy.$id('comp-a').selected());
+    expect(isCompASelected).toBe(false);
+
+    // Node B becomes selected
+    const isCompBSelected = await page.evaluate(() => globalThis.__cy.$id('comp-b').selected());
+    expect(isCompBSelected).toBe(true);
+
+    // Only one node should be selected at a time
+    const selectedCount = await page.evaluate(
+      () => globalThis.__cy.nodes().filter((n) => n.selected()).length,
+    );
+    expect(selectedCount).toBe(1);
+
+    // Properties panel updates to show Node B's details
     const detailName = await page.locator('#detail-panel .detail-name').textContent();
-    // The first connection from comp-a is to comp-b, so name should be "Component B"
     expect(detailName).toBe('Component B');
   });
 

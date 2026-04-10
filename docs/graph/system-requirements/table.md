@@ -56,7 +56,9 @@ each.
 #### Steps
 
 1. Observe the "Entities" tab (active by default).
-   - The table displays columns for entity name, type, and associated properties.
+   - The table always displays columns for entity **Name** and **Type**.
+   - Additional columns are derived dynamically from the properties defined in the model metadata
+     for the currently visible entity types. Only properties present in the data are shown.
    - The row count indicates how many entities are visible relative to the total.
 2. Select the "Relationships" tab.
    - The table updates to show columns for source entity, relationship type, target entity, and
@@ -144,6 +146,8 @@ graph.
 
 1. Click on a row in the "Entities" table.
    - The system switches the view mode to "Graph".
+   - The `view` URL parameter is removed entirely (it must not appear as `view=` with an empty
+     value, nor as `view=graph`; its absence signals the default Graph view).
    - The corresponding node is selected and highlighted.
    - The camera performs a smooth centering animation on the selected node.
 
@@ -178,7 +182,7 @@ graph.
   - `pushState`: Used when switching between Graph and Table view modes.
   - `replaceState`: Used for table sorting adjustments.
 - **Navigation**: The smooth centering animation on the node uses the same camera logic as
-  property-panel navigation in SR-2.
+  Properties panel link navigation in SR-2.
 - **Performance**: For very large tables, virtual scrolling or pagination should be used to maintain
   60fps responsiveness.
 - **Data Refresh**: Switching tabs in the table view does not trigger a new API fetch if the model

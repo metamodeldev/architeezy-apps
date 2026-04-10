@@ -66,10 +66,45 @@ export function setVisRelCounts(counts) {
   _visRelCounts.value = counts;
 }
 
-// ── PLAIN STATE (not reactive) ────────────────────────────────────────────────
+// ── DISPLAY TOTALS (reactive signals, updated by GraphService) ────────────────
+//
+// In full-model mode these equal the full-model counts. In drill-down mode
+// GraphService switches them to in-scope counts so the component never needs
+// To know which mode it is in.
 
-let _elemTypeTotals = {};
-let _relTypeTotals = {};
+/**
+ * Element type totals for the current view context: full-model counts outside drill, scope counts
+ * inside drill. Updated by GraphService via {@link setElemTypeTotals}.
+ *
+ * @type {import('../signals').Signal<Record<string, number>>}
+ */
+const _elemTypeTotals = signal({});
+
+/**
+ * Relationship type totals for the current view context: full-model counts outside drill, scope
+ * counts inside drill. Updated by GraphService via {@link setRelTypeTotals}.
+ *
+ * @type {import('../signals').Signal<Record<string, number>>}
+ */
+const _relTypeTotals = signal({});
+
+/** @param {Record<string, number>} totals - Element type counts keyed by type name. */
+export function setElemTypeTotals(totals) {
+  _elemTypeTotals.value = totals;
+}
+
+/** @param {Record<string, number>} totals - Relationship type counts keyed by type name. */
+export function setRelTypeTotals(totals) {
+  _relTypeTotals.value = totals;
+}
+
+// ── FULL-MODEL TYPE REGISTRY (plain, stable across drill transitions) ─────────
+//
+// Used by persistence and "select all" so they always operate on the complete
+// Set of types in the loaded model, regardless of drill mode.
+
+let _fullModelElemTotals = {};
+let _fullModelRelTotals = {};
 
 // ── SELECTORS (immutable) ────────────────────────────────────────────────────
 
@@ -92,21 +127,24 @@ export function getActiveRelTypes() {
 }
 
 /**
- * Returns the element type counts (readonly).
+ * Returns the element type totals for the current view context (full model or drill scope).
+ * Reactive: reads the `_elemTypeTotals` signal so callers inside an `effect` or `computed` are
+ * automatically re-evaluated when totals switch between full-model and scope values.
  *
- * @returns {Object<string, number>} Element type counts object.
+ * @returns {Record<string, number>} Element type totals object.
  */
 export function getElemTypeTotals() {
-  return _elemTypeTotals;
+  return _elemTypeTotals.value;
 }
 
 /**
- * Returns the relationship type counts (readonly).
+ * Returns the relationship type totals for the current view context (full model or drill scope).
+ * Reactive: reads the `_relTypeTotals` signal.
  *
- * @returns {Object<string, number>} Relationship type counts object.
+ * @returns {Record<string, number>} Relationship type totals object.
  */
 export function getRelTypeTotals() {
-  return _relTypeTotals;
+  return _relTypeTotals.value;
 }
 
 // ── ACTIONS (state mutations) ────────────────────────────────────────────────
@@ -146,21 +184,24 @@ export function toggleRelType(type) {
 }
 
 /**
- * Sets all element types as active or inactive.
+ * Sets all element types as active or inactive. Always operates on the full-model type registry so
+ * that toggling "select all" in drill-down mode does not lose types that are outside the current
+ * scope.
  *
  * @param {boolean} active - True to activate all, false to deactivate all.
  */
 export function setAllElemTypes(active) {
-  _activeElemTypes.value = active ? new Set(Object.keys(_elemTypeTotals)) : new Set();
+  _activeElemTypes.value = active ? new Set(Object.keys(_fullModelElemTotals)) : new Set();
 }
 
 /**
- * Sets all relationship types as active or inactive.
+ * Sets all relationship types as active or inactive. Always operates on the full-model type
+ * registry.
  *
  * @param {boolean} active - True to activate all, false to deactivate all.
  */
 export function setAllRelTypes(active) {
-  _activeRelTypes.value = active ? new Set(Object.keys(_relTypeTotals)) : new Set();
+  _activeRelTypes.value = active ? new Set(Object.keys(_fullModelRelTotals)) : new Set();
 }
 
 /**
@@ -261,8 +302,10 @@ export function computeVisRelCounts({ allRelations, elemMap, activeElemTypes, dr
  */
 export function initializeFilterService(elements, relations) {
   const { elemTypeTotals, relTypeTotals } = computeFilterCounts(elements, relations);
-  _elemTypeTotals = elemTypeTotals;
-  _relTypeTotals = relTypeTotals;
+  _fullModelElemTotals = elemTypeTotals;
+  _fullModelRelTotals = relTypeTotals;
+  _elemTypeTotals.value = elemTypeTotals;
+  _relTypeTotals.value = relTypeTotals;
   _activeElemTypes.value = new Set(Object.keys(elemTypeTotals));
   _activeRelTypes.value = new Set(Object.keys(relTypeTotals));
   _showAllElem.value = false;
@@ -301,9 +344,10 @@ export function loadFilterStateFromStorage() {
   const hiddenE = new Set(saved.hiddenEntityTypes || []);
   const hiddenR = new Set(saved.hiddenRelationshipTypes || []);
 
-  // Restore active types: all types minus hidden
-  const allETypes = Object.keys(_elemTypeTotals);
-  const allRTypes = Object.keys(_relTypeTotals);
+  // Restore active types from full-model registry so types outside the current
+  // Drill scope are not lost.
+  const allETypes = Object.keys(_fullModelElemTotals);
+  const allRTypes = Object.keys(_fullModelRelTotals);
   _activeElemTypes.value = new Set(allETypes.filter((t) => !hiddenE.has(t)));
   _activeRelTypes.value = new Set(allRTypes.filter((t) => !hiddenR.has(t)));
 }
@@ -315,11 +359,12 @@ export function saveFilterStateToStorage() {
     return;
   }
 
-  // Compute hidden types from totals minus active
+  // Derive hidden types from the full-model registry so types outside the
+  // Current drill scope are included correctly.
   const activeE = _activeElemTypes.value;
   const activeR = _activeRelTypes.value;
-  const hiddenEntityTypes = Object.keys(_elemTypeTotals).filter((t) => !activeE.has(t));
-  const hiddenRelationshipTypes = Object.keys(_relTypeTotals).filter((t) => !activeR.has(t));
+  const hiddenEntityTypes = Object.keys(_fullModelElemTotals).filter((t) => !activeE.has(t));
+  const hiddenRelationshipTypes = Object.keys(_fullModelRelTotals).filter((t) => !activeR.has(t));
 
   const all = JSON.parse(localStorage.getItem('architeezyGraphFilter') ?? '{}');
   all[ns] = {

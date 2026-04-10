@@ -110,7 +110,7 @@ export function computeDrillBfs({
           reachable.add(neighborId);
         }
       }
-      if (containmentMode === 'compound') {
+      if (containmentMode === 'compound' || containmentMode === 'edge') {
         addCompoundNeighbors(nodeId, reachable);
       }
       for (const neighborId of reachable) {
@@ -168,7 +168,7 @@ export function computeDrillScopeIds({
           reachable.add(neighborId);
         }
       }
-      if (containmentMode === 'compound') {
+      if (containmentMode === 'compound' || containmentMode === 'edge') {
         const node = nodeById.get(nodeId);
         if (node?.parent) {
           reachable.add(node.parent);
@@ -201,7 +201,7 @@ export function computeDrillScopeIds({
  *   activeElemTypes: Set<string>;
  *   showAll: boolean;
  *   drillNodeId: string | undefined;
- *   drillScopeIds: Set<string> | undefined;
+ *   drillVisibleIds: Set<string> | undefined;
  *   highlightEnabled: boolean;
  *   highlightNodeId: string | undefined;
  * }} params
@@ -213,7 +213,7 @@ export function computeVisibleNodeIds({
   activeElemTypes,
   showAll,
   drillNodeId,
-  drillScopeIds,
+  drillVisibleIds,
   highlightEnabled,
   highlightNodeId,
 }) {
@@ -227,9 +227,9 @@ export function computeVisibleNodeIds({
     return new Set([...visibleFromFilter, highlightNodeId]);
   }
 
-  // 3. Режим drill: пересечение фильтра и scope
-  if (drillNodeId && drillScopeIds) {
-    return new Set([...visibleFromFilter].filter((id) => drillScopeIds.has(id)));
+  // 3. Режим drill: использовать drillVisibleIds напрямую (BFS уже учитывает тип-фильтр)
+  if (drillNodeId && drillVisibleIds) {
+    return drillVisibleIds;
   }
 
   // 4. Нормальный режим

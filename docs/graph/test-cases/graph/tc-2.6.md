@@ -204,3 +204,28 @@ depth) do not trigger a relayout."
 | ------------------------------ | ---------------------------------------- |
 | hide some neighbor nodes       | region shrinks to visible neighbors      |
 | show hidden nodes              | nodes added, opacity determined by depth |
+
+## TC-2.6.9: Highlight mode and dimming reset on model switch
+
+### Preconditions
+
+- Highlight mode is ON
+- A node is selected; some nodes and edges are visibly dimmed (35% / 15% opacity)
+
+### Steps
+
+1. Open the model selector and switch to a different model
+   - The new model loads
+   - Highlight toggle is now **OFF**
+   - All elements in the new model are rendered at 100% opacity (no dimming)
+   - The properties panel is cleared (no selection)
+2. Confirm the toggle state
+   - The Highlight toggle control appears in the inactive/off state
+   - Highlight mode reset on model switch; no residual dimming carried over
+
+### Test Data
+
+| State before model switch   | State after model switch    |
+| --------------------------- | --------------------------- |
+| Highlight ON, node selected | Highlight OFF, no selection |
+| Dimmed nodes at 35% opacity | All nodes at 100% opacity   |

@@ -11,7 +11,7 @@ const STRINGS = {
     themeLight: 'Light',
     themeSystem: 'System',
     introText:
-      '<strong>Architeezy Application Gallery</strong> is a collection of applications that extend Architeezy. Each one demonstrates a different way to work with architectural models: graph visualizations, tables, and more.<br><br>Build your own extensions using the Architeezy REST API. All source code is available on <a href="https://github.com/metamodeldev/architeezy-apps" target="_blank" rel="noopener">GitHub</a>.',
+      '<strong>Architeezy</strong> is a unified repository of architectural models for humans and AI agents.<br><br>The gallery showcases the platform\'s extensibility, such as visualizing data via graphs or tables. You can build your own tools using the <a href="https://architeezy.com/swagger-ui/index.html" target="_blank" rel="noopener">Architeezy REST API</a>. All source code is available on <a href="https://github.com/metamodeldev/architeezy-apps" target="_blank" rel="noopener">GitHub</a>.',
     apps: {
       graph: {
         name: 'Architeezy Graph',
@@ -29,7 +29,7 @@ const STRINGS = {
     themeLight: 'Светлая',
     themeSystem: 'Системная',
     introText:
-      '<strong>Галерея приложений Architeezy</strong> — это коллекция приложений, расширяющих Architeezy. Каждое демонстрирует свой подход к работе с архитектурными моделями: визуализация графов, таблицы и другие возможности.<br><br>Создавайте свои расширения, используя REST API Architeezy. Весь исходный код доступен на <a href="https://github.com/metamodeldev/architeezy-apps" target="_blank" rel="noopener">GitHub</a>.',
+      '<strong>Architeezy</strong> — это единый репозиторий архитектурных моделей для людей и ИИ-агентов.<br><br>Галерея демонстрирует возможности расширения платформы: например, визуализацию данных в виде графов или таблиц. Вы можете создавать собственные инструменты, используя <a href="https://architeezy.com/swagger-ui/index.html" target="_blank" rel="noopener">REST API Architeezy</a>. Весь исходный код приложений доступен на <a href="https://github.com/metamodeldev/architeezy-apps" target="_blank" rel="noopener">GitHub</a>.',
     apps: {
       graph: {
         name: 'Architeezy Graph',

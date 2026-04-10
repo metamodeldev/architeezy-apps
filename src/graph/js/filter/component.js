@@ -117,6 +117,7 @@ export function filterSearch(kind, query) {
 export function updateElemFilterDim(scopeCounts, showElem) {
   const searchInput = document.getElementById('elem-filter-search');
   const searchActive = searchInput?.value.trim();
+  const inDrillDown = scopeCounts !== undefined;
 
   for (const el of document.querySelectorAll('[data-kind="elem"]')) {
     const item = el.closest('.filter-item');
@@ -124,17 +125,19 @@ export function updateElemFilterDim(scopeCounts, showElem) {
       continue;
     }
     const type = item.dataset.type;
+    // GetElemTypeTotals() is reactive: returns full-model counts in normal mode, scope counts in
+    // Drill-down mode (GraphService switches the signal on enter/exit).
     const total = getElemTypeTotals()[type] ?? 0;
-    const available = scopeCounts ? (scopeCounts[type] ?? 0) : total;
+    const available = inDrillDown ? (scopeCounts[type] ?? 0) : total;
     const countEl = item.querySelector('.count');
     if (countEl) {
-      countEl.textContent =
-        scopeCounts && available !== total ? `${available} / ${total}` : `${total}`;
+      countEl.textContent = available !== total ? `${available} / ${total}` : `${total}`;
     }
-    const checked = el.checked;
     item.classList.toggle('dim', available === 0);
     if (!searchActive) {
-      item.classList.toggle('hidden', available === 0 && !checked && !showElem);
+      // Hide when total is 0 (type has no instances in the current scope).
+      // In full-model mode this never triggers (total equals full-model count > 0).
+      item.classList.toggle('hidden', total === 0 && !showElem);
     }
   }
 }
@@ -161,6 +164,7 @@ export function updateRelFilterCounts(visCounts, activeElemTypes, activeRelTypes
 
   const searchInput = document.getElementById('rel-filter-search');
   const searchActive = searchInput?.value.trim();
+  const inDrillDown = scopeElemCounts.value !== undefined;
 
   for (const el of document.querySelectorAll('[data-kind="rel"]')) {
     const item = el.closest('.filter-item');
@@ -168,15 +172,19 @@ export function updateRelFilterCounts(visCounts, activeElemTypes, activeRelTypes
       continue;
     }
     const type = item.dataset.type;
+    // GetRelTypeTotals() is reactive: returns full-model counts in normal mode, scope counts in
+    // Drill-down mode (GraphService switches the signal on enter/exit).
     const total = getRelTypeTotals()[type] ?? 0;
     const vis = counts[type] ?? 0;
     const countEl = item.querySelector('.count');
     if (countEl) {
       countEl.textContent = vis === total ? `${total}` : `${vis} / ${total}`;
     }
-    item.classList.toggle('dim', vis === 0 && activeRelTypes.has(type));
+    item.classList.toggle('dim', vis === 0);
     if (!searchActive) {
-      item.classList.toggle('hidden', vis === 0 && !activeRelTypes.has(type) && !showRel);
+      // In Full Model (no drill scope) rel types are never hidden — only dimmed.
+      // In Drill-down they are hidden when in-scope total = 0 (no edges of this type in scope).
+      item.classList.toggle('hidden', inDrillDown && total === 0 && !showRel);
     }
   }
 }

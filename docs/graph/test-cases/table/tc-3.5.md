@@ -8,24 +8,27 @@
 
 - Table view active, Entities tab
 - Table displays entities, row for entity "PaymentService" is visible
+- Current URL contains `view=table`
 
 ### Steps
 
 1. Click on the "PaymentService" row (anywhere except on a link if any)
    - View switches to Graph mode (Graph view becomes visible, Table hides)
-   - URL updates: `view=table` parameter is removed (graph is default, no parameter needed)
+   - URL is updated: the `view` parameter is **removed entirely**
+     - The resulting URL must **not** contain `view=graph`, `view=`, or any `view` key
+     - Absence of the `view` parameter signals the default Graph view
    - Graph renders (if not already)
    - Camera animates smoothly to center on the node representing "PaymentService"
    - That node becomes selected (highlighted)
    - Properties panel opens showing PaymentService details
-   - Graph view active
-   - Target node centered and selected
+2. Inspect the URL in the address bar
+   - Confirm `view` is absent: no `view=`, no `view=graph`, no trailing `&view`
 
 ### Test Data
 
-| Table row clicked  | Expected view | Expected camera action   | Selection               |
-| ------------------ | ------------- | ------------------------ | ----------------------- |
-| PaymentService row | Graph         | smooth centering on node | PaymentService selected |
+| Table row clicked  | Expected view | URL after navigation        | Selection               |
+| ------------------ | ------------- | --------------------------- | ----------------------- |
+| PaymentService row | Graph         | no `view` parameter present | PaymentService selected |
 
 ## TC-3.5.2: Navigation respects current filters (row may be hidden)
 

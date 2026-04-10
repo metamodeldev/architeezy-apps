@@ -83,6 +83,7 @@
   "env": {
     "browser": true
   },
+  "ignorePatterns": ["src/vendor"],
   "overrides": [
     {
       "files": ["*.test.js", "*.spec.js"],

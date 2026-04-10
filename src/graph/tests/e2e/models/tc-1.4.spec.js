@@ -123,7 +123,9 @@ test.describe('TC-1.4: Navigation', () => {
     await expect(page.locator('#current-model-name')).toHaveText('Chain Model');
   });
 
-  test('TC-1.4.5: Drill-down navigation adds a history entry', async ({ page }) => {
+  test('TC-1.4.5: Drill-down navigation adds a history entry; Back and Forward work correctly', async ({
+    page,
+  }) => {
     await injectCyCapture(page);
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
@@ -134,7 +136,7 @@ test.describe('TC-1.4: Navigation', () => {
 
     const initialLength = await page.evaluate(() => history.length);
 
-    // Trigger drill-down on first node
+    // Step 1: Enter drill-down via double-click — pushState adds a history entry
     await page.evaluate(() => {
       if (globalThis.__cy) {
         const node = globalThis.__cy.nodes().first();
@@ -144,13 +146,42 @@ test.describe('TC-1.4: Navigation', () => {
       }
     });
 
-    // URL should contain entity and depth params
+    // URL must contain drill-down parameters
     await expect(page).toHaveURL(/entity=/);
     await expect(page).toHaveURL(/depth=/);
 
-    // History should have increased (pushState used)
+    // History length must have increased
     const afterDrillLength = await page.evaluate(() => history.length);
     expect(afterDrillLength).toBeGreaterThan(initialLength);
+
+    // Capture drill-down URL for Forward verification
+    const drillUrl = page.url();
+
+    // Step 2: Click the Back button — drill-down mode exits, full model restored
+    await page.goBack();
+    await waitForLoading(page);
+
+    // Drill-down navigation bar should be hidden
+    await expect(page.locator('#crumb-entity-sep')).toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).toHaveClass(/hidden/);
+
+    // URL must no longer contain drill parameters
+    await expect(page).not.toHaveURL(/entity=/);
+
+    // Step 3: Click the Forward button — drill-down state must be restored
+    await page.goForward();
+    await waitForLoading(page);
+
+    // Drill-down mode must re-activate with the same root and depth
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+
+    // URL must restore the drill-down parameters
+    await expect(page).toHaveURL(/entity=/);
+    await expect(page).toHaveURL(/depth=/);
+
+    // Restored URL should match the original drill-down URL
+    expect(page.url()).toBe(drillUrl);
   });
 
   test('TC-1.4.6: URL always reflects the current application state', async ({ page }) => {

@@ -18,6 +18,7 @@ import { currentView, showDetail, switchView } from '../view/index.js';
 import {
   elementRowHtml,
   exportCsv,
+  extraColKeys,
   filteredElements,
   filteredRelations,
   getCurrentTab,
@@ -75,14 +76,12 @@ function updateExportButtonState() {
  * @param {HTMLElement} body - Table body element.
  */
 export function renderElemsTable(head, body) {
-  head.innerHTML = thHtml(
-    [t('colName'), t('colType'), t('colStatus'), t('colOwner')],
-    getSortCol(),
-    getSortAsc(),
-  );
+  const extraKeys = extraColKeys.value;
+  const extraLabels = extraKeys.map((k) => k.charAt(0).toUpperCase() + k.slice(1));
+  head.innerHTML = thHtml([t('colName'), t('colType'), ...extraLabels], getSortCol(), getSortAsc());
 
   const elements = filteredElements.value;
-  body.innerHTML = elements.map((element) => elementRowHtml(element)).join('');
+  body.innerHTML = elements.map((element) => elementRowHtml(element, extraKeys)).join('');
 }
 
 /**
@@ -134,7 +133,7 @@ export function switchTableTab(tab) {
 export function focusNode(id) {
   switchView('graph');
   resizeCy();
-  pushState({ view: '' });
+  pushState({ view: undefined });
   requestAnimationFrame(() => {
     if (focusCyNode(id)) {
       showDetail(id);

@@ -210,6 +210,9 @@ export function setLegendEnabled(enabled) {
   }
   if (enabled) {
     el.classList.remove('hidden');
+    const { x: rawX, y: rawY } = loadPosition();
+    const { x, y } = clampToParent(el, rawX, rawY);
+    applyPosition(el, x, y);
     updateLegend();
   } else {
     el.classList.add('hidden');

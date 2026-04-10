@@ -20,12 +20,16 @@ layers of the architecture.
 
 1. Open the filtering panel.
    - Two lists are displayed: "Entities" and "Relationships", with checkboxes for each type.
-   - Each type displays an "Available / Total" count.
+   - Each type displays an "Available / Total" count, or only one number if they are the same.
 2. Uncheck an entity type.
    - All nodes of that type and their associated relationships disappear from the view.
-   - The "Available" count for the unchecked entity type remains unchanged.
+   - The "Available" counts for other types are recalculated based on reachability and visibility.
 3. Uncheck a relationship type.
-   - All edges of that type disappear, while the connected nodes remain visible.
+   - All edges of that type disappear, while the connected nodes remain visible (unless they become
+     unreachable in Drill-down mode, in which case they also disappear from the canvas).
+   - In Drill-down mode, the **total counts** for entity types are not affected — total count is
+     always computed ignoring current filter settings. Only the **available counts** may decrease
+     for entity types whose reachability paths are broken by the disabled relationship type.
 
 ### SR-4.2: Bulk actions
 
@@ -46,8 +50,6 @@ As a user, I want to reset the visibility of all entities or all relationships w
    - All entity checkboxes become unchecked; the graph becomes empty (except for the Drill-down
      root).
    - The "Available" counts for all relationship types drop to 0.
-   - Relationship types that were unchecked disappear from the list; those that were checked become
-     dimmed (grayed out).
 2. Click "Check all" in the Entities section.
    - All entity types become checked and visible on the canvas.
    - The "Available" counts for relationship types are restored.
@@ -77,13 +79,10 @@ drill-down scope.
 
 1. Uncheck an entity type that is a mandatory endpoint for a specific relationship type.
    - The available count for that relationship type drops to 0.
-   - If the relationship type was unchecked, it disappears from the list; if it was checked, it
-     remains visible but dimmed.
 2. Activate Drill-down mode on a specific node.
-   - Types that do not exist within the current drill-down scope disappear from the filter lists (if
-     unchecked).
-   - Types that do not exist in the scope but are currently **checked** remain visible in the list
-     but are displayed as dimmed with a 0 count.
+   - Types that do not exist within the current drill-down scope (total count = 0) disappear from
+     the filter lists, regardless of their checked state (unless "Show all" is enabled or a search
+     query is active within the filter list).
    - Types that exist in the scope but are **unchecked** remain visible as normal unchecked items
      with their available count.
 
@@ -125,34 +124,46 @@ The system allows finding and enabling types that are currently hidden from the 
 
 #### User Story
 
-As a user, I want to find and enable a type that is hidden because it has no available elements in
-the current scope.
+As a user, I want to find and enable a type that is hidden because it has no elements in the current
+scope.
 
 #### Steps
 
 1. Enter a query into the search field within a filter list.
    - The list updates to show matching types, including those that are currently hidden (with a 0
-     available count).
+     total count).
 2. Activate the "Show all" switch next to the search field.
    - The list expands to show every type present in the model metadata.
-3. Check a dimmed type with a 0 available count.
-   - The type is now "pinned" to the list (it will stay visible even after search is cleared),
-     although no elements appear on the canvas until the scope changes.
+3. Check a dimmed type with a 0 total count.
+   - The checkbox state changes: the type is now enabled and will appear on the canvas when the
+     scope changes to include elements of that type.
+   - Once the search is cleared or "Show all" is turned off, the type disappears from the list again
+     (total count remains 0).
 
 ## Business Rules
 
-- **Available Count Definition**: The number of elements of a type that satisfy current spatial
-  (Drill-down) and dependency (endpoint visibility) constraints, **regardless of whether the type is
-  currently enabled in the filter**. In Drill-down mode, the spatial scope includes all elements
-  reachable within the depth limit, following active relationship types and containment edges,
-  **ignoring entity type filters**.
-- **Dependency Rule**: The "Available Count" for a relationship type is 0 if any of its mandatory
-  endpoint entity types are **unchecked** in the filter.
-- **Dynamic Hiding Rule**:
-  - A type is automatically hidden from the filter list if its "Available Count" is 0 AND its
-    checkbox is unchecked.
-  - If a type's checkbox is **checked**, it is never hidden from the list, even if its count is 0
-    (it becomes dimmed instead).
+- **Available / Total Count Definition**:
+  - **Total Count**:
+    - For **Entities (Full Model)**: The total number of objects of this type in the entire model.
+    - For **Entities (Drill-down)**: The number of objects of this type connected to the current
+      root within the specified depth, **ignoring current filter settings**.
+    - For **Relationships (Full Model)**: The total number of relationships of this type in the
+      model.
+    - For **Relationships (Drill-down)**: The number of relationships of this type reachable from
+      the root within the current scope, **ignoring current filter settings**.
+  - **Available Count**:
+    - For **Entities (Full Model)**: Always matches the Total count.
+    - For **Entities (Drill-down)**: The number of objects reachable from the root, considering that
+      disabled entity or relationship types break the reachability path.
+    - For **Relationships (Full Model)**: The number of relationships of this type existing between
+      currently visible (checked) objects.
+    - For **Relationships (Drill-down)**: The number of relationships reachable and active given the
+      current filter state.
+- **Dynamic Hiding Rule**: A type is shown in the filter list if and only if at least one of the
+  following conditions is true:
+  - Its "Total Count" is greater than 0.
+  - The "Show all" toggle is enabled.
+  - Its name matches the active search query within the filter list.
 - **URL Parameter Policy**:
   - If all types of a category (Entities or Relationships) are checked, no corresponding parameter
     is added to the URL.
@@ -189,5 +200,5 @@ the current scope.
   (re-rendering only matched rows).
 - **Performance**: Graph visibility is managed by the rendering engine's display flags.
 - **Storage**: Uses `localStorage`, keyed by the model type identifier.
-- **BFS Consistency**: Filter counters in Drill-down mode use the same BFS algorithm as the Graph
-  view.
+- **BFS Consistency**: Filter counters and reachability in Drill-down mode use the same BFS
+  algorithm as the Graph view.

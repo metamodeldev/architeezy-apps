@@ -49,14 +49,14 @@
 }
 
 .detail-conn-item {
-  background: var(--surface2);
+  background: var(--bg);
   border-radius: 5px;
   padding: 5px 8px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   cursor: pointer;
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
 }
 
 .detail-conn-item:hover {
@@ -71,4 +71,19 @@
 .detail-conn-item .conn-rel {
   font-size: 0.7rem;
   color: var(--text-muted);
+}
+
+.detail-edge-entity {
+  background: var(--bg);
+  border-radius: 5px;
+  padding: 5px 8px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+}
+
+.detail-edge-entity:hover {
+  border-color: var(--accent);
 }

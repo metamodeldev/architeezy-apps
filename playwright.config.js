@@ -4,12 +4,12 @@ import { defineConfig } from '@playwright/test';
 export default defineConfig({
   testMatch: '**/tests/e2e/**/*.spec.js',
   timeout: 15_000,
-  retries: 1,
+  retries: 0,
   use: {
     baseURL: 'http://localhost:4200',
   },
   reporter: [
-    ['list'],
+    ['line'],
     [
       'monocart-reporter',
       {

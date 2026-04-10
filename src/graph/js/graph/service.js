@@ -10,18 +10,21 @@
 
 import { consumeSkipLayoutSave, drillDepth, drillNodeId } from '../drill/index.js';
 import {
+  computeFilterCounts,
   computeVisRelCounts,
   getActiveElemTypes,
   getActiveRelTypes,
+  setElemTypeTotals,
+  setRelTypeTotals,
   setScopeElemCounts,
   setVisRelCounts,
   showAllElem,
 } from '../filter/index.js';
-import { getHighlightEnabled } from '../highlight/index.js';
-import { getElemMap, getElements, getRelations, getStatus } from '../model/index.js';
+import { getHighlightEnabled, setHighlightEnabled } from '../highlight/index.js';
+import { getElemMap, getElements, getId, getRelations, getStatus } from '../model/index.js';
 import { elemColor, relColor } from '../palette.js';
 import { selectedNodeId, setSelectedNodeId } from '../selection/index.js';
-import { computed, effect, signal } from '../signals/index.js';
+import { computed, effect, signal, untrack } from '../signals/index.js';
 import { createCytoscapeInstance } from './builder.js';
 import { getContainmentMode } from './containment.js';
 import { applyLayout, stopLayout, updateStats } from './controls.js';
@@ -44,7 +47,31 @@ import {
 
 // ============ DRILL COMPUTED ============
 
-/** Set of all node IDs reachable from drill root (ignores elem type filter). */
+/**
+ * Set of all node IDs reachable from drill root ignoring ALL filters (elem type and rel type). Used
+ * for computing scope totals that must not change when filters are toggled.
+ */
+const _drillFullScopeIds = computed(() => {
+  const nodeId = drillNodeId.value;
+  if (!nodeId) {
+    return;
+  }
+  const edges = getRelations();
+  const allRelTypes = new Set(edges.map((e) => e.type));
+  return computeDrillScopeIds({
+    rootId: nodeId,
+    drillDepth: drillDepth.value,
+    nodes: getElements(),
+    edges,
+    activeRelTypes: allRelTypes,
+    containmentMode: getContainmentMode(),
+  });
+});
+
+/**
+ * Set of all node IDs reachable from drill root (ignores elem type filter, respects rel type
+ * filter).
+ */
 export const drillScopeIds = computed(() => {
   const nodeId = drillNodeId.value;
   if (!nodeId) {
@@ -84,15 +111,41 @@ export const drillVisibleIds = computed(() => {
  * Pushed into filter/service.js via setScopeElemCounts so filter doesn't need to import graph.
  */
 const _scopeElemCounts = computed(() => {
-  const scopeIds = drillScopeIds.value;
-  if (!scopeIds) {
+  const nodeId = drillNodeId.value;
+  if (!nodeId) {
     return;
   }
+  const activeElemTypes = getActiveElemTypes();
+  const activeRelTypes = getActiveRelTypes();
+  const nodes = getElements();
+  const edges = getRelations();
+  const depth = drillDepth.value;
+  const containmentMode = getContainmentMode();
+  const nodeById = new Map(nodes.map((n) => [n.id, n]));
+  const allTypes = new Set(nodes.map((n) => n.type));
+
+  // For each element type T, compute the available count as:
+  // How many T-type elements are reachable from the drill root when T is always treated as
+  // Active (a type's own checkbox does not block BFS traversal for its own count).
   const counts = {};
-  for (const e of getElements()) {
-    if (scopeIds.has(e.id)) {
-      counts[e.type] = (counts[e.type] ?? 0) + 1;
+  for (const type of allTypes) {
+    const activeTypesForBfs = new Set([...activeElemTypes, type]);
+    const { visibleIds } = computeDrillBfs({
+      rootId: nodeId,
+      drillDepth: depth,
+      nodes,
+      edges,
+      activeElemTypes: activeTypesForBfs,
+      activeRelTypes,
+      containmentMode,
+    });
+    let count = 0;
+    for (const id of visibleIds) {
+      if (nodeById.get(id)?.type === type) {
+        count++;
+      }
     }
+    counts[type] = count;
   }
   return counts;
 });
@@ -110,6 +163,25 @@ const _visRelCounts = computed(() =>
   }),
 );
 
+/**
+ * Element and relationship type totals for the current view context. In full-model mode returns the
+ * full-model counts; in drill-down mode returns counts for the spatial scope (ignoring all
+ * filters). Pushed into filter/service.js via setElemTypeTotals / setRelTypeTotals so the filter
+ * component always reads from a single unified source.
+ */
+const _currentTypeTotals = computed(() => {
+  const nodeId = drillNodeId.value;
+  const nodes = getElements();
+  const edges = getRelations();
+  if (!nodeId) {
+    return computeFilterCounts(nodes, edges);
+  }
+  const fullScopeIds = _drillFullScopeIds.value ?? new Set();
+  const scopeNodes = nodes.filter((n) => fullScopeIds.has(n.id));
+  const scopeEdges = edges.filter((r) => fullScopeIds.has(r.source) && fullScopeIds.has(r.target));
+  return computeFilterCounts(scopeNodes, scopeEdges);
+});
+
 // ============ PRIVATE COMPUTED ============
 
 /** Set of node IDs that are currently visible (passed through filters). */
@@ -118,7 +190,7 @@ const _visibleNodeIds = computed(() => {
   const activeElemTypes = getActiveElemTypes();
   const showAll = showAllElem.value;
   const drillNodeIdVal = drillNodeId.value;
-  const drillScopeIdsVal = drillScopeIds.value ?? new Set();
+  const drillVisibleIdsVal = drillVisibleIds.value;
   const highlightEnabled = getHighlightEnabled();
   // Use selectedNodeId as highlight anchor only when highlight is on and not in drill mode.
   const highlightNodeId = highlightEnabled && !drillNodeIdVal ? selectedNodeId.value : undefined;
@@ -128,7 +200,7 @@ const _visibleNodeIds = computed(() => {
     activeElemTypes,
     showAll,
     drillNodeId: drillNodeIdVal,
-    drillScopeIds: drillScopeIdsVal,
+    drillVisibleIds: drillVisibleIdsVal,
     highlightEnabled,
     highlightNodeId,
   });
@@ -316,6 +388,37 @@ export function buildCytoscape({
 
 // ============ PRIVATE EFFECT FACTORIES ============
 
+function handleDrillEnter(nodeId, loaded) {
+  setSelectedNodeId(undefined);
+  if (!consumeSkipLayoutSave()) {
+    saveLayoutState();
+  }
+  if (loaded) {
+    setDrillRootNode(nodeId);
+    updateStats(getElements(), getRelations());
+    untrack(applyGraphDisplayState);
+    applyLayout({ preserveViewport: false });
+  }
+}
+
+function handleDrillExit() {
+  clearDrillRootNodes();
+  stopLayout();
+  if (!restoreLayoutState()) {
+    untrack(applyGraphDisplayState);
+    applyLayout();
+  }
+}
+
+function handleDrillNodeChange(nodeId, loaded) {
+  clearDrillRootNodes();
+  if (loaded) {
+    setDrillRootNode(nodeId);
+  }
+  untrack(applyGraphDisplayState);
+  applyLayout({ preserveViewport: false });
+}
+
 function setupDrillTransitionEffect() {
   let prevDrillNodeId;
   let prevLoaded = false;
@@ -330,34 +433,20 @@ function setupDrillTransitionEffect() {
     const graphJustLoaded = loaded && !prevLoaded;
 
     if (justEntered) {
-      setSelectedNodeId(undefined);
-      if (!consumeSkipLayoutSave()) {
-        saveLayoutState();
-      }
-      if (loaded) {
-        setDrillRootNode(nodeId);
-        updateStats(getElements(), getRelations());
-        applyLayout({ preserveViewport: false });
-      }
+      handleDrillEnter(nodeId, loaded);
     } else if (justExited) {
-      clearDrillRootNodes();
-      stopLayout();
-      if (!restoreLayoutState()) {
-        applyLayout();
-      }
+      handleDrillExit();
     } else if (changedNode) {
-      clearDrillRootNodes();
-      if (loaded) {
-        setDrillRootNode(nodeId);
-      }
-      applyLayout({ preserveViewport: false });
+      handleDrillNodeChange(nodeId, loaded);
     } else if (nodeId && graphJustLoaded) {
       // Graph became ready while already in drill (URL-restore scenario)
       setDrillRootNode(nodeId);
       updateStats(getElements(), getRelations());
+      untrack(applyGraphDisplayState);
       applyLayout({ preserveViewport: false });
     } else if (nodeId && depth !== undefined) {
       // Depth changed while in drill
+      untrack(applyGraphDisplayState);
       applyLayout({ preserveViewport: false });
     }
 
@@ -377,13 +466,14 @@ export function initializeGraphService() {
   }
   _initialized = true;
 
+  let prevModelId;
+
   _effects.push(
     /** Effect: Rebuild cytoscape graph when model status changes to 'loaded'. */
     effect(() => {
       const status = getStatus();
-      const mode = getContainmentMode();
       if (status === 'loaded') {
-        rebuildGraph(mode);
+        rebuildGraph(untrack(getContainmentMode));
       }
     }),
 
@@ -399,6 +489,8 @@ export function initializeGraphService() {
       const mode = getContainmentMode();
       if (isGraphLoaded() && getStatus() === 'loaded') {
         rebuildGraph(mode);
+        untrack(applyGraphDisplayState);
+        applyLayout();
       }
     }),
 
@@ -410,9 +502,26 @@ export function initializeGraphService() {
       setScopeElemCounts(_scopeElemCounts.value);
     }),
 
+    // Effect: Push current-context type totals (full model or drill scope) into filter.
+    effect(() => {
+      const { elemTypeTotals, relTypeTotals } = _currentTypeTotals.value;
+      setElemTypeTotals(elemTypeTotals);
+      setRelTypeTotals(relTypeTotals);
+    }),
+
     // Effect: Push visible relationship counts into filter.
     effect(() => {
       setVisRelCounts(_visRelCounts.value);
+    }),
+
+    // Effect: Reset highlight and selection when switching to a different model.
+    effect(() => {
+      const modelId = getId();
+      if (modelId !== undefined && prevModelId !== undefined && modelId !== prevModelId) {
+        setHighlightEnabled(false);
+        setSelectedNodeId(undefined);
+      }
+      prevModelId = modelId;
     }),
   );
 }

@@ -65,8 +65,9 @@ relationship type.
 
 #### Edge Cases
 
-- **Out of Bounds**: If the canvas is resized, the system ensures the legend remains within the
-  visible boundaries.
+- **Out of Bounds**: The system ensures the legend remains within the visible boundaries both when
+  the canvas is resized and when the legend is first enabled. If the saved position would place the
+  legend outside the current viewport, the system adjusts it to the nearest valid position.
 
 ### SR-2.3: Navigation
 
@@ -147,8 +148,12 @@ As a user, I want to select an element to see its properties and navigate to rel
 
 1. Select a node or an edge on the canvas.
    - The element receives a visual highlight and the properties panel opens.
+   - For a **node**: the panel displays entity name, type, and its attributes.
+   - For an **edge**: the panel displays the relationship name (if available), relationship type, a
+     clickable link to the source entity, and a clickable link to the target entity.
 2. Select a related entity link within the properties panel.
-   - The system updates the selection and performs a smooth centering animation on the target node.
+   - The system **replaces** the current selection: the previously selected element loses its
+     highlight and the new element becomes selected.
 3. Deselect the element by clicking the canvas background.
    - The highlight is removed and the properties panel clears.
 
@@ -250,9 +255,12 @@ As a user, I want to choose how physical containment is visualized: as edges or 
   (Composition/Parent-Child), distinct from standard relationships.
 - **Relayout Policy**: The system recalculates the layout whenever the set of **visible** entities
   or relationships changes (e.g., changing filters, containment modes, or entering/exiting
-  Drill-down).
+  Drill-down). The layout algorithm operates exclusively on currently visible nodes and edges;
+  hidden elements do not influence positioning.
 - **Highlight Exception**: Changes in the Highlight scope (including depth) **do not** trigger a
   relayout.
+- **Highlight Reset**: Switching to a different model resets the Highlight mode: the toggle turns
+  off and all dimming is removed.
 - **Neighborhood Logic**: Relationships between nodes at the same distance level $N$ from the root
   are hidden. They are only displayed if the exploration depth is increased to $N+1$.
 - **Depth Limit**: The maximum exploration depth for Drill-down and Highlight modes is 5 levels.
@@ -260,9 +268,21 @@ As a user, I want to choose how physical containment is visualized: as edges or 
   across all models.
 - **Reset Trigger**: The application name in the header (accompanied by a dropdown/switch icon) acts
   as the trigger for model switching and exits any active Drill-down mode.
-- **Navigation Sync**: Selecting a record in the Table view or a link in the Properties panel
-  triggers a smooth centering animation on the corresponding node. Standard clicks on the canvas
-  background or nodes do not move the camera.
+- **Navigation Sync**: Selecting a record in the Table view or clicking a link in the Properties
+  panel triggers a smooth centering animation on the corresponding node. Direct clicks on nodes,
+  edges, or the canvas background do not move the camera.
+- **Drill-down Root Change**: In Drill-down mode, changing the root node — either by double-clicking
+  a node within the drill-down scope or by clicking a related entity link in the Properties panel —
+  recalculates the scope from the new root at the **current exploration depth**. The depth is
+  preserved and is not reset. The layout is reapplied to the new visible subgraph. This action uses
+  `replaceState`.
+- **Drill-down Connectivity**: In Drill-down mode, only nodes reachable from the root via visible
+  relationship types are shown. When a filter change hides an intermediate node or relationship, any
+  node that becomes disconnected from the root is also hidden (dangling nodes are not displayed).
+- **Model Switch Exits Drill-down**: When the user selects a different model while Drill-down mode
+  is active, the system automatically exits Drill-down mode. The new model is displayed in the
+  standard full model view. Drill-down state (root entity and depth) is not carried over to the new
+  model.
 
 ## UI/UX Functional Details
 
