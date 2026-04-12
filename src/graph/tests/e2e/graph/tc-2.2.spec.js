@@ -47,14 +47,21 @@ test.describe('TC-2.2: Legend', () => {
     const legendToggle = page.locator('#legend-toggle');
     await expect(legendToggle).toBeVisible();
 
-    const initialState = await legendToggle.isChecked();
+    // Ensure known start state: legend off
+    await legendToggle.uncheck();
+    // Turn legend on
     await legendToggle.click();
-    const newState = await legendToggle.isChecked();
-    expect(newState).toBe(!initialState);
+    expect(await legendToggle.isChecked()).toBe(true);
 
-    // Verify legend panel visibility matches toggle state
+    // Legend panel should be visible (not hidden) when toggle is on
     const legend = page.locator('#graph-legend');
-    await expect(legend)[newState ? 'not' : ''].toHaveClass(/hidden/);
+    await expect(legend).not.toHaveClass(/hidden/);
+
+    // Turn legend off
+    await legendToggle.click();
+    expect(await legendToggle.isChecked()).toBe(false);
+    // Legend panel should be hidden when toggle is off
+    await expect(legend).toHaveClass(/hidden/);
   });
 
   test('TC-2.2.2: Legend lists only types currently visible', async ({ page }) => {
@@ -118,7 +125,8 @@ test.describe('TC-2.2: Legend', () => {
 
     const newBox = await legend.boundingBox();
     // Position should have changed (either x or y)
-    expect(newBox.x !== initialBox.x || newBox.y !== initialBox.y).toBeTruthy();
+    const moved = Math.abs(newBox.x - initialBox.x) + Math.abs(newBox.y - initialBox.y);
+    expect(moved).toBeGreaterThan(0);
   });
 
   test('TC-2.2.5: Legend updates on filter changes (removes hidden types)', async ({ page }) => {
@@ -152,11 +160,10 @@ test.describe('TC-2.2: Legend', () => {
     await page.waitForTimeout(200);
 
     const relSection = page.locator('.legend-section-label:has-text("Relationships")');
-    if (await relSection.isVisible()) {
-      const relEntries = page.locator('.legend-row[data-kind="rel"]');
-      const count = await relEntries.count();
-      expect(count).toBeGreaterThan(0);
-    }
+    await expect(relSection).toBeVisible();
+    const relEntries = page.locator('.legend-row[data-kind="rel"]');
+    const count = await relEntries.count();
+    expect(count).toBeGreaterThan(0);
   });
 
   test('TC-2.2.7: Canvas resize keeps legend within bounds', async ({ page }) => {

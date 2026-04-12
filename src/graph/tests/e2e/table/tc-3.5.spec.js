@@ -52,6 +52,61 @@ async function waitForNodeSelected(page, nodeId) {
   }, nodeId);
 }
 
+// Wait until the specified node is centered within the viewport (within 100px of center)
+async function waitForNodeCentered(page, nodeId) {
+  await page.waitForFunction((id) => {
+    if (!globalThis.__cy) {
+      return false;
+    }
+    const node = globalThis.__cy.$id(id);
+    if (!node.length) {
+      return false;
+    }
+    if (!node.selected()) {
+      return false;
+    }
+    const pos = node.renderedPosition();
+    if (!pos) {
+      return false;
+    }
+    const nodeCenterX = pos.x + node.outerWidth() / 2;
+    const nodeCenterY = pos.y + node.outerHeight() / 2;
+    const cyEl = document.getElementById('cy');
+    if (!cyEl) {
+      return false;
+    }
+    const rect = cyEl.getBoundingClientRect();
+    return Math.hypot(nodeCenterX - rect.width / 2, nodeCenterY - rect.height / 2) < 100;
+  }, nodeId);
+}
+
+// Wait until the specified node is fully within the viewport (50px margin)
+async function waitForNodeInViewport(page, nodeId) {
+  await page.waitForFunction((id) => {
+    if (!globalThis.__cy) {
+      return false;
+    }
+    const node = globalThis.__cy.$id(id);
+    if (!node.length) {
+      return false;
+    }
+    const pos = node.renderedPosition();
+    if (!pos) {
+      return false;
+    }
+    const w = node.outerWidth();
+    const h = node.outerHeight();
+    const cyEl = document.getElementById('cy');
+    if (!cyEl) {
+      return false;
+    }
+    const rect = cyEl.getBoundingClientRect();
+    return (
+      pos.x >= 50 && pos.y >= 50 && pos.x + w <= rect.width - 50 && pos.y + h <= rect.height - 50
+    );
+  }, nodeId);
+}
+
 test.describe('TC-3.5: Graph navigation', () => {
   test.beforeEach(async ({ page }) => {
     await mockApi(page);
@@ -92,7 +147,7 @@ test.describe('TC-3.5: Graph navigation', () => {
 
     // Verify selected node
     const selectedNode = await page.evaluate(() =>
-      globalThis.__cy ? globalThis.__cy.$('node:selected').first().data('id') : null,
+      globalThis.__cy.$('node:selected').first().data('id'),
     );
     expect(selectedNode).toBe(rowEntity);
 
@@ -132,13 +187,10 @@ test.describe('TC-3.5: Graph navigation', () => {
 
     // Graph should show only Microservices (filter still active)
     // Check that selected node is a Microservice
-    const nodeType = await page.evaluate((nodeId) => {
-      if (!globalThis.__cy) {
-        return null;
-      }
-      const node = globalThis.__cy.$id(nodeId);
-      return node ? node.data('type') : null;
-    }, firstRowId);
+    const nodeType = await page.evaluate(
+      (nodeId) => globalThis.__cy.$id(nodeId).data('type'),
+      firstRowId,
+    );
     expect(nodeType).toBe('Microservice');
 
     // Filter parameter should remain in URL
@@ -199,13 +251,7 @@ test.describe('TC-3.5: Graph navigation', () => {
     await waitForNodeSelected(page, relId);
 
     // Verify that the node is selected (source node from relationship row)
-    const isSelected = await page.evaluate((id) => {
-      if (!globalThis.__cy) {
-        return false;
-      }
-      const node = globalThis.__cy.$id(id);
-      return node && node.length && node.isNode() && node.selected();
-    }, relId);
+    const isSelected = await page.evaluate((id) => globalThis.__cy.$id(id).selected(), relId);
     expect(isSelected).toBe(true);
   });
 
@@ -232,9 +278,7 @@ test.describe('TC-3.5: Graph navigation', () => {
 
     // Pan away to make animation necessary
     await page.evaluate(() => {
-      if (globalThis.__cy) {
-        globalThis.__cy.panBy(800, 600);
-      }
+      globalThis.__cy.panBy(800, 600);
     });
     // Wait for pan to settle
     await page.waitForTimeout(200);
@@ -253,37 +297,7 @@ test.describe('TC-3.5: Graph navigation', () => {
     await waitForCyNode(page, rowId);
 
     // Wait for node to be centered (node's center near viewport center)
-    await page.waitForFunction((id) => {
-      if (!globalThis.__cy) {
-        return false;
-      }
-      const node = globalThis.__cy.$id(id);
-      if (!node.length) {
-        return false;
-      }
-      if (!node.selected()) {
-        return false;
-      }
-      // Compute node center from rendered top-left and dimensions
-      const pos = node.renderedPosition();
-      if (!pos) {
-        return false;
-      }
-      const w = node.outerWidth();
-      const h = node.outerHeight();
-      const nodeCenterX = pos.x + w / 2;
-      const nodeCenterY = pos.y + h / 2;
-      // Get container dimensions
-      const cyEl = document.getElementById('cy');
-      if (!cyEl) {
-        return false;
-      }
-      const rect = cyEl.getBoundingClientRect();
-      const containerCenterX = rect.width / 2;
-      const containerCenterY = rect.height / 2;
-      const dist = Math.hypot(nodeCenterX - containerCenterX, nodeCenterY - containerCenterY);
-      return dist < 100; // Within 100px of center
-    }, rowId);
+    await waitForNodeCentered(page, rowId);
 
     const duration = Date.now() - startTime;
 
@@ -309,9 +323,7 @@ test.describe('TC-3.5: Graph navigation', () => {
 
     // Pan far away (ensure node is off-screen)
     await page.evaluate(() => {
-      if (globalThis.__cy) {
-        globalThis.__cy.panBy(1000, 1000);
-      }
+      globalThis.__cy.panBy(1000, 1000);
     });
     await page.waitForTimeout(200);
 
@@ -324,48 +336,18 @@ test.describe('TC-3.5: Graph navigation', () => {
     await expect(page.locator('#cy')).toBeVisible();
 
     // Wait for node to be fully within viewport (entire node inside with margin)
-    await page.waitForFunction((id) => {
-      if (!globalThis.__cy) {
-        return false;
-      }
-      const node = globalThis.__cy.$id(id);
-      if (!node.length) {
-        return false;
-      }
-      // Get node rendered top-left and dimensions
-      const pos = node.renderedPosition();
-      if (!pos) {
-        return false;
-      }
-      const w = node.outerWidth();
-      const h = node.outerHeight();
-      // Get container dimensions
-      const cyEl = document.getElementById('cy');
-      if (!cyEl) {
-        return false;
-      }
-      const rect = cyEl.getBoundingClientRect();
-      // Node should be fully inside with at least 50px margin
-      return (
-        pos.x >= 50 && pos.y >= 50 && pos.x + w <= rect.width - 50 && pos.y + h <= rect.height - 50
-      );
-    }, rowId);
+    await waitForNodeInViewport(page, rowId);
 
     // Verify node position properties (optional detailed check)
     const pos = await page.evaluate((id) => {
       const node = globalThis.__cy.$id(id);
-      if (!node) {
-        return null;
-      }
-      const rendered = node.renderedPosition ? node.renderedPosition() : node.position();
+      const rendered = node.renderedPosition();
       return { x: rendered.x, y: rendered.y };
     }, rowId);
 
-    if (pos) {
-      // Node should be within viewport bounds (> 50px from edges as checked above)
-      expect(pos.x).toBeGreaterThan(50);
-      expect(pos.y).toBeGreaterThan(50);
-    }
+    // Node should be within viewport bounds (> 50px from edges as checked above)
+    expect(pos.x).toBeGreaterThan(50);
+    expect(pos.y).toBeGreaterThan(50);
   });
 
   test('TC-3.5.7: Navigation does not change current filters or drill-down', async ({ page }) => {

@@ -44,11 +44,7 @@ test.describe('TC-5.2: Relationship table export', () => {
     // Should only include AssociationRelationship rows
     const lines = csvText.trim().split('\n');
     // Header line may be: Source,Relationship type,Target,Name
-    for (let i = 1; i < lines.length; i++) {
-      const row = lines[i].trim();
-      if (!row) {
-        continue;
-      }
+    for (const row of lines.slice(1).filter((l) => l.trim())) {
       const cols = row.split(',');
       // Relationship type column is index 1
       const relType = cols[1]?.trim();

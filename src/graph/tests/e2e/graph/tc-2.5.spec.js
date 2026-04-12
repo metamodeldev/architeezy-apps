@@ -98,10 +98,7 @@ test.describe('TC-2.5: Selection', () => {
     await page.waitForTimeout(300);
 
     // Node should be highlighted
-    const isSelected = await page.evaluate(() => {
-      const node = globalThis.__cy.$id('comp-a');
-      return node && node.selected();
-    });
+    const isSelected = await page.evaluate(() => globalThis.__cy.$id('comp-a').selected());
     expect(isSelected).toBe(true);
 
     // Properties panel should open
@@ -198,11 +195,9 @@ test.describe('TC-2.5: Selection', () => {
     await page.waitForTimeout(200);
 
     // Selection should be cleared
-    const hasSelection = await page.evaluate(() => {
-      const nodesSelected = globalThis.__cy.nodes().some((n) => n.selected());
-      const edgesSelected = globalThis.__cy.edges().some((e) => e.selected());
-      return nodesSelected || edgesSelected;
-    });
+    const hasSelection = await page.evaluate(
+      () => globalThis.__cy.elements(':selected').length > 0,
+    );
     expect(hasSelection).toBe(false);
   });
 
@@ -340,10 +335,7 @@ test.describe('TC-2.5: Selection', () => {
     expect(selectedCount).toBe(1);
 
     // Verify that comp-b is the selected one
-    const isCompBSelected = await page.evaluate(() => {
-      const node = globalThis.__cy.$id('comp-b');
-      return node && node.selected();
-    });
+    const isCompBSelected = await page.evaluate(() => globalThis.__cy.$id('comp-b').selected());
     expect(isCompBSelected).toBe(true);
   });
 });

@@ -23,6 +23,19 @@ async function injectCyCapture(page) {
   });
 }
 
+async function waitForLayoutChange(page, initialPositions) {
+  await page.waitForFunction((initial) => {
+    if (!globalThis.__cy) {
+      return false;
+    }
+    const current = globalThis.__cy.nodes().map((n) => n.position());
+    return current.some((pos, i) => {
+      const init = initial[i];
+      return init && (Math.abs(pos.x - init.x) > 1 || Math.abs(pos.y - init.y) > 1);
+    });
+  }, initialPositions);
+}
+
 async function waitForCyNode(page, nodeId) {
   await page.waitForFunction((id) => {
     if (!globalThis.__cy) {
@@ -62,18 +75,7 @@ test.describe('TC-2.4: Layouts', () => {
     await page.selectOption('#layout-select', 'dagre');
 
     // Wait for positions to change (layout to complete) with timeout
-    await page.waitForFunction((initial) => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return false;
-      }
-      const current = cy.nodes().map((n) => n.position());
-      // Check if at least one node has moved by more than 1 pixel
-      return current.some((pos, i) => {
-        const init = initial[i];
-        return init && (Math.abs(pos.x - init.x) > 1 || Math.abs(pos.y - init.y) > 1);
-      });
-    }, initialPositions);
+    await waitForLayoutChange(page, initialPositions);
 
     // Verify positions have changed
     const newPositions = await page.evaluate(() =>
@@ -135,10 +137,7 @@ test.describe('TC-2.4: Layouts', () => {
 
   test('TC-2.4.4: Animations disabled for large graphs (>400 nodes)', async ({ page }) => {
     // Check animation setting based on node count
-    const usesAnimation = await page.evaluate(() => {
-      const nodes = globalThis.__cy ? globalThis.__cy.nodes().length : 0;
-      return nodes < 400; // Should animate if < 400
-    });
+    const usesAnimation = await page.evaluate(() => globalThis.__cy.nodes().length < 400);
 
     expect(usesAnimation).toBe(true);
   });
@@ -156,9 +155,7 @@ test.describe('TC-2.4: Layouts', () => {
     await page.waitForTimeout(500);
 
     // Nodes should still be visible (at least one visible node)
-    const visibleNodeCount = await page.evaluate(() =>
-      globalThis.__cy ? globalThis.__cy.nodes(':visible').length : 0,
-    );
+    const visibleNodeCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
     expect(visibleNodeCount).toBeGreaterThan(0);
   });
 
@@ -205,10 +202,8 @@ test.describe('TC-2.4: Layouts', () => {
     );
 
     // Change containment mode
-    if (await page.locator('#containment-select').isVisible()) {
-      await page.selectOption('#containment-select', 'compound');
-      await page.waitForTimeout(1000);
-    }
+    await page.selectOption('#containment-select', 'compound');
+    await page.waitForTimeout(1000);
 
     const newPositions = await page.evaluate(() =>
       globalThis.__cy.nodes().map((n) => n.position()),

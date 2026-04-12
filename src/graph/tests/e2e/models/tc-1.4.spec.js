@@ -132,18 +132,14 @@ test.describe('TC-1.4: Navigation', () => {
     await waitForLoading(page);
 
     // Wait for Cytoscape nodes to be rendered
-    await page.waitForFunction(() => globalThis.__cy && globalThis.__cy.nodes().length > 0);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy.nodes().length > 0);
 
     const initialLength = await page.evaluate(() => history.length);
 
     // Step 1: Enter drill-down via double-click — pushState adds a history entry
     await page.evaluate(() => {
-      if (globalThis.__cy) {
-        const node = globalThis.__cy.nodes().first();
-        if (node) {
-          node.trigger('dbltap');
-        }
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
 
     // URL must contain drill-down parameters

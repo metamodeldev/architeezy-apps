@@ -52,10 +52,7 @@ test.describe('TC-3.1: View switching', () => {
     // Wait for table to be fully rendered and then scroll
     await expect(page.locator('#table-view')).toBeVisible();
     await page.evaluate(() => {
-      const container = document.querySelector('.table-container');
-      if (container) {
-        container.scrollTop = 500;
-      }
+      document.querySelector('.table-container').scrollTop = 500;
     });
 
     // Switch to graph and back
@@ -64,10 +61,9 @@ test.describe('TC-3.1: View switching', () => {
 
     // Wait for table view to be visible again and check scroll
     await expect(page.locator('#table-view')).toBeVisible();
-    const scrollTop = await page.evaluate(() => {
-      const container = document.querySelector('.table-container');
-      return container ? container.scrollTop : 0;
-    });
+    const scrollTop = await page.evaluate(
+      () => document.querySelector('.table-container').scrollTop,
+    );
     expect(scrollTop).toBeGreaterThan(0);
   });
 
@@ -135,11 +131,9 @@ test.describe('TC-3.1: View switching', () => {
     await mockApi(page);
 
     // Track network requests
-    const requests = [];
+    const allRequests = [];
     page.on('request', (req) => {
-      if (req.url().includes('/content')) {
-        requests.push(req.url());
-      }
+      allRequests.push(req.url());
     });
 
     await page.goto('/graph/?model=model-test');
@@ -154,7 +148,7 @@ test.describe('TC-3.1: View switching', () => {
     await page.waitForTimeout(500);
 
     // Should have only initial model fetch, no additional content fetches
-    const contentRequests = requests.filter((r) => r.includes('/content'));
+    const contentRequests = allRequests.filter((r) => r.includes('/content'));
     // If model was already loaded, subsequent view switches shouldn't fetch again
     // At most one content request expected
     expect(contentRequests.length).toBeLessThanOrEqual(1);

@@ -27,20 +27,19 @@ import { buildAxis } from './compute-level.js';
  * @returns {string} The computed cell value string.
  */
 function computeCellValue(rowElem, colElem, firstDataItem) {
-  let quals = [];
   if (rowElem._isDataItem) {
-    quals = resolveDataItemElements(rowElem, colElem);
+    const quals = resolveDataItemElements(rowElem, colElem);
     return dataItemDisplay(rowElem, quals);
   }
   if (colElem._isDataItem) {
-    quals = resolveDataItemElements(colElem, rowElem);
+    const quals = resolveDataItemElements(colElem, rowElem);
     return dataItemDisplay(colElem, quals);
   }
   if (!firstDataItem) {
     return '';
   }
   if (!rowElem._isRel && !colElem._isRel) {
-    quals =
+    const quals =
       (firstDataItem.relationItems ?? []).length > 0
         ? resolveDataItemRelations(firstDataItem, rowElem, colElem)
         : resolveDataItemElements(firstDataItem, rowElem).filter((e) => e.id === colElem.id);
@@ -50,7 +49,7 @@ function computeCellValue(rowElem, colElem, firstDataItem) {
     const fromRow = resolveDataItemElements(firstDataItem, rowElem);
     const fromCol = resolveDataItemElements(firstDataItem, colElem);
     const colIds = new Set(fromCol.map((e) => e.id));
-    quals = fromRow.filter((e) => colIds.has(e.id));
+    const quals = fromRow.filter((e) => colIds.has(e.id));
     return dataItemDisplay(firstDataItem, quals);
   }
   return '';

@@ -162,14 +162,12 @@ test.describe('TC-4.5: Filter list discovery', () => {
     const depCheckbox = page.locator('input[data-kind="rel"][data-type="DependsOn"]');
     const searchInput = page.locator('#rel-filter-search');
 
-    // Ensure DependsOn is unchecked (reveal via search to uncheck if needed)
-    if (await depCheckbox.isChecked()) {
-      await searchInput.fill('DependsOn');
-      await page.waitForTimeout(200);
-      await depCheckbox.uncheck();
-      await searchInput.clear();
-      await page.waitForTimeout(200);
-    }
+    // Ensure DependsOn is unchecked: reveal via search and uncheck
+    await searchInput.fill('DependsOn');
+    await page.waitForTimeout(200);
+    await depCheckbox.uncheck();
+    await searchInput.clear();
+    await page.waitForTimeout(200);
 
     // Hidden (in-scope total = 0, unchecked)
     await expect(depCheckbox).not.toBeVisible();
@@ -237,14 +235,12 @@ test.describe('TC-4.5: Filter list discovery', () => {
     const depCheckbox = page.locator('input[data-kind="rel"][data-type="DependsOn"]');
     const relSearch = page.locator('#rel-filter-search');
 
-    // Ensure unchecked: DependsOn is hidden (in-scope total=0), so reveal via search to uncheck it
-    if (await depCheckbox.isChecked()) {
-      await relSearch.fill('DependsOn');
-      await page.waitForTimeout(200);
-      await depCheckbox.uncheck();
-      await relSearch.clear();
-      await page.waitForTimeout(200);
-    }
+    // Ensure unchecked: DependsOn is hidden (in-scope total=0), so reveal via search and uncheck
+    await relSearch.fill('DependsOn');
+    await page.waitForTimeout(200);
+    await depCheckbox.uncheck();
+    await relSearch.clear();
+    await page.waitForTimeout(200);
 
     // Should be hidden now (unchecked + in-scope total=0)
     await expect(depCheckbox).not.toBeVisible();

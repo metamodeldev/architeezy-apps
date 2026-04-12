@@ -197,7 +197,7 @@ function _migrateCellToDataItem(cell) {
     return blankDataItem();
   }
   const relTypes = cell.relTypes ?? [];
-  let dirs = [];
+  let dirs;
   if (cell.direction === 'row_col') {
     dirs = ['out'];
   } else if (cell.direction === 'col_row') {

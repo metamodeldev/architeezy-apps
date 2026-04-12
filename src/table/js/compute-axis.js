@@ -185,6 +185,7 @@ export function recomputeFlatRowGroups(flatItems, numGroupLevels) {
     while (i < flatItems.length) {
       const grp = flatItems[i].groups[g];
       if (!grp) {
+        // oxlint-disable-next-line no-useless-assignment
         i++;
         continue;
       } // Grand-total or promoted-empty row — no group at this level

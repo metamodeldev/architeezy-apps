@@ -370,8 +370,8 @@ test.describe('TC-3.2: Tabular display', () => {
     expect(headersA).toContain('Type ⇅');
     // Model A properties should appear as columns; Model B properties should not
     const lowerA = headersA.map((h) => h.toLowerCase());
-    expect(lowerA.some((h) => h.includes('description') || h.includes('url'))).toBe(true);
-    expect(lowerA.some((h) => h.includes('title') || h.includes('version'))).toBe(false);
+    expect(lowerA.some((h) => ['description', 'url'].some((k) => h.includes(k)))).toBe(true);
+    expect(lowerA.some((h) => ['title', 'version'].some((k) => h.includes(k)))).toBe(false);
 
     // Step 2: Switch to model B — columns must update
     await page.locator('#current-model-btn').click();
@@ -384,8 +384,8 @@ test.describe('TC-3.2: Tabular display', () => {
     expect(headersB).toContain('Name ⇅');
     expect(headersB).toContain('Type ⇅');
     const lowerB = headersB.map((h) => h.toLowerCase());
-    expect(lowerB.some((h) => h.includes('title') || h.includes('version'))).toBe(true);
-    expect(lowerB.some((h) => h.includes('description') || h.includes('url'))).toBe(false);
+    expect(lowerB.some((h) => ['title', 'version'].some((k) => h.includes(k)))).toBe(true);
+    expect(lowerB.some((h) => ['description', 'url'].some((k) => h.includes(k)))).toBe(false);
   });
 
   test('TC-3.2.10: Switching tabs (Entities ↔ Relationships) does not refetch data', async ({

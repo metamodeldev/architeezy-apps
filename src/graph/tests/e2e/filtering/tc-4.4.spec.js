@@ -19,10 +19,7 @@ test.describe('TC-4.4: Global search', () => {
       const allNodes = globalThis.__cy.nodes();
       const matching = globalThis.__cy.$(`node[label*="payment"]`);
       const nonMatching = allNodes.not(matching);
-      if (nonMatching.length > 0) {
-        return nonMatching.first().style('opacity');
-      }
-      return '1';
+      return nonMatching.first().style('opacity');
     });
 
     // Non-matching should be dimmed (less than 1)
@@ -53,11 +50,8 @@ test.describe('TC-4.4: Global search', () => {
     const customModel = structuredClone(MODEL_CONTENT);
     const elements = customModel.content[0].data.elements;
     const microsvc = elements.find((e) => e.id === 'microsvc-1');
-    if (microsvc) {
-      microsvc.data.name = 'Payment Microservice';
-    } else {
-      throw new Error('Microservice element not found in model');
-    }
+    expect(microsvc).toBeDefined();
+    microsvc.data.name = 'Payment Microservice';
 
     // Override the model content API response (must be registered before mockApi's route)
     await page.route(MODEL_CONTENT_URL, (route) => {
@@ -91,9 +85,6 @@ test.describe('TC-4.4: Global search', () => {
     // Verify: all non-dimmed nodes should be Microservice
     const nonDimmedTypes = await page.evaluate(() => {
       const cy = globalThis.__cy;
-      if (!cy) {
-        return [];
-      }
       const visibleNodes = cy.nodes().filter((n) => n.style('display') !== 'none');
       const nonDimmed = visibleNodes.filter((n) => !n.hasClass('search-dimmed'));
       return nonDimmed.map((n) => n.data('type'));
@@ -117,6 +108,7 @@ test.describe('TC-4.4: Global search', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     const searchInput = page.locator('#global-search');
 
@@ -128,25 +120,17 @@ test.describe('TC-4.4: Global search', () => {
     // After 100ms from last keystroke: debounce hasn't fired yet, no dimming should occur
     await page.waitForTimeout(100);
     // Check that no nodes are dimmed yet (search hasn't been applied)
-    const dimmedCountBefore = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return 0;
-      }
-      return cy.nodes('.search-dimmed').length;
-    });
+    const dimmedCountBefore = await page.evaluate(
+      () => globalThis.__cy.nodes('.search-dimmed').length,
+    );
     expect(dimmedCountBefore).toBe(0);
 
     // Wait additional 300ms: debounce should have fired
     await page.waitForTimeout(300);
     // Search executed: some nodes should be dimmed (or all if no match)
-    const dimmedCountAfter = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return 0;
-      }
-      return cy.nodes('.search-dimmed').length;
-    });
+    const dimmedCountAfter = await page.evaluate(
+      () => globalThis.__cy.nodes('.search-dimmed').length,
+    );
     // At least some nodes exist and search was applied
     expect(dimmedCountAfter).toBeGreaterThanOrEqual(0);
   });
@@ -158,22 +142,13 @@ test.describe('TC-4.4: Global search', () => {
 
     // Enter drill-down on first node
     await page.evaluate(() => {
-      if (globalThis.__cy) {
-        const node = globalThis.__cy.nodes().first();
-        if (node) {
-          node.trigger('dbltap');
-        }
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
     // Capture the set of visible node IDs after drill-down (the drill scope)
     const drillScopeIds = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return [];
-      }
-      const visibleNodes = cy.nodes().filter((n) => n.style('display') !== 'none');
+      const visibleNodes = globalThis.__cy.nodes().filter((n) => n.style('display') !== 'none');
       return visibleNodes.map((n) => n.id());
     });
 
@@ -183,11 +158,7 @@ test.describe('TC-4.4: Global search', () => {
 
     // Verify: all non-dimmed nodes are within the drill scope
     const nonDimmedIds = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return [];
-      }
-      const visibleNodes = cy.nodes().filter((n) => n.style('display') !== 'none');
+      const visibleNodes = globalThis.__cy.nodes().filter((n) => n.style('display') !== 'none');
       const nonDimmed = visibleNodes.filter((n) => !n.hasClass('search-dimmed'));
       return nonDimmed.map((n) => n.id());
     });
@@ -232,16 +203,13 @@ test.describe('TC-4.4: Global search', () => {
     await mockApi(page);
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Search uppercase
     await page.locator('#global-search').fill('PAYMENT');
     await page.waitForTimeout(400);
     const nonDimmedCount1 = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return 0;
-      }
-      const visibleNodes = cy.nodes().filter((n) => n.style('display') !== 'none');
+      const visibleNodes = globalThis.__cy.nodes().filter((n) => n.style('display') !== 'none');
       return visibleNodes.filter((n) => !n.hasClass('search-dimmed')).length;
     });
 
@@ -250,11 +218,7 @@ test.describe('TC-4.4: Global search', () => {
     await page.locator('#global-search').fill('payment');
     await page.waitForTimeout(400);
     const nonDimmedCount2 = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (!cy) {
-        return 0;
-      }
-      const visibleNodes = cy.nodes().filter((n) => n.style('display') !== 'none');
+      const visibleNodes = globalThis.__cy.nodes().filter((n) => n.style('display') !== 'none');
       return visibleNodes.filter((n) => !n.hasClass('search-dimmed')).length;
     });
 

@@ -33,7 +33,7 @@ const _sortAsc = signal(true);
 /**
  * Computed set of extra property keys derived from the current model's elements.
  *
- * @type {ComputedSignal<string[]>}
+ * @type {import('../signals').ReadonlySignal<string[]>}
  */
 export const extraColKeys = computed(() => {
   const elements = getElements();
@@ -51,7 +51,7 @@ export const extraColKeys = computed(() => {
 /**
  * Filtered and sorted elements for current table view.
  *
- * @type {ComputedSignal<object[]>}
+ * @type {import('../signals').ReadonlySignal<object[]>}
  */
 export const filteredElements = computed(() => {
   const q = query.value.toLowerCase();
@@ -89,7 +89,7 @@ export const filteredElements = computed(() => {
 /**
  * Filtered and sorted relations for current table view.
  *
- * @type {ComputedSignal<object[]>}
+ * @type {import('../signals').ReadonlySignal<object[]>}
  */
 export const filteredRelations = computed(() => {
   const q = query.value.toLowerCase();
@@ -153,7 +153,7 @@ export const filteredRelations = computed(() => {
 /**
  * True if currently showing elements tab.
  *
- * @type {ComputedSignal<boolean>}
+ * @type {import('../signals').ReadonlySignal<boolean>}
  */
 export const isElementsTab = computed(() => _currentTab.value === 'elements');
 

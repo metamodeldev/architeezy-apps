@@ -133,11 +133,8 @@ test.describe('TC-1.3: Persistence', () => {
 
     // Zoom and pan (transient UI state)
     await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      if (cy) {
-        cy.zoom(2);
-        cy.pan({ x: 100, y: 100 });
-      }
+      globalThis.__cy.zoom(2);
+      globalThis.__cy.pan({ x: 100, y: 100 });
     });
 
     // Reload the page
@@ -146,10 +143,7 @@ test.describe('TC-1.3: Persistence', () => {
     await page.waitForFunction(() => globalThis.__cy !== undefined);
 
     // Verify zoom has been reset (not persistent)
-    const zoom = await page.evaluate(() => {
-      const cy = globalThis.__cy;
-      return cy ? cy.zoom() : 1;
-    });
+    const zoom = await page.evaluate(() => globalThis.__cy.zoom());
     expect(zoom).not.toBe(2);
   });
 

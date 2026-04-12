@@ -221,14 +221,9 @@ test.describe('@perf Graph performance', () => {
       await waitForLayout(page, 80_000);
       const elapsed = Date.now() - start;
 
-      const { nodes, edges } = await page.evaluate(() => ({
-        nodes: globalThis.__cy.nodes().length,
-        edges: globalThis.__cy.edges().length,
-      }));
+      const nodes = await page.evaluate(() => globalThis.__cy.nodes().length);
 
       record(`Load+Layout ${nodeCount} nodes`, elapsed);
-      record(`  nodes rendered`, nodes);
-      record(`  edges rendered`, edges);
 
       expect(nodes).toBeGreaterThan(0);
       expect(elapsed).toBeLessThan(MAX_LOAD_LAYOUT_MS[nodeCount]);
@@ -327,8 +322,8 @@ test.describe('@perf Graph performance', () => {
     await cdp.send('HeapProfiler.collectGarbage');
 
     const { metrics } = await cdp.send('Performance.getMetrics');
-    const heapUsed = metrics.find((m) => m.name === 'JSHeapUsedSize')?.value ?? 0;
-    const heapTotal = metrics.find((m) => m.name === 'JSHeapTotalSize')?.value ?? 0;
+    const heapUsed = metrics.find((m) => m.name === 'JSHeapUsedSize').value;
+    const heapTotal = metrics.find((m) => m.name === 'JSHeapTotalSize').value;
 
     record('JS Heap Used (1000 nodes) MB', heapUsed / 1024 / 1024);
     record('JS Heap Total (1000 nodes) MB', heapTotal / 1024 / 1024);

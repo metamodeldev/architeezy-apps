@@ -77,6 +77,7 @@ export function buildCompactDisplayRows(flatRows, numGroupLevels, isEmpty) {
 
       if (leaf._isGrandTotal) {
         result.push({ origIdx: i, indent: 0, isGroupHeader: false, noChildren: false });
+        // oxlint-disable-next-line no-useless-assignment
         i++;
         continue;
       }
@@ -84,6 +85,7 @@ export function buildCompactDisplayRows(flatRows, numGroupLevels, isEmpty) {
       // Subtotals belonging to a level shallower than current depth are outer group
       // Boundaries emitted by the parent processRange call — skip here.
       if (leaf._isSubtotal && leaf._groupLevel !== undefined && leaf._groupLevel < depth) {
+        // oxlint-disable-next-line no-useless-assignment
         i++;
         continue;
       }
@@ -91,6 +93,7 @@ export function buildCompactDisplayRows(flatRows, numGroupLevels, isEmpty) {
       if (depth >= numGroupLevels) {
         // Leaf level: emit non-virtual, non-empty rows.
         pushLeafRow(i, depth);
+        // oxlint-disable-next-line no-useless-assignment
         i++;
         continue;
       }
@@ -99,6 +102,7 @@ export function buildCompactDisplayRows(flatRows, numGroupLevels, isEmpty) {
       const groupElem = groups[depth]?.elem;
       if (!groupElem) {
         pushLeafRow(i, depth);
+        // oxlint-disable-next-line no-useless-assignment
         i++;
         continue;
       }

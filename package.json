@@ -5,19 +5,19 @@
     "lint": "oxlint && stylelint '**/*.css' && markdownlint-cli2",
     "lint:fix": "oxlint --fix; stylelint '**/*.css' --fix; markdownlint-cli2  --fix; oxfmt",
     "test": "bun test && playwright test",
-    "test:coverage": "bun test --only-failures --coverage && playwright test",
+    "test:coverage": "bun test --only-failures --coverage && COVERAGE=true playwright test",
     "test:unit": "bun test",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "@types/bun": "^1.3.11",
+    "@playwright/test": "^1.59.1",
+    "@types/bun": "^1.3.12",
     "markdownlint-cli2": "^0.22.0",
     "monocart-reporter": "^2.10.0",
-    "oxfmt": "^0.42.0",
-    "oxlint": "^1.57.0",
+    "oxfmt": "^0.44.0",
+    "oxlint": "^1.59.0",
     "oxlint-tsgolint": "^0.20.0",
-    "stylelint": "^17.6.0",
+    "stylelint": "^17.7.0",
     "stylelint-config-standard": "^40.0.0"
   },
   "engines": {

@@ -14,6 +14,20 @@ const PRIVATE_MODEL_ID = 'private-model';
 const PRIVATE_MODEL_URL =
   'https://architeezy.com/api/models/test/test/1/private/content?format=json';
 
+// ── Helper: Private model route handler ─────────────────────────────────────────
+
+function fulfillPrivateModelRoute(r) {
+  if (r.request().headers()['authorization']) {
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(MODEL_CONTENT),
+    });
+  } else {
+    r.fulfill({ status: 401, body: 'Unauthorized' });
+  }
+}
+
 // ── Helper: Authenticate user ───────────────────────────────────────────────────
 
 /**
@@ -76,17 +90,7 @@ test.describe('TC-1.5: Access', () => {
     });
 
     // Private model content: succeeds with auth, fails without
-    await page.route(PRIVATE_MODEL_URL, (r) => {
-      if (r.request().headers()['authorization']) {
-        r.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MODEL_CONTENT),
-        });
-      } else {
-        r.fulfill({ status: 401, body: 'Unauthorized' });
-      }
-    });
+    await page.route(PRIVATE_MODEL_URL, fulfillPrivateModelRoute);
 
     // Load the app initially (anonymous)
     await page.goto('/graph/');
@@ -292,17 +296,7 @@ test.describe('TC-1.5: Access', () => {
       });
     });
 
-    await page.route(PRIVATE_MODEL_URL, (r) => {
-      if (r.request().headers()['authorization']) {
-        r.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(MODEL_CONTENT),
-        });
-      } else {
-        r.fulfill({ status: 401, body: 'Unauthorized' });
-      }
-    });
+    await page.route(PRIVATE_MODEL_URL, fulfillPrivateModelRoute);
 
     // Load app
     await page.goto('/graph/');

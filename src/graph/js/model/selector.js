@@ -27,16 +27,16 @@ import {
 // ── PRIVATE SIGNALS ─────────────────────────────────────────────────────────────
 
 /** @type {import('../signals').Signal<string>} */
-const _searchQuery = signal('', 'model-search-query');
+const _searchQuery = signal('');
 
 /** @type {import('../signals').Signal<boolean>} */
-const _isModalOpen = signal(false, 'model-modal-open');
+const _isModalOpen = signal(false);
 
 /** @type {import('../signals').Signal<boolean>} */
-const _listLoading = signal(false, 'model-list-loading');
+const _listLoading = signal(false);
 
 /** @type {import('../signals').Signal<string>} */
-const _error = signal('', 'model-error');
+const _error = signal('');
 
 // ── COMPUTED ────────────────────────────────────────────────────────────────────
 

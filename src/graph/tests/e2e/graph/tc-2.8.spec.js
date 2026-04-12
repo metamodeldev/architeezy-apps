@@ -56,8 +56,8 @@ test.describe('TC-2.8: Containment', () => {
     await waitForLoading(page);
 
     // sys-parent has child-1 and child-2 — expect synthetic containment edges
-    const containmentEdges = await page.evaluate(() =>
-      globalThis.__cy.edges().filter((e) => e.data('isContainment') === true).length,
+    const containmentEdges = await page.evaluate(
+      () => globalThis.__cy.edges().filter((e) => e.data('isContainment') === true).length,
     );
     expect(containmentEdges).toBe(2);
   });
@@ -74,9 +74,7 @@ test.describe('TC-2.8: Containment', () => {
     await waitForLoading(page);
 
     // In compound mode children are nested: cy node carries parent id
-    const parentId = await page.evaluate(
-      () => globalThis.__cy.$id('child-1').data('parent'),
-    );
+    const parentId = await page.evaluate(() => globalThis.__cy.$id('child-1').data('parent'));
     expect(parentId).toBe('sys-parent');
   });
 
@@ -95,9 +93,7 @@ test.describe('TC-2.8: Containment', () => {
     await page.locator('#elem-filter-list input[data-type="System"]').uncheck();
 
     // Children must still be present after their parent type is filtered out
-    const child1Exists = await page.evaluate(
-      () => globalThis.__cy.$id('child-1').length > 0,
-    );
+    const child1Exists = await page.evaluate(() => globalThis.__cy.$id('child-1').length > 0);
     expect(child1Exists).toBe(true);
   });
 

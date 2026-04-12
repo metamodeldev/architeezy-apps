@@ -6,13 +6,50 @@
  * @module signals
  */
 
+/**
+ * @typedef {Object} Observer
+ * @property {Set<Set<Observer>>} deps - A set of subscriber sets that this observer is currently
+ *   subscribed to.
+ * @property {() => void} run - The function that executes the observer logic.
+ * @property {() => void} [scheduler] - Optional custom scheduling logic for re-runs.
+ * @property {() => void} [dispose] - Optional method to clean up the observer.
+ * @internal
+ */
+
+/**
+ * @template T
+ * @typedef {Object} ReadonlySignal
+ * @property {T} value - The current value of the signal (read-only).
+ */
+
+/**
+ * @template T
+ * @typedef {Object} Signal
+ * @property {T} value - The current value of the signal (read/write).
+ * @property {function(): ReadonlySignal<T>} asReadonly - Returns a read-only view of the signal.
+ * @property {function(): [ReadonlySignal<T>, (newValue: T) => void]} asPair - Returns a tuple
+ *   containing a read-only signal and a setter function.
+ */
+
+/**
+ * @typedef {Object} EffectController
+ * @property {() => void} run - Manually triggers the effect execution.
+ * @property {() => void} dispose - Unsubscribes the effect from all dependencies.
+ */
+
+/** @type {Observer | undefined} */
 let _activeObserver;
 
+/** @type {Set<Observer>} */
 const _batchQueue = new Set();
 
 let _isBatchPending = false;
 
-/** Runs queued effects in the next microtask. */
+/**
+ * Runs queued effects in the next microtask.
+ *
+ * @private
+ */
 function _flushQueue() {
   const jobs = [..._batchQueue];
   _batchQueue.clear();
@@ -25,7 +62,8 @@ function _flushQueue() {
 /**
  * Removes an observer from all its dependencies' subscriber sets.
  *
- * @param {Object} observer - The observer to clean up.
+ * @private
+ * @param {Observer} observer - The observer to clean up.
  */
 function _cleanup(observer) {
   for (const depSet of observer.deps) {
@@ -35,32 +73,17 @@ function _cleanup(observer) {
 }
 
 /**
- * @template T
- * @typedef {Object} ReadonlySignal
- * @property {T} value - A read-only signal value.
- * @readonly
- */
-
-/**
- * @template T
- * @typedef {Object} Signal
- * @property {T} value - A signal value.
- * @property {function(): ReadonlySignal<T>} asReadonly - Creates a read-only signal.
- * @property {function(): [ReadonlySignal<T>,(newValue: T) => void]} asPair - Creates a pair of a
- *   read-only signal and setter.
- */
-
-/**
  * Creates a reactive signal.
  *
  * @template T
  * @param {T} [initialValue] - The initial value of the signal.
- * @returns {Signal<T>} A signal object with getter/setter for reactive value.
+ * @returns {Signal<T>} A signal object with reactive getter/setter.
  */
 export function signal(initialValue) {
   let _value = initialValue;
   const _subscribers = new Set();
 
+  /** @type {Signal<T>} */
   const signalObj = {
     get value() {
       if (_activeObserver) {
@@ -72,7 +95,6 @@ export function signal(initialValue) {
     set value(newValue) {
       if (_value !== newValue) {
         _value = newValue;
-        // Schedule updates for all subscribers
         for (const sub of _subscribers) {
           if (sub.scheduler) {
             sub.scheduler();
@@ -94,12 +116,12 @@ export function signal(initialValue) {
       };
     },
     asPair() {
-      return /** @type {[ReadonlySignal<T>, (newValue: T) => void]} */ ([
+      return [
         signalObj.asReadonly(),
         (newValue) => {
           signalObj.value = newValue;
         },
-      ]);
+      ];
     },
   };
 
@@ -107,8 +129,7 @@ export function signal(initialValue) {
 }
 
 /**
- * Runs `fn` without tracking any signal dependencies. Reads inside `fn` will not subscribe the
- * current observer to those signals.
+ * Runs `fn` without tracking any signal dependencies.
  *
  * @template T
  * @param {() => T} fn - The function to run without tracking.
@@ -127,9 +148,8 @@ export function untrack(fn) {
 /**
  * Creates a reactive effect that re-runs when its dependencies change.
  *
- * @param {Function} fn - The side-effect function.
- * @returns {{ run: () => void; dispose: () => void }} An effect controller with run and dispose
- *   methods.
+ * @param {() => void} fn - The side-effect function to execute.
+ * @returns {EffectController} An effect controller.
  */
 export function effect(fn) {
   const observer = {
@@ -157,21 +177,21 @@ export function effect(fn) {
  * Creates a derived reactive value.
  *
  * @template T
- * @param {() => T} computeFn - Function to calculate the value.
- * @returns {ReadonlySignal<T>} A computed signal with read-only value.
+ * @param {() => T} computeFn - Function to calculate the derived value.
+ * @returns {ReadonlySignal<T>} A computed signal.
  */
 export function computed(computeFn) {
   let _value;
   let _isDirty = true;
+
   const _subscribers = new Set();
 
-  // Internal observer to track dependencies of the computeFn
+  /** @type {Observer} */
   const _internalObserver = {
     deps: new Set(),
     scheduler: () => {
       if (!_isDirty) {
         _isDirty = true;
-        // Notify downstream observers that this computed is now dirty
         for (const sub of _subscribers) {
           if (sub.scheduler) {
             sub.scheduler();
@@ -200,12 +220,10 @@ export function computed(computeFn) {
 
   return {
     get value() {
-      // Register current observer as a subscriber to this computed value
       if (_activeObserver) {
         _subscribers.add(_activeObserver);
         _activeObserver.deps.add(_subscribers);
       }
-
       if (_isDirty) {
         _internalObserver.run();
       }

@@ -17,10 +17,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Double-click a node
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
 
     await page.waitForTimeout(500);
@@ -41,10 +38,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -53,19 +47,13 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Increase depth: click button with data-depth="3"
     const increaseBtn = page.locator('#depth-picker .depth-btn[data-depth="3"]');
-    if (await increaseBtn.isVisible()) {
-      await increaseBtn.click();
-      // Wait for layout to settle
-      await page.waitForTimeout(1000);
+    await increaseBtn.click();
+    // Wait for layout to settle
+    await page.waitForTimeout(1000);
 
-      // More nodes should be visible after increasing depth
-      const newCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
-      expect(newCount).toBeGreaterThan(initialCount);
-    } else {
-      // Depth picker should be visible; at least some nodes visible
-      await expect(page.locator('#depth-picker')).toBeVisible();
-      expect(initialCount).toBeGreaterThan(0);
-    }
+    // More nodes should be visible after increasing depth
+    const newCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+    expect(newCount).toBeGreaterThan(initialCount);
   });
 
   test('TC-2.7.3: Decrease depth shrinks the scope', async ({ page }) => {
@@ -76,32 +64,24 @@ test.describe('TC-2.7: Drill-down', () => {
     await waitForCyReady(page);
 
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
-    // Increase to depth 3 first (if possible)
+    // Increase to depth 3 first
     const depth3Btn = page.locator('#depth-picker .depth-btn[data-depth="3"]');
-    if (await depth3Btn.isVisible()) {
-      await depth3Btn.click();
-      await page.waitForTimeout(1000);
-    }
+    await depth3Btn.click();
+    await page.waitForTimeout(1000);
 
     // Decrease: click depth 2
     const decreaseBtn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
-    if (await decreaseBtn.isVisible()) {
-      await decreaseBtn.click();
-      await page.waitForTimeout(1000);
+    await decreaseBtn.click();
+    await page.waitForTimeout(1000);
 
-      const nodeCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
+    const nodeCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
 
-      // Should have fewer nodes than at deeper depth (or at least >=1)
-      expect(nodeCount).toBeGreaterThanOrEqual(1);
-      // Ideally fewer than before, but could be equal if max depth reached
-    }
+    // Should have fewer nodes than at deeper depth (or at least >=1)
+    expect(nodeCount).toBeGreaterThanOrEqual(1);
   });
 
   test('TC-2.7.4: Exit drill-down via application name in header', async ({ page }) => {
@@ -112,10 +92,7 @@ test.describe('TC-2.7: Drill-down', () => {
     await waitForCyReady(page);
 
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -142,10 +119,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -175,10 +149,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -204,10 +175,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
 
     // Wait for URL to update with drill parameters instead of fixed timeout
@@ -222,10 +190,7 @@ test.describe('TC-2.7: Drill-down', () => {
     await waitForCyReady(page);
 
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -250,53 +215,43 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down on first node
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
     // Increase depth to 2 to ensure a second node is reachable
     const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
-    if (await depth2Btn.isVisible()) {
-      await depth2Btn.click();
-      await page.waitForTimeout(500);
-    }
+    await depth2Btn.click();
+    await page.waitForTimeout(500);
 
     const visibleCount = await page.evaluate(() => globalThis.__cy.nodes(':visible').length);
-    if (visibleCount > 1) {
-      // Double-click a neighbor node to re-root drill-down
-      await page.evaluate(() => {
-        const visible = globalThis.__cy.nodes(':visible');
-        // Pick a node that is NOT the current root (not depth=0)
-        const neighbor = visible.filter((n) => n.data('drillDepth') !== 0).first();
-        if (neighbor.length) {
-          neighbor.trigger('dbltap');
-        } else {
-          visible[1].trigger('dbltap');
-        }
-      });
-      await page.waitForTimeout(500);
+    expect(visibleCount).toBeGreaterThan(1);
 
-      // Drill-down nav must remain visible with the new root
-      await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
-      await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
+    // Double-click a neighbor node to re-root drill-down
+    await page.evaluate(() => {
+      const visible = globalThis.__cy.nodes(':visible');
+      // Pick a node that is NOT the current root (not depth=0)
+      visible
+        .filter((n) => n.data('drillDepth') !== 0)
+        .first()
+        .trigger('dbltap');
+    });
+    await page.waitForTimeout(500);
 
-      // Depth must be preserved (remains at 2, not reset to 1)
-      const activeDepthText = await page.locator('#depth-picker .depth-btn.active').textContent();
-      expect(activeDepthText.trim()).toBe('2');
+    // Drill-down nav must remain visible with the new root
+    await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
+    await expect(page.locator('#drill-label')).not.toHaveClass(/hidden/);
 
-      // Layout must use only the newly visible nodes (no hidden nodes visible)
-      const hiddenInScope = await page.evaluate(
-        () =>
-          globalThis.__cy.nodes(':hidden').filter((n) => n.data('drillDepth') !== undefined).length,
-      );
-      expect(hiddenInScope).toBe(0);
-    } else {
-      // Single node or no neighbors: drill nav still visible
-      await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
-    }
+    // Depth must be preserved (remains at 2, not reset to 1)
+    const activeDepthText = await page.locator('#depth-picker .depth-btn.active').textContent();
+    expect(activeDepthText.trim()).toBe('2');
+
+    // Layout must use only the newly visible nodes (no hidden nodes visible)
+    const hiddenInScope = await page.evaluate(
+      () =>
+        globalThis.__cy.nodes(':hidden').filter((n) => n.data('drillDepth') !== undefined).length,
+    );
+    expect(hiddenInScope).toBe(0);
   });
 
   // oxlint-disable-next-line max-statements
@@ -327,10 +282,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down on first node
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     // Wait for drill layout to complete
     await page.waitForFunction(() => !globalThis.__layoutRunning);
@@ -352,11 +304,9 @@ test.describe('TC-2.7: Drill-down', () => {
     for (const nodeId of Object.keys(initialPositions)) {
       const initial = initialPositions[nodeId];
       const restored = restoredPositions[nodeId];
-      if (initial && restored) {
-        // Allow tolerance for minor differences (a few pixels)
-        expect(Math.abs(restored.x - initial.x)).toBeLessThan(10);
-        expect(Math.abs(restored.y - initial.y)).toBeLessThan(10);
-      }
+      // Allow tolerance for minor differences (a few pixels)
+      expect(Math.abs(restored.x - initial.x)).toBeLessThan(10);
+      expect(Math.abs(restored.y - initial.y)).toBeLessThan(10);
     }
 
     // Change layout algorithm to fcose and apply
@@ -376,10 +326,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Re-enter drill-down
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForFunction(() => !globalThis.__layoutRunning);
 
@@ -396,17 +343,11 @@ test.describe('TC-2.7: Drill-down', () => {
     });
 
     // Verify: fcose layout positions should be preserved after this drill cycle
-    let preservesFcose = true;
-    for (const nodeId of Object.keys(afterFcose)) {
+    const preservesFcose = Object.keys(afterFcose).every((nodeId) => {
       const fcosePos = afterFcose[nodeId];
       const finalPos = finalPositions[nodeId];
-      if (fcosePos && finalPos) {
-        if (Math.abs(finalPos.x - fcosePos.x) >= 10 || Math.abs(finalPos.y - fcosePos.y) >= 10) {
-          preservesFcose = false;
-          break;
-        }
-      }
-    }
+      return Math.max(Math.abs(finalPos.x - fcosePos.x), Math.abs(finalPos.y - fcosePos.y)) < 10;
+    });
     expect(preservesFcose).toBe(true);
   });
 
@@ -421,27 +362,19 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down on comp-a (has connection to comp-b via rel-1)
     await page.evaluate(() => {
-      const node = globalThis.__cy.$id('comp-a');
-      if (node?.length) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.$id('comp-a').trigger('dbltap');
     });
     await page.waitForTimeout(500);
     await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
 
     // Increase depth to 2
     const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
-    if (await depth2Btn.isVisible()) {
-      await depth2Btn.click();
-      await page.waitForTimeout(300);
-    }
+    await depth2Btn.click();
+    await page.waitForTimeout(300);
 
     // Select the root node so its properties are shown
     await page.evaluate(() => {
-      const root = globalThis.__cy.$id('comp-a');
-      if (root?.length) {
-        root.trigger('tap');
-      }
+      globalThis.__cy.$id('comp-a').trigger('tap');
     });
     await page.waitForTimeout(300);
 
@@ -522,10 +455,7 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down on root-r at depth=2 (should see root-r, middle-m, end-d)
     await page.evaluate(() => {
-      const node = globalThis.__cy.$id('root-r');
-      if (node?.length) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.$id('root-r').trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -578,19 +508,14 @@ test.describe('TC-2.7: Drill-down', () => {
 
     // Enter drill-down on first node at depth=2
     await page.evaluate(() => {
-      const node = globalThis.__cy.nodes().first();
-      if (node) {
-        node.trigger('dbltap');
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
     await expect(page.locator('#crumb-entity-sep')).not.toHaveClass(/hidden/);
 
     const depth2Btn = page.locator('#depth-picker .depth-btn[data-depth="2"]');
-    if (await depth2Btn.isVisible()) {
-      await depth2Btn.click();
-      await page.waitForTimeout(300);
-    }
+    await depth2Btn.click();
+    await page.waitForTimeout(300);
 
     // Switch to a different model via the model selector
     await page.locator('#current-model-btn').click();

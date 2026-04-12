@@ -5,6 +5,10 @@ import { expect } from '@playwright/test';
 
 import { mockApi, test, waitForLoading } from '../fixtures.js';
 
+function isMemoryConsoleError(m) {
+  return m.type === 'error' && m.text.includes('memory');
+}
+
 test.describe('TC-5.3: Graph image export', () => {
   test('TC-5.3.1: Export graph as PNG with 2x resolution', async ({ page }) => {
     await mockApi(page);
@@ -55,12 +59,7 @@ test.describe('TC-5.3: Graph image export', () => {
 
     // Enter drill-down
     await page.evaluate(() => {
-      if (globalThis.__cy) {
-        const node = globalThis.__cy.nodes().first();
-        if (node) {
-          node.trigger('dbltap');
-        }
-      }
+      globalThis.__cy.nodes().first().trigger('dbltap');
     });
     await page.waitForTimeout(500);
 
@@ -83,12 +82,7 @@ test.describe('TC-5.3: Graph image export', () => {
 
     // Select a node
     await page.evaluate(() => {
-      if (globalThis.__cy) {
-        const node = globalThis.__cy.nodes().first();
-        if (node) {
-          node.trigger('tap');
-        }
-      }
+      globalThis.__cy.nodes().first().trigger('tap');
     });
     await page.waitForTimeout(500);
 
@@ -193,17 +187,14 @@ test.describe('TC-5.3: Graph image export', () => {
 
     // Blob URLs should be cleaned - can't easily verify in test
     // Just ensure no memory leak warnings in console (basic check)
-    const errors = [];
-    page.on('console', (msg) => {
-      if (msg.type() === 'error' && msg.text().includes('memory')) {
-        errors.push(msg.text());
-      }
-    });
+    const consoleMsgs = [];
+    page.on('console', (msg) => consoleMsgs.push({ type: msg.type(), text: msg.text() }));
 
     // Wait a bit
     await page.waitForTimeout(1000);
 
     // Should not have memory leak errors
-    expect(errors.length).toBe(0);
+    const memoryErrors = consoleMsgs.filter((m) => isMemoryConsoleError(m));
+    expect(memoryErrors).toHaveLength(0);
   });
 });

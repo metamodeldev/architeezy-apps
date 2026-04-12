@@ -177,12 +177,10 @@ test.describe('TC-5.1: Entity table export', () => {
     // Parse rows, skip header
     const lines = csvText.trim().split('\n');
     const dataRows = lines.slice(1).filter((l) => l.trim());
-    if (dataRows.length >= 2) {
-      // Extract type column (index 1) from each row and verify they are sorted ascending
-      const types = dataRows.map((row) => row.split(',')[1]?.trim());
-      const sortedTypes = [...types].toSorted((a, b) => a.localeCompare(b));
-      expect(types).toEqual(sortedTypes);
-    }
+    // Extract type column (index 1) from each row and verify they are sorted ascending
+    const types = dataRows.map((row) => row.split(',')[1]?.trim());
+    const sortedTypes = [...types].toSorted((a, b) => a.localeCompare(b));
+    expect(types).toEqual(sortedTypes);
   });
 
   test('TC-5.1.6: Extra column data is exported correctly', async ({ page }) => {
@@ -287,11 +285,7 @@ test.describe('TC-5.1: Entity table export', () => {
 
     // Should only contain rows where Type column equals ApplicationComponent
     const lines = csvText.trim().split('\n');
-    for (let i = 1; i < lines.length; i++) {
-      const row = lines[i].trim();
-      if (!row) {
-        continue;
-      }
+    for (const row of lines.slice(1).filter((l) => l.trim())) {
       const cols = row.split(',');
       // Assuming Type is the second column (index 1) based on earlier tests
       const type = cols[1]?.trim();

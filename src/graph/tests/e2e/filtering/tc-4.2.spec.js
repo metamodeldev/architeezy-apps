@@ -83,9 +83,8 @@ test.describe('TC-4.2: Bulk actions', () => {
     const entities = ['Microservice', 'Database', 'Queue', 'ExternalAPI'];
     for (const entity of entities) {
       const checkbox = page.locator(`input[data-kind="elem"][data-type="${entity}"]`);
-      if (await checkbox.isVisible()) {
-        await expect(checkbox).not.toBeChecked();
-      }
+      await expect(checkbox).toBeVisible();
+      await expect(checkbox).not.toBeChecked();
     }
 
     // In Full Model, relationship types REMAIN VISIBLE in the list (total count > 0)
@@ -113,9 +112,8 @@ test.describe('TC-4.2: Bulk actions', () => {
     const entities = ['Microservice', 'Database', 'Queue', 'ExternalAPI'];
     for (const entity of entities) {
       const checkbox = page.locator(`input[data-kind="elem"][data-type="${entity}"]`);
-      if (await checkbox.isVisible()) {
-        await expect(checkbox).toBeChecked();
-      }
+      await expect(checkbox).toBeVisible();
+      await expect(checkbox).toBeChecked();
     }
   });
 

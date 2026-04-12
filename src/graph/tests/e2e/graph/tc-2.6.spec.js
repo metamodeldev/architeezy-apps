@@ -81,10 +81,7 @@ test.describe('TC-2.6: Highlight Mode', () => {
     await page.waitForTimeout(300);
 
     // Verify node is selected
-    const isSelected = await page.evaluate(() => {
-      const node = globalThis.__cy.$id('comp-a');
-      return node && node.selected();
-    });
+    const isSelected = await page.evaluate(() => globalThis.__cy.$id('comp-a').selected());
     expect(isSelected).toBe(true);
 
     // Check that non-neighbor nodes (excluding selected and neighbors) have reduced opacity (0.35)
@@ -93,10 +90,7 @@ test.describe('TC-2.6: Highlight Mode', () => {
       const neighborhood = selected.neighborhood();
       // Exclude the selected node and its neighbors
       const nonNeighbors = globalThis.__cy.nodes().not(neighborhood).not(selected);
-      if (nonNeighbors.length > 0) {
-        return Number.parseFloat(nonNeighbors.first().style('opacity'));
-      }
-      return 1;
+      return Number.parseFloat(nonNeighbors.first().style('opacity'));
     });
 
     // Non-neighbors should be dimmed (< 1)
@@ -148,20 +142,14 @@ test.describe('TC-2.6: Highlight Mode', () => {
 
     // Capture initial positions after layout stabilizes
     await page.waitForFunction(() => !globalThis.__layoutRunning);
-    const initialPos = await page.evaluate(() => {
-      const n = globalThis.__cy.nodes().first();
-      return n ? n.position() : { x: 0, y: 0 };
-    });
+    const initialPos = await page.evaluate(() => globalThis.__cy.nodes().first().position());
 
     // Change depth to 3
     const depthButton3 = page.locator('#depth-picker .depth-btn[data-depth="3"]');
     await depthButton3.click();
     await page.waitForTimeout(500);
 
-    const newPos = await page.evaluate(() => {
-      const n = globalThis.__cy.nodes().first();
-      return n ? n.position() : { x: 0, y: 0 };
-    });
+    const newPos = await page.evaluate(() => globalThis.__cy.nodes().first().position());
 
     // Positions should not change (no relayout)
     expect(newPos.x).toBeCloseTo(initialPos.x, 1);
@@ -247,7 +235,8 @@ test.describe('TC-2.6: Highlight Mode', () => {
     await expect(page.locator('#model-modal')).toBeVisible();
     await page.locator('.model-item', { hasText: 'e-commerce' }).click();
     await waitForLoading(page);
-    await page.waitForFunction(() => globalThis.__cy && globalThis.__cy.nodes().length > 0);
+    await page.waitForFunction(() => globalThis.__cy !== undefined);
+    await page.waitForFunction(() => globalThis.__cy.nodes().length > 0);
 
     // Highlight toggle must be OFF after model switch
     await expect(page.locator('#highlight-toggle')).not.toBeChecked();
