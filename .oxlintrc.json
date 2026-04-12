@@ -10,6 +10,7 @@
     "nursery": "error"
   },
   "rules": {
+    "eslint/capitalized-comments": "off",
     "eslint/default-case": "off",
     "eslint/eqeqeq": "error",
     "eslint/func-style": ["error", "declaration"],
@@ -91,7 +92,7 @@
       "rules": {
         "eslint/max-lines-per-function": "off",
         "eslint/no-await-in-loop": "off",
-        "jest/no-conditional-in-test": "off",
+        // "jest/no-conditional-in-test": "off",
         "jest/valid-title": "off",
         "unicorn/no-null": "off",
         "vitest/consistent-test-filename": [
