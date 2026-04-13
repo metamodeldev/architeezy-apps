@@ -1,27 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { injectCyCapture } from '../cy-helpers.js';
 import { mockApi, MODEL_CONTENT_URL, test, waitForLoading } from '../fixtures.js';
-
-// Helper to capture Cytoscape instance for tests that need to inspect it (e.g., zoom)
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
 
 test.describe('TC-1.3: Persistence', () => {
   test('TC-1.3.1: Last active session is restored on app reload', async ({ page }) => {

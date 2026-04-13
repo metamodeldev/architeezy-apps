@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-import { mockApi, test, waitForLoading, MODEL_CONTENT_URL } from '../fixtures.js';
+import { mockApiWithContent, test, waitForLoading } from '../fixtures.js';
 
 // Custom model content for filtering tests with required entity and relationship types
 const FILTER_MODEL_CONTENT = {
@@ -62,14 +62,7 @@ const FILTER_MODEL_CONTENT = {
 
 test.describe('TC-4.2: Bulk actions', () => {
   test.beforeEach(async ({ page }) => {
-    await mockApi(page);
-    await page.route(MODEL_CONTENT_URL, (r) =>
-      r.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(FILTER_MODEL_CONTENT),
-      }),
-    );
+    await mockApiWithContent(page, FILTER_MODEL_CONTENT);
     await page.addInitScript(() => localStorage.clear());
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);

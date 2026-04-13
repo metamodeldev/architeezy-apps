@@ -1,111 +1,13 @@
 import { expect } from '@playwright/test';
 
+import {
+  injectCyCapture,
+  waitForCyNode,
+  waitForNodeSelected,
+  waitForNodeCentered,
+  waitForNodeInViewport,
+} from '../cy-helpers.js';
 import { mockApi, test, waitForLoading } from '../fixtures.js';
-
-// Helper to capture Cytoscape instance (consistent with other tests)
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
-
-// Wait for Cytoscape node to be positioned (from tc-2.1.spec.js)
-async function waitForCyNode(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const el = globalThis.__cy.$id(id);
-    if (!el.length) {
-      return false;
-    }
-    if (el.isNode && el.isNode()) {
-      const pos = el.renderedPosition();
-      return pos && pos.x > 10 && pos.y > 10;
-    }
-    return true;
-  }, nodeId);
-}
-
-// Wait until the specified node is selected
-async function waitForNodeSelected(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const node = globalThis.__cy.$id(id);
-    return node && node.length && node.isNode() && node.selected();
-  }, nodeId);
-}
-
-// Wait until the specified node is centered within the viewport (within 100px of center)
-async function waitForNodeCentered(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const node = globalThis.__cy.$id(id);
-    if (!node.length) {
-      return false;
-    }
-    if (!node.selected()) {
-      return false;
-    }
-    const pos = node.renderedPosition();
-    if (!pos) {
-      return false;
-    }
-    const nodeCenterX = pos.x + node.outerWidth() / 2;
-    const nodeCenterY = pos.y + node.outerHeight() / 2;
-    const cyEl = document.getElementById('cy');
-    if (!cyEl) {
-      return false;
-    }
-    const rect = cyEl.getBoundingClientRect();
-    return Math.hypot(nodeCenterX - rect.width / 2, nodeCenterY - rect.height / 2) < 100;
-  }, nodeId);
-}
-
-// Wait until the specified node is fully within the viewport (50px margin)
-async function waitForNodeInViewport(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const node = globalThis.__cy.$id(id);
-    if (!node.length) {
-      return false;
-    }
-    const pos = node.renderedPosition();
-    if (!pos) {
-      return false;
-    }
-    const w = node.outerWidth();
-    const h = node.outerHeight();
-    const cyEl = document.getElementById('cy');
-    if (!cyEl) {
-      return false;
-    }
-    const rect = cyEl.getBoundingClientRect();
-    return (
-      pos.x >= 50 && pos.y >= 50 && pos.x + w <= rect.width - 50 && pos.y + h <= rect.height - 50
-    );
-  }, nodeId);
-}
 
 test.describe('TC-3.5: Graph navigation', () => {
   test.beforeEach(async ({ page }) => {

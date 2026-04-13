@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test';
 
-import { mockApi, test, waitForLoading, MODEL_CONTENT_URL } from '../fixtures.js';
+import { injectCyCapture } from '../cy-helpers.js';
+import { mockApiWithContent, test, waitForLoading } from '../fixtures.js';
+import { enterDrillDown, exitDrillDown } from '../ui-helpers.js';
 
 // Custom model content for TC-4.5 filtering tests
 const FILTER_MODEL_CONTENT = {
@@ -37,66 +39,9 @@ const FILTER_MODEL_CONTENT = {
   ],
 };
 
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
-
-async function waitForCyReady(page) {
-  await page.waitForFunction(
-    () => globalThis.__cy !== undefined || (globalThis.cy && globalThis.cy !== undefined),
-  );
-  await page.evaluate(() => {
-    if (globalThis.cy && !globalThis.__cy) {
-      globalThis.__cy = globalThis.cy;
-    }
-  });
-}
-
-async function enterDrillDown(page, nodeId) {
-  await waitForCyReady(page);
-  await page.evaluate((id) => {
-    const node = globalThis.__cy.$id(id);
-    if (node.length) {
-      node.trigger('dbltap');
-    }
-  }, nodeId);
-  await expect(page.locator('#drill-label')).toBeVisible();
-}
-
-async function exitDrillDown(page) {
-  const btn = page.locator('#drill-exit-btn');
-  if (await btn.isVisible()) {
-    await btn.click();
-    await page.waitForTimeout(500);
-  }
-}
-
 test.describe('TC-4.5: Filter list discovery', () => {
   test.beforeEach(async ({ page }) => {
-    await mockApi(page);
-    await page.route(MODEL_CONTENT_URL, (r) =>
-      r.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(FILTER_MODEL_CONTENT),
-      }),
-    );
+    await mockApiWithContent(page, FILTER_MODEL_CONTENT);
     await page.addInitScript(() => localStorage.clear());
     await injectCyCapture(page);
     await page.goto('/graph/?model=model-test');

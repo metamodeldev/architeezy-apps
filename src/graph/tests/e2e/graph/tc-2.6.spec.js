@@ -1,50 +1,9 @@
 import { expect } from '@playwright/test';
 
+import { injectCyCapture, waitForCyNode, getNodePos } from '../cy-helpers.js';
 import { mockApi, test, waitForLoading } from '../fixtures.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
-
-async function waitForCyNode(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const el = globalThis.__cy.$id(id);
-    if (!el.length) {
-      return false;
-    }
-    const pos = el.renderedPosition();
-    return pos && pos.x > 10 && pos.y > 10;
-  }, nodeId);
-}
-
-function getNodePos(page, nodeId) {
-  return page.evaluate((id) => {
-    const pos = globalThis.__cy.$id(id).renderedPosition();
-    const rect = document.getElementById('cy').getBoundingClientRect();
-    return { x: rect.left + pos.x, y: rect.top + pos.y };
-  }, nodeId);
-}
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 

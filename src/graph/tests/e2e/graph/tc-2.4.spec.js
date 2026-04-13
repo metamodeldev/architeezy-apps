@@ -1,27 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { injectCyCapture, waitForCyNode } from '../cy-helpers.js';
 import { mockApi, test, waitForLoading } from '../fixtures.js';
-
-// Helper to capture Cytoscape instance
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
 
 async function waitForLayoutChange(page, initialPositions) {
   await page.waitForFunction((initial) => {
@@ -34,23 +14,6 @@ async function waitForLayoutChange(page, initialPositions) {
       return init && (Math.abs(pos.x - init.x) > 1 || Math.abs(pos.y - init.y) > 1);
     });
   }, initialPositions);
-}
-
-async function waitForCyNode(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const el = globalThis.__cy.$id(id);
-    if (!el.length) {
-      return false;
-    }
-    if (el.isNode && el.isNode()) {
-      const pos = el.renderedPosition();
-      return pos && pos.x > 10 && pos.y > 10;
-    }
-    return true;
-  }, nodeId);
 }
 
 test.describe('TC-2.4: Layouts', () => {

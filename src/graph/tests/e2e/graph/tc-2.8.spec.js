@@ -1,47 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { injectCyCapture, waitForCyReady, waitForCyNode } from '../cy-helpers.js';
 import { mockApi, test, waitForLoading } from '../fixtures.js';
-
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
-
-async function waitForCyReady(page) {
-  await page.waitForFunction(() => globalThis.__cy !== undefined);
-}
-
-async function waitForCyNode(page, nodeId) {
-  await page.waitForFunction((id) => {
-    if (!globalThis.__cy) {
-      return false;
-    }
-    const el = globalThis.__cy.$id(id);
-    if (!el.length) {
-      return false;
-    }
-    if (el.isNode && el.isNode()) {
-      const pos = el.renderedPosition();
-      return pos && pos.x > 10 && pos.y > 10;
-    }
-    return true;
-  }, nodeId);
-}
 
 test.describe('TC-2.8: Containment', () => {
   test('TC-2.8.1: Switch containment mode to "Edge-based"', async ({ page }) => {

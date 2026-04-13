@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test';
 
-import { mockApi, MODEL_CONTENT_URL, test, waitForLoading } from '../fixtures.js';
+import { mockApiWithContent, test, waitForLoading } from '../fixtures.js';
 
 // Custom model content for legend tests with required entity types
 const LEGEND_MODEL_CONTENT = {
@@ -29,15 +29,7 @@ const LEGEND_MODEL_CONTENT = {
 
 test.describe('TC-2.2: Legend', () => {
   test.beforeEach(async ({ page }) => {
-    await mockApi(page);
-    // Override model content with legend-specific types
-    await page.route(MODEL_CONTENT_URL, (r) =>
-      r.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(LEGEND_MODEL_CONTENT),
-      }),
-    );
+    await mockApiWithContent(page, LEGEND_MODEL_CONTENT);
     await page.addInitScript(() => localStorage.clear());
     await page.goto('/graph/?model=model-test');
     await waitForLoading(page);

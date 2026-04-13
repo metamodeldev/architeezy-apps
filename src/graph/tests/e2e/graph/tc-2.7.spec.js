@@ -1,11 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { waitForCyReady } from '../cy-helpers.js';
 import { mockApi, test, waitForLoading } from '../fixtures.js';
-
-// Wait for cytoscape to be ready (test hook: globalThis.__cy)
-async function waitForCyReady(page) {
-  await page.waitForFunction(() => globalThis.__cy !== undefined);
-}
 
 test.describe('TC-2.7: Drill-down', () => {
   test('TC-2.7.1: Enter drill-down mode on a node (double-click)', async ({ page }) => {

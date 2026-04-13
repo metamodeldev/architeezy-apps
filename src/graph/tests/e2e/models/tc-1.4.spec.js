@@ -1,27 +1,7 @@
 import { expect } from '@playwright/test';
 
+import { injectCyCapture } from '../cy-helpers.js';
 import { mockApi, test, waitForLoading } from '../fixtures.js';
-
-// Helper to capture Cytoscape instance for drill-down tests
-async function injectCyCapture(page) {
-  await page.addInitScript(() => {
-    Object.defineProperty(globalThis, 'cytoscape', {
-      configurable: true,
-      get() {
-        return globalThis.__cyImpl;
-      },
-      set(fn) {
-        globalThis.__cyImpl = function cyWrapper(...args) {
-          const inst = fn.apply(this, args);
-          if (inst && typeof inst.$id === 'function') {
-            globalThis.__cy = inst;
-          }
-          return inst;
-        };
-      },
-    });
-  });
-}
 
 test.describe('TC-1.4: Navigation', () => {
   test.beforeEach(async ({ page }) => {

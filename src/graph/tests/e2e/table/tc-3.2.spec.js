@@ -1,16 +1,12 @@
 import { expect } from '@playwright/test';
 
 import { mockApi, test, waitForLoading } from '../fixtures.js';
+import { getTableHeaders } from '../ui-helpers.js';
 
 async function switchToTableAndWait(page) {
   await page.locator('#tab-table').click();
   await expect(page.locator('#table-view')).toBeVisible();
   await expect(page.locator('#table-body tr').first()).toBeVisible();
-}
-
-async function getTableHeaders(page) {
-  const raw = await page.locator('#table-head th').allTextContents();
-  return raw.map((h) => h.trim());
 }
 
 test.describe('TC-3.2: Tabular display', () => {

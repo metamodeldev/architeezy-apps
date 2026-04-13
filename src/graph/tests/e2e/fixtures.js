@@ -334,6 +334,24 @@ export async function mockApi(page, { modelListStatus = 200 } = {}) {
 }
 
 /**
+ * Registers API mocks and overrides the test-model content with the given payload. Combines
+ * `mockApi(page)` + `page.route(MODEL_CONTENT_URL, ...)` into one call.
+ *
+ * @param {import('@playwright/test').Page} page - The Playwright page object.
+ * @param {object} modelContent - Content to serve at MODEL_CONTENT_URL.
+ */
+export async function mockApiWithContent(page, modelContent) {
+  await mockApi(page);
+  await page.route(MODEL_CONTENT_URL, (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(modelContent),
+    }),
+  );
+}
+
+/**
  * Wait for the loading spinner to disappear.
  *
  * @param {import('@playwright/test').Page} page - The Playwright page object.
