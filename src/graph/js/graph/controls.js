@@ -5,6 +5,8 @@
  * @package
  */
 
+import { modelNameSignal } from '../model/index.js';
+import { effect } from '../signals/index.js';
 import { getCy } from './cy.js';
 
 const FIT_PADDING = 40;
@@ -208,8 +210,38 @@ export function panBy(dx, dy) {
 
 // ── DOM EVENT WIRING ─────────────────────────────────────────────────────────
 
+/**
+ * Converts a model content API URL to the model page URL.
+ *
+ * Example: https://architeezy.com/api/models/metamodel/c4/dev/c4/content?format=json
+ *       → https://architeezy.com/metamodel/c4/dev/c4
+ *
+ * @param {string} contentUrl - The content API URL.
+ * @returns {string} The model page URL.
+ */
+function modelPageUrl(contentUrl) {
+  const url = new URL(contentUrl);
+  const path = url.pathname.replace(/^\/api\/models/, '').replace(/\/content$/, '');
+  return `${url.origin}${path}`;
+}
+
 /** Wires zoom, fit, layout select, and refresh layout buttons. */
 export function wireGraphControlEvents() {
+  const openModelBtn = document.getElementById('open-model-btn');
+  if (openModelBtn) {
+    openModelBtn.addEventListener('click', () => {
+      const contentUrl = localStorage.getItem('architeezyGraphModelUrl');
+      if (contentUrl) {
+        window.open(modelPageUrl(contentUrl), '_blank', 'noopener');
+      }
+    });
+    effect(() => {
+      const _ = modelNameSignal.value;
+      const contentUrl = localStorage.getItem('architeezyGraphModelUrl');
+      openModelBtn.disabled = !contentUrl;
+    });
+  }
+
   const zoomInBtn = document.getElementById('zoom-in-btn');
   if (zoomInBtn) {
     zoomInBtn.addEventListener('click', zoomIn);
