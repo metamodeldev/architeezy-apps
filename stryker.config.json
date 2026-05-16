@@ -1,0 +1,41 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Mutation testing for unit-tested modules. E2E (Playwright) intentionally excluded.",
+  "packageManager": "npm",
+  "testRunner": "command",
+  "commandRunner": {
+    "command": "bun test src/graph/tests/unit src/table/tests/unit"
+  },
+  "mutate": [
+    "src/graph/js/**/*.js",
+    "src/table/js/**/*.js",
+    "!src/**/*.test.js",
+    "!src/vendor/**"
+  ],
+  "ignorePatterns": [
+    "node_modules",
+    "coverage",
+    "monocart-report",
+    "test-results",
+    "src/vendor",
+    "src/**/tests/e2e/**",
+    "docs",
+    "tsconfig.json",
+    "tsconfig.*.json"
+  ],
+  "reporters": ["html", "clear-text", "progress"],
+  "htmlReporter": {
+    "fileName": "reports/mutation/index.html"
+  },
+  "coverageAnalysis": "off",
+  "concurrency": 4,
+  "thresholds": {
+    "high": 80,
+    "low": 60,
+    "break": 0
+  },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "incremental": true,
+  "incrementalFile": "reports/stryker-incremental.json"
+}

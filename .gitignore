@@ -1,5 +1,7 @@
 /.claude/
+/.stryker-tmp/
+/coverage/
 /node_modules/
-coverage/
+/reports/
+/test-results/
 monocart-report/
-test-results/

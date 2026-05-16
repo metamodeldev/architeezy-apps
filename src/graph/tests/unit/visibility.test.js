@@ -3,6 +3,7 @@ import { describe, expect, it } from 'bun:test';
 import { computeVisRelCounts } from '../../js/filter/index.js';
 import {
   computeDrillBfs,
+  computeDrillScopeIds,
   computeVisibleNodeIds,
   computeFadedNodeIds,
 } from '../../js/graph/visibility.js';
@@ -409,6 +410,226 @@ describe('computeDrillBfs — nodeDepth', () => {
   });
 });
 
+// ── computeDrillBfs — termination & extra branches ────────────────────────────
+
+describe('computeDrillBfs — termination and edge cases', () => {
+  it('drillDepth = 0 returns only root', () => {
+    const { visibleIds, nodeDepth } = computeDrillBfs({
+      rootId: 'r',
+      drillDepth: 0,
+      nodes: [node('r', 'A'), node('x', 'A')],
+      edges: [edge('e', 'R', 'r', 'x')],
+      activeElemTypes: new Set(['A']),
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    expect([...visibleIds]).toStrictEqual(['r']);
+    expect(nodeDepth.get('r')).toBe(0);
+    expect(nodeDepth.has('x')).toBe(false);
+  });
+
+  it('breaks early when frontier becomes empty (no more reachable nodes)', () => {
+    // Even with very high drillDepth, must terminate. Cycle ensures coverage of the
+    // "if (!frontier.length) break" branch (otherwise the for loop would still terminate).
+    const { visibleIds, nodeDepth } = computeDrillBfs({
+      rootId: 'r',
+      drillDepth: 999,
+      nodes: [node('r', 'A'), node('x', 'A')],
+      edges: [edge('e', 'R', 'r', 'x')],
+      activeElemTypes: new Set(['A']),
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    expect(visibleIds.size).toBe(2);
+    expect(nodeDepth.get('x')).toBe(1); // Reached at depth 1, then frontier emptied
+  });
+
+  it("containmentMode 'none' does NOT add parent/child via compound links", () => {
+    const { visibleIds } = computeDrillBfs({
+      rootId: 'child',
+      drillDepth: 1,
+      nodes: [node('parent', 'G'), node('child', 'I', 'parent')],
+      edges: [],
+      activeElemTypes: new Set(['G', 'I']),
+      activeRelTypes: new Set(),
+      containmentMode: 'none',
+    });
+    expect(visibleIds).not.toContain('parent');
+  });
+
+  it('containment edge connects nodes even when activeRelTypes set is empty', () => {
+    // Pins the `activeRelTypes.has(type) || isContainment` (logical OR vs AND).
+    const { visibleIds } = computeDrillBfs({
+      rootId: 'r',
+      drillDepth: 1,
+      nodes: [node('r', 'A'), node('x', 'A')],
+      // Non-containment edge with a type NOT in activeRelTypes → must NOT be followed
+      edges: [edge('e', 'NotActive', 'r', 'x', false)],
+      activeElemTypes: new Set(['A']),
+      activeRelTypes: new Set(['SomethingElse']),
+      containmentMode: 'none',
+    });
+    expect(visibleIds).not.toContain('x');
+  });
+
+  it('node without `type` field is excluded by type filter (root exception only)', () => {
+    // Pins the optional chaining on `nodeById.get(nodeId)?.type`:
+    // a strict access would throw on missing entries; we must just return false.
+    const { visibleIds } = computeDrillBfs({
+      rootId: 'r',
+      drillDepth: 1,
+      nodes: [node('r', 'A')], // 'x' is referenced in edges but missing from nodes
+      edges: [edge('e', 'R', 'r', 'x')],
+      activeElemTypes: new Set(['A']),
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    // 'x' has no type, no entry → activeElemTypes.has(undefined) is false → not visible
+    expect(visibleIds).not.toContain('x');
+    expect(visibleIds.has('r')).toBe(true);
+  });
+});
+
+// ── computeDrillScopeIds ──────────────────────────────────────────────────────
+
+describe(computeDrillScopeIds, () => {
+  it('returns the root with no edges', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'r',
+      drillDepth: 3,
+      nodes: [node('r', 'A')],
+      edges: [],
+      activeRelTypes: new Set(),
+      containmentMode: 'none',
+    });
+    expect([...ids]).toStrictEqual(['r']);
+  });
+
+  it('ignores type filter — includes nodes regardless of their type', () => {
+    // This is the key difference from computeDrillBfs.
+    const ids = computeDrillScopeIds({
+      rootId: 'r',
+      drillDepth: 1,
+      nodes: [node('r', 'A'), node('x', 'Hidden')],
+      edges: [edge('e', 'R', 'r', 'x')],
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    expect(ids).toContain('x'); // Would be excluded by computeDrillBfs
+  });
+
+  it('respects activeRelTypes (skips edges not in set)', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'r',
+      drillDepth: 1,
+      nodes: [node('r', 'A'), node('x', 'A')],
+      edges: [edge('e', 'Inactive', 'r', 'x')],
+      activeRelTypes: new Set(['Uses']),
+      containmentMode: 'none',
+    });
+    expect(ids).not.toContain('x');
+  });
+
+  it('follows containment edges regardless of activeRelTypes', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'r',
+      drillDepth: 1,
+      nodes: [node('r', 'A'), node('x', 'A')],
+      edges: [edge('e', 'Contains', 'r', 'x', true)],
+      activeRelTypes: new Set(),
+      containmentMode: 'none',
+    });
+    expect(ids).toContain('x');
+  });
+
+  it('compound mode traverses parent/child links', () => {
+    const idsUp = computeDrillScopeIds({
+      rootId: 'child',
+      drillDepth: 1,
+      nodes: [node('parent', 'G'), node('child', 'I', 'parent')],
+      edges: [],
+      activeRelTypes: new Set(),
+      containmentMode: 'compound',
+    });
+    expect(idsUp).toContain('parent');
+
+    const idsDown = computeDrillScopeIds({
+      rootId: 'parent',
+      drillDepth: 1,
+      nodes: [node('parent', 'G'), node('child', 'I', 'parent')],
+      edges: [],
+      activeRelTypes: new Set(),
+      containmentMode: 'compound',
+    });
+    expect(idsDown).toContain('child');
+  });
+
+  it('edge mode also traverses compound links', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'parent',
+      drillDepth: 1,
+      nodes: [node('parent', 'G'), node('child', 'I', 'parent')],
+      edges: [],
+      activeRelTypes: new Set(),
+      containmentMode: 'edge',
+    });
+    expect(ids).toContain('child');
+  });
+
+  it("'none' mode skips compound links", () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'parent',
+      drillDepth: 1,
+      nodes: [node('parent', 'G'), node('child', 'I', 'parent')],
+      edges: [],
+      activeRelTypes: new Set(),
+      containmentMode: 'none',
+    });
+    expect(ids).not.toContain('child');
+  });
+
+  it('respects drillDepth as a hard cutoff', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'a',
+      drillDepth: 1,
+      nodes: [node('a', 'X'), node('b', 'X'), node('c', 'X')],
+      edges: [edge('e1', 'R', 'a', 'b'), edge('e2', 'R', 'b', 'c')],
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    expect(ids).toContain('b');
+    expect(ids).not.toContain('c');
+  });
+
+  it('linear chain at full depth includes every node', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'a',
+      drillDepth: 3,
+      nodes: [node('a', 'X'), node('b', 'X'), node('c', 'X'), node('d', 'X')],
+      edges: [
+        edge('e1', 'R', 'a', 'b'),
+        edge('e2', 'R', 'b', 'c'),
+        edge('e3', 'R', 'c', 'd'),
+      ],
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    expect([...ids].sort()).toStrictEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('cycle does not loop infinitely', () => {
+    const ids = computeDrillScopeIds({
+      rootId: 'a',
+      drillDepth: 99,
+      nodes: [node('a', 'X'), node('b', 'X'), node('c', 'X')],
+      edges: [edge('e1', 'R', 'a', 'b'), edge('e2', 'R', 'b', 'c'), edge('e3', 'R', 'c', 'a')],
+      activeRelTypes: new Set(['R']),
+      containmentMode: 'none',
+    });
+    expect(ids.size).toBe(3);
+  });
+});
+
 // ── computeVisibleNodeIds ─────────────────────────────────────────────────────
 
 const visElements = [
@@ -477,6 +698,80 @@ describe('computeVisibleNodeIds — highlight mode', () => {
     expect(result).toContain('d');
     expect(result).not.toContain('c');
   });
+
+  it('highlightEnabled = true but no highlightNodeId → falls through to normal mode', () => {
+    // Pins the AND vs OR on `highlightEnabled && highlightNodeId`
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+      highlightEnabled: true,
+      highlightNodeId: undefined,
+    });
+    expect(result).toStrictEqual(new Set(['a', 'd']));
+  });
+
+  it('highlightNodeId present but disabled → falls through to normal mode', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+      highlightEnabled: false,
+      highlightNodeId: 'b',
+    });
+    expect(result).not.toContain('b'); // Not force-included
+    expect(result).toStrictEqual(new Set(['a', 'd']));
+  });
+});
+
+describe('computeVisibleNodeIds — drill mode edge cases', () => {
+  it('drillNodeId set but drillVisibleIds undefined → falls through to normal mode', () => {
+    // Pins the AND on `drillNodeId && drillVisibleIds`.
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: 'a',
+      drillVisibleIds: undefined,
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+    });
+    expect(result).toStrictEqual(new Set(['a', 'd']));
+  });
+
+  it('drillVisibleIds set but drillNodeId undefined → falls through to normal mode', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: undefined,
+      drillVisibleIds: new Set(['a', 'b', 'c']),
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+    });
+    expect(result).toStrictEqual(new Set(['a', 'd']));
+  });
+
+  it('highlight takes precedence over drill when both set', () => {
+    const result = computeVisibleNodeIds({
+      allElements: visElements,
+      activeElemTypes: new Set(['Actor']),
+      showAll: false,
+      drillNodeId: 'a',
+      drillVisibleIds: new Set(['a']),
+      highlightEnabled: true,
+      highlightNodeId: 'c',
+    });
+    // Highlight branch returns active types + highlighted node, NOT drill set
+    expect(result).toContain('a');
+    expect(result).toContain('c'); // Force-included
+    expect(result).toContain('d'); // Active Actor type
+    expect(result).not.toContain('b');
+  });
 });
 
 // ── computeFadedNodeIds ───────────────────────────────────────────────────────
@@ -511,5 +806,85 @@ describe('computeFadedNodeIds — drill mode', () => {
     expect(result).toContain('c');
     expect(result).not.toContain('a');
     expect(result).not.toContain('b');
+  });
+
+  it('drillNodeId set but drillScopeIds undefined → empty set', () => {
+    // Pins AND on `drillNodeId && drillScopeIds`.
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['a', 'b']),
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+      highlightReachableIds: undefined,
+      drillNodeId: 'a',
+      drillScopeIds: undefined,
+    });
+    expect(result.size).toBe(0);
+  });
+
+  it('drillScopeIds set but drillNodeId undefined → empty set', () => {
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['a']),
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+      highlightReachableIds: undefined,
+      drillNodeId: undefined,
+      drillScopeIds: new Set(['a', 'b']),
+    });
+    expect(result.size).toBe(0);
+  });
+});
+
+describe('computeFadedNodeIds — highlight edge cases', () => {
+  it('highlightEnabled = true but no highlightNodeId → empty set', () => {
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['a', 'b', 'c']),
+      highlightEnabled: true,
+      highlightNodeId: undefined,
+      highlightReachableIds: new Set(['a']),
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+    });
+    expect(result.size).toBe(0);
+  });
+
+  it('highlighted node never fades, even when reachable set excludes it', () => {
+    // Pins `id !== highlightNodeId && !reachable.has(id)` — removing the first conjunct
+    // would put the highlighted node into faded if it is not also in reachable.
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['hl', 'x']),
+      highlightEnabled: true,
+      highlightNodeId: 'hl',
+      highlightReachableIds: new Set(), // 'hl' explicitly not in reachable
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+    });
+    expect(result).not.toContain('hl');
+    expect(result).toContain('x');
+  });
+
+  it('missing highlightReachableIds defaults to empty set (everything fades except highlighted)', () => {
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['hl', 'a', 'b']),
+      highlightEnabled: true,
+      highlightNodeId: 'hl',
+      highlightReachableIds: undefined,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+    });
+    expect(result).toContain('a');
+    expect(result).toContain('b');
+    expect(result).not.toContain('hl');
+  });
+
+  it('no highlight, no drill → empty faded set', () => {
+    const result = computeFadedNodeIds({
+      visibleNodeIds: new Set(['a', 'b']),
+      highlightEnabled: false,
+      highlightNodeId: undefined,
+      highlightReachableIds: undefined,
+      drillNodeId: undefined,
+      drillScopeIds: undefined,
+    });
+    expect(result.size).toBe(0);
   });
 });
